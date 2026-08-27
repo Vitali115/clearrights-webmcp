@@ -185,7 +185,7 @@ export function createToolDefinitions(
           privacyUi.navigate({
             view: 'home',
             origin: 'agent',
-            message: 'The agent opened the Privacy Center overview so you can inspect the current setup.',
+            message: 'The agent opened the privacy settings index so you can inspect the current setup.',
           })
         }
         return {
@@ -285,7 +285,7 @@ export function createToolDefinitions(
   const apply: WebMCP.ModelContextTool = {
     name: 'apply_privacy_plan',
     title: 'Apply reviewed privacy plan',
-    description: 'Apply the exact staged plan after a person has reviewed it in the visible privacy center, then verify persisted state and return a receipt.',
+    description: 'Apply the exact staged plan after a person has reviewed it in the visible privacy settings, then verify persisted state and return a receipt.',
     inputSchema: z.toJSONSchema(applyInputSchema),
     annotations: { readOnlyHint: false, untrustedContentHint: false },
     execute: (input) => executeValidated(applyInputSchema, privacyReceiptSchema, input, async ({ planId }) => {

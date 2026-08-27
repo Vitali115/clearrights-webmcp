@@ -1,6 +1,6 @@
 # ClearRights WebMCP
 
-ClearRights is a WebMCP-native, guided privacy center embedded in the fictional Waypoint Travel product. A person and a browser agent share the same visible state: the agent can inspect service-declared processing, open the relevant view, stage a deterministic minimisation plan, and apply it only after a person reviews the consequences in the page. The application then rereads persisted state and produces a verified receipt.
+ClearRights is a WebMCP-native privacy-settings surface embedded in the fictional Waypoint Travel product. Every setting is visible in one grouped index instead of a promotional or wizard-style entry screen. A person and a browser agent share the same state: the agent can inspect a setting, open its detail, prepare deterministic changes, and apply them only after a person reviews the effects in the page. The application then rereads persisted state and produces a verified receipt.
 
 This is a local, single-page demo. It has no backend, login, internal AI, OpenAI API integration, account deletion flow, or formal GDPR request workflow.
 
@@ -34,12 +34,12 @@ npm run lint       # Oxlint
 
 ### Manual fallback
 
-1. Open Waypoint Travel and select **Privacy Center**.
-2. Open **Current privacy setup** to move from category → activity → detail, or select **Start privacy cleanup**.
-3. Keep or turn off optional experiences. Essential trip services remain visible and locked.
-4. Select **Review changes**.
-5. Inspect **Turning off**, **Turning on**, consequences, conflicts, and required activities that cannot change.
-6. Mark the visible human-confirmation checkbox.
+1. Open Waypoint Travel and select **Privacy settings**.
+2. Read every setting in the grouped index or open an individual setting for its purpose, data, legal basis, dependencies, and effect.
+3. Turn optional settings on or off. Required settings remain visible and labelled **Required**.
+4. Pending rows are marked **Will turn on/off**; select **Review changes**.
+5. Inspect the exact before/after state and the effect of each change.
+6. Confirm that **Agent check** is prepared when the change set came from WebMCP, then provide the separate **Human check**.
 7. Select **Apply changes**.
 8. Inspect the verified receipt produced after persisted-state readback. **Previous changes** retains the latest ten receipts, newest first.
 
@@ -57,7 +57,7 @@ The intended agent sequence is:
 4. `apply_privacy_plan` using the staged `planId`.
 5. `get_privacy_receipt` or `get_privacy_history` for later read-only inspection.
 
-Staging always opens **Review your changes** and creates an `opened` agent-activity event. Apply always opens the verified receipt. Clicking the activity popover or closing the sheet does not acknowledge the view: the blue dot clears only after click, keyboard, or scroll engagement in the view. Engagement never checks the human-confirmation checkbox.
+Staging always opens **Review changes**, marks the visible **Agent check** as prepared, and creates an `opened` agent-activity event. The independent **Human check** remains incomplete. Apply always opens the verified receipt. Clicking the activity popover or closing the sheet does not acknowledge the view: the blue dot clears only after click, keyboard, or scroll engagement in the view. Engagement never checks the human-confirmation checkbox.
 
 Example staging input:
 
@@ -149,9 +149,13 @@ The Vitest suite covers:
 - five tools at load and review-gated sixth-tool registration;
 - WebMCP input/output validation and registration races;
 - reveal navigation that is opt-in for reads and automatic for staging/apply;
-- hierarchical navigation, focus return, desktop/mobile layout, and the complete manual flow;
+- grouped settings navigation, detail focus return, desktop/mobile layout, and the complete manual flow;
 - agent activity persistence through popover, rerender, and close, plus click/keyboard/scroll engagement;
-- agent staging → visible human checkbox → agent apply → verified receipt.
+- agent staging → visible agent check → separate human checkbox → agent apply → verified receipt.
+
+## Interface design
+
+The settings list intentionally has no decorative menu icons, branded setup card, or cleanup funnel. It uses text hierarchy, native-looking switches, and only sparse monochrome outline icons for universal controls such as back, disclosure, and status. This follows the optional, system-oriented approach in the [OpenAI UI guidelines](https://developers.openai.com/plugins/concepts/ui-guidelines); the guidelines do not define a separate required GPT Apps SDK icon pack.
 
 ## Blueprint boundary
 

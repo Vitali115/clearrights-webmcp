@@ -36,7 +36,7 @@ function renderApp(controller: PrivacyController, webMcpAvailable = false) {
 
 afterEach(cleanup)
 
-describe('ClearRights UI', () => {
+describe('privacy settings UI', () => {
   it('opens and closes the privacy Sheet over the travel product', async () => {
     const user = userEvent.setup()
     const controller = await createController()
@@ -164,7 +164,7 @@ describe('ClearRights UI', () => {
     act(() => privacyUi.navigate({
       view: 'home',
       origin: 'agent',
-      message: 'The agent opened the Privacy Center overview.',
+      message: 'The agent opened the privacy settings overview.',
     }))
     await screen.findByRole('dialog', { name: 'Privacy settings panel' })
 
@@ -191,7 +191,7 @@ describe('ClearRights UI', () => {
     act(() => privacyUi.navigate({
       view: 'home',
       origin: 'agent',
-      message: 'The agent opened the Privacy Center overview again.',
+      message: 'The agent opened the privacy settings overview again.',
     }))
     fireEvent.scroll(screen.getByTestId('privacy-view-content'))
     expect(privacyUi.getSnapshot().agentActivity?.status).toBe('engaged')
@@ -341,7 +341,7 @@ describe('ClearRights UI', () => {
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toHaveFocus()
   })
 
-  it('returns activity details to cleanup without losing accumulated choices', async () => {
+  it('returns from setting details without losing accumulated choices', async () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
