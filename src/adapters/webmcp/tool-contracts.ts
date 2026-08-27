@@ -266,7 +266,7 @@ function createCatalogSchemas(catalog: ProcessingCatalog) {
     verified: z.literal(true),
     verification: z.object({
       observedRevision: z.number().int().positive(),
-      method: z.literal('persisted_state_readback'),
+      method: z.enum(['persisted_state_readback', 'adapter_readback']),
       adapterId: z.string(),
       scope: z.enum(['local_demo', 'external']),
     }).strict(),

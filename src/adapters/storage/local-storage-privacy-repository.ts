@@ -69,7 +69,7 @@ const receiptSchema = legacyReceiptSchema.extend({
   choiceMethod: z.enum(['accept_all', 'essential_only', 'managed_settings']).nullable(),
   verification: z.object({
     observedRevision: z.number().int().positive(),
-    method: z.literal('persisted_state_readback'),
+    method: z.enum(['persisted_state_readback', 'adapter_readback']),
     adapterId: z.string().min(1),
     scope: z.enum(['local_demo', 'external']),
   }).strict(),

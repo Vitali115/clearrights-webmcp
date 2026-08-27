@@ -125,7 +125,7 @@ export interface PrivacyReceipt {
   verified: true
   verification: {
     observedRevision: number
-    method: 'persisted_state_readback'
+    method: 'persisted_state_readback' | 'adapter_readback'
     adapterId: string
     scope: PrivacyVerificationScope
   }

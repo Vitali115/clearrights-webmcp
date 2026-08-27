@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
+import { LocalDemoEnforcementAdapter } from '@/adapters/enforcement/local-demo-enforcement-adapter'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
 import { ApplicationError, createPrivacyController } from './index'
@@ -26,6 +27,7 @@ function dependencies(storage = new MemoryStorage()) {
   return {
     storage,
     repository: new LocalStoragePrivacyRepository(storage, createTravelSeed),
+    enforcement: new LocalDemoEnforcementAdapter(storage, createTravelSeed),
     clock: { now: () => `2026-08-27T10:00:0${time++}.000Z` },
     idGenerator: { next: () => `receipt-${++id}` },
   }
@@ -47,7 +49,11 @@ describe('PrivacyController', () => {
     const receipt = await controller.apply(plan.id)
     expect(controller.getSnapshot().workflow).toBe('applied')
     expect(receipt.verified).toBe(true)
-    expect(receipt.verification.method).toBe('persisted_state_readback')
+    expect(receipt.verification).toEqual(expect.objectContaining({
+      method: 'adapter_readback',
+      adapterId: 'waypoint-local-demo',
+      scope: 'local_demo',
+    }))
     expect(receipt.changes).toHaveLength(3)
 
     const reloaded = await createPrivacyController({ catalog: travelCatalog, ...deps })
@@ -85,6 +91,33 @@ describe('PrivacyController', () => {
     })
 
     await expect(controller.apply(plan.id)).rejects.toMatchObject({ code: 'stale_plan' })
+  })
+
+  it('does not create a receipt when enforcement readback differs from the plan', async () => {
+    const deps = dependencies()
+    const controller = await createPrivacyController({
+      catalog: travelCatalog,
+      repository: deps.repository,
+      enforcement: {
+        id: 'mismatching-demo',
+        scope: 'local_demo',
+        apply: async () => undefined,
+        readCurrentState: async () => createTravelSeed().processing,
+      },
+      clock: deps.clock,
+      idGenerator: deps.idGenerator,
+    })
+    const plan = controller.stage({
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
+    })
+    controller.setReviewed(true)
+
+    await expect(controller.apply(plan.id)).rejects.toMatchObject({
+      code: 'enforcement_verification_failed',
+    })
+    expect(controller.getReceipt()).toBeNull()
+    expect((await deps.repository.load()).state.revision).toBe(1)
   })
 
   it('does not review, apply, or create a receipt for a no-op plan', async () => {

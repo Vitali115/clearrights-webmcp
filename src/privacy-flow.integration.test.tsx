@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
+import { LocalDemoEnforcementAdapter } from '@/adapters/enforcement/local-demo-enforcement-adapter'
 import { startWebMcpAdapter } from '@/adapters/webmcp/webmcp-adapter'
 import { createPrivacyController, createPrivacyViewCoordinator } from '@/application'
 import { travelCatalog } from '@/demo/travel-catalog'
@@ -40,9 +41,11 @@ afterEach(cleanup)
 describe('agent-guided privacy flow', () => {
   it('requires visible human review between agent staging and agent apply', async () => {
     let tick = 0
+    const storage = new MemoryStorage()
     const controller = await createPrivacyController({
       catalog: travelCatalog,
-      repository: new LocalStoragePrivacyRepository(new MemoryStorage(), createTravelSeed),
+      repository: new LocalStoragePrivacyRepository(storage, createTravelSeed),
+      enforcement: new LocalDemoEnforcementAdapter(storage, createTravelSeed),
       clock: { now: () => `2026-08-27T14:00:0${tick++}.000Z` },
       idGenerator: { next: () => 'receipt-integration' },
     })

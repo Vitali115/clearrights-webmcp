@@ -7,6 +7,7 @@ import {
   type PrivacyController,
 } from '@/application'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
+import { LocalDemoEnforcementAdapter } from '@/adapters/enforcement/local-demo-enforcement-adapter'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
 import { HOLD_TO_CONFIRM_MS } from '@/ui/HoldToConfirm'
@@ -24,6 +25,7 @@ async function createController(storage = new MemoryStorage()) {
   return createPrivacyController({
     catalog: travelCatalog,
     repository: new LocalStoragePrivacyRepository(storage, createTravelSeed),
+    enforcement: new LocalDemoEnforcementAdapter(storage, createTravelSeed),
     clock: { now: () => `2026-08-27T12:00:0${tick++}.000Z` },
     idGenerator: { next: () => 'receipt-ui-test' },
   })

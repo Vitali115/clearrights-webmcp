@@ -5,6 +5,7 @@ import {
   type PrivacyController,
 } from '@/application'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
+import { LocalDemoEnforcementAdapter } from '@/adapters/enforcement/local-demo-enforcement-adapter'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
 import { startWebMcpAdapter } from './webmcp-adapter'
@@ -39,11 +40,13 @@ class FakeModelContext extends EventTarget implements WebMCP.ModelContext {
 }
 
 async function setup() {
-  const repository = new LocalStoragePrivacyRepository(new MemoryStorage(), createTravelSeed)
+  const storage = new MemoryStorage()
+  const repository = new LocalStoragePrivacyRepository(storage, createTravelSeed)
   let time = 0
   const controller = await createPrivacyController({
     catalog: travelCatalog,
     repository,
+    enforcement: new LocalDemoEnforcementAdapter(storage, createTravelSeed),
     clock: { now: () => `2026-08-27T11:00:0${time++}.000Z` },
     idGenerator: { next: () => 'receipt-webmcp' },
   })

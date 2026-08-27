@@ -1,0 +1,38 @@
+import { describe, expect, it } from 'vitest'
+import { createTravelSeed } from '@/demo/travel-seed'
+import { DEMO_ENFORCEMENT_STORAGE_KEY, LocalDemoEnforcementAdapter } from './local-demo-enforcement-adapter'
+
+class MemoryStorage {
+  values = new Map<string, string>()
+  getItem(key: string) { return this.values.get(key) ?? null }
+  setItem(key: string, value: string) { this.values.set(key, value) }
+}
+
+describe('LocalDemoEnforcementAdapter', () => {
+  it('keeps enforced state separate and supports idempotent operation replay', async () => {
+    const storage = new MemoryStorage()
+    const adapter = new LocalDemoEnforcementAdapter(storage, createTravelSeed)
+    const target = { ...createTravelSeed().processing, recommendations: false }
+    const command = {
+      operationId: 'operation-1',
+      planId: 'plan-1',
+      expectedRevision: 1,
+      target,
+      changes: [],
+    }
+
+    await adapter.apply(command)
+    await adapter.apply(command)
+
+    expect((await adapter.readCurrentState()).recommendations).toBe(false)
+    expect(storage.getItem(DEMO_ENFORCEMENT_STORAGE_KEY)).toContain('operation-1')
+  })
+
+  it('repairs corrupt isolated adapter state from the repeatable seed', async () => {
+    const storage = new MemoryStorage()
+    storage.setItem(DEMO_ENFORCEMENT_STORAGE_KEY, '{invalid')
+    const adapter = new LocalDemoEnforcementAdapter(storage, createTravelSeed)
+
+    expect(await adapter.readCurrentState()).toEqual(createTravelSeed().processing)
+  })
+})
