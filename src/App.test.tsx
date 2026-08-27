@@ -346,7 +346,7 @@ describe('privacy settings UI', () => {
       message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
     }))
 
-    const activityButton = await screen.findByRole('button', { name: 'Agent activity, view awaiting review' })
+    const activityButton = await screen.findByRole('button', { name: 'Agent activity, new agent-opened view' })
     expect(screen.getByTestId('agent-activity-dot')).toBeVisible()
     await user.click(activityButton)
     expect(screen.getByText(/The agent prepared the final review/)).toBeVisible()
@@ -370,8 +370,8 @@ describe('privacy settings UI', () => {
     expect(controller.getSnapshot().plan?.id).toBe(plan.id)
     expect(screen.getByRole('button', { name: 'Hold to confirm review' })).toHaveAttribute('aria-pressed', 'false')
 
-    await user.click(screen.getByRole('button', { name: 'Agent activity, view review started' }))
-    expect(screen.getByText('You started reviewing this view')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Agent activity, interaction recorded' }))
+    expect(screen.getByText('You interacted with this view')).toBeVisible()
   })
 
   it('acknowledges keyboard and scroll engagement while surviving unrelated rerenders', async () => {

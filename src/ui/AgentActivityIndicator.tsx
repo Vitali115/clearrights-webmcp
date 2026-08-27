@@ -24,7 +24,7 @@ export function AgentActivityIndicator({ activity, placement = 'sheet' }: AgentA
         className="relative h-8 rounded-full bg-foreground/5 px-3"
         aria-expanded={open}
         aria-controls={popoverId}
-        aria-label={pending ? 'Agent activity, view awaiting review' : 'Agent activity, view review started'}
+        aria-label={pending ? 'Agent activity, new agent-opened view' : 'Agent activity, interaction recorded'}
         onClick={() => setOpen((current) => !current)}
       >
         <span>Agent</span>
@@ -47,7 +47,7 @@ export function AgentActivityIndicator({ activity, placement = 'sheet' }: AgentA
               ? <span className="mt-2 size-2.5 shrink-0 rounded-full bg-blue-600" aria-hidden="true" />
               : <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white"><Check className="size-4" aria-hidden="true" /></span>}
             <div className="space-y-1">
-              <p className="font-medium">{pending ? 'Opened by agent' : 'You started reviewing this view'}</p>
+              <p className="font-medium">{pending ? 'Opened by agent' : 'You interacted with this view'}</p>
               <p className="text-sm leading-relaxed text-muted-foreground">{activity.message}</p>
             </div>
           </div>
