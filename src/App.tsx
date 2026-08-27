@@ -16,6 +16,7 @@ import { PersonalControls } from '@/ui/waypoint/PersonalControls'
 import { WaypointInfoPage } from '@/ui/waypoint/WaypointInfoPage'
 import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
 import { getWaypointInfoPage } from '@/demo/waypoint/info-pages'
+import { selectWaypointExperience } from '@/demo/waypoint/product-effects'
 import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
 
 interface AppProps {
@@ -145,6 +146,10 @@ export default function App({
     : null
 
   const infoPage = route.kind === 'info' ? getWaypointInfoPage(route.id) : null
+  const experience = selectWaypointExperience({
+    privacyState: snapshot.record.state.processing,
+    accessibility: accessibilitySnapshot,
+  })
 
   return (
     <Sheet open={controlsSnapshot.open} onOpenChange={setSheetOpen}>
@@ -186,10 +191,12 @@ export default function App({
           snapshot={snapshot}
           accessibilitySnapshot={accessibilitySnapshot}
           siteGuideSnapshot={siteGuideSnapshot}
+          experience={experience}
           webMcpAvailable={webMcpAvailable}
           controlsAction={controlsAction}
           agentActivityAction={agentActivityAction}
           onBack={() => navigate('#/')}
+          onOpenPreview={() => navigate('#/?effects=1')}
         />
       ) : infoPage ? (
         <WaypointInfoPage page={infoPage} controlsAction={controlsAction} agentActivityAction={agentActivityAction} onBack={() => navigate('#/')} />

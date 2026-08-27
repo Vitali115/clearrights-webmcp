@@ -4,24 +4,30 @@ import type { PrivacyControllerSnapshot } from '@/application'
 import { Button } from '@/components/ui/button'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
+import type { WaypointExperienceViewModel } from '@/demo/waypoint/product-effects'
 import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
+import { ProductEffectsInspector } from './ProductEffectsInspector'
 
 export function ClearRightsExplainerPage({
   snapshot,
   accessibilitySnapshot,
   siteGuideSnapshot,
+  experience,
   webMcpAvailable,
   controlsAction,
   agentActivityAction,
   onBack,
+  onOpenPreview,
 }: {
   snapshot: PrivacyControllerSnapshot
   accessibilitySnapshot: AccessibilitySnapshot
   siteGuideSnapshot: SiteGuideSnapshot
+  experience: WaypointExperienceViewModel
   webMcpAvailable: boolean
   controlsAction: ReactNode
   agentActivityAction?: ReactNode
   onBack(): void
+  onOpenPreview(): void
 }) {
   const toolCount = snapshot.workflow === 'reviewed' ? 9 : 8
   const optional = travelCatalog.processing.filter(({ control }) => control.mode !== 'required')
@@ -67,6 +73,8 @@ export function ClearRightsExplainerPage({
             </dl>
           </div>
         </section>
+
+        <ProductEffectsInspector experience={experience} onOpenPreview={onOpenPreview} />
 
         <section className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-16 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20" aria-labelledby="modules-heading">
           <h2 id="modules-heading" className="text-2xl font-medium tracking-tight">Three modules, three policies</h2>

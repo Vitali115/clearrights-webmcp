@@ -121,7 +121,18 @@ describe('privacy settings UI', () => {
     expect(screen.getByText(/definePrivacyCatalog/)).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Accessibility Preferences' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'ClearRights Site Guide' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Product effects' })).toBeVisible()
+    expect(screen.getAllByTestId('product-effect-row')).toHaveLength(10)
     expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Accessibility' }))
+    expect(screen.getAllByTestId('product-effect-row')).toHaveLength(4)
+    await user.click(screen.getByText('Current experience view model'))
+    expect(screen.getByText(/"discovery": "generic"/)).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Open live product preview' }))
+    expect(window.location.hash).toBe('#/?effects=1')
+    expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: 'Personal controls' }))
     expect(screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
