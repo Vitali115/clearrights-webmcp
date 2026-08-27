@@ -16,7 +16,7 @@ export function AgentActivityIndicator({ activity, placement = 'sheet' }: AgentA
 
   const pending = activity.status === 'opened'
   return (
-    <div className={placement === 'page' ? 'fixed right-4 top-3 z-40' : 'absolute right-14 top-3 z-10'}>
+    <div className={placement === 'page' ? 'relative z-40' : 'absolute right-14 top-3 z-10'}>
       <Button
         type="button"
         variant="ghost"

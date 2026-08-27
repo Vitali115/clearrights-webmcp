@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 
 interface TravelProductPageProps {
   controlsAction: ReactNode
+  agentActivityAction?: ReactNode
   privacyState: ProcessingState
   readingLayout: 'standard' | 'focused'
   onExplainPrivacy(): void
@@ -58,7 +59,7 @@ function DiscoveryContent({ focused, children }: { focused: boolean; children: R
   )
 }
 
-export function TravelProductPage({ controlsAction, privacyState, readingLayout, onExplainPrivacy }: TravelProductPageProps) {
+export function TravelProductPage({ controlsAction, agentActivityAction, privacyState, readingLayout, onExplainPrivacy }: TravelProductPageProps) {
   const recommendationsEnabled = privacyState.recommendations
   const locationEnabled = privacyState.location_suggestions
   const partnerOffersEnabled = privacyState.partner_advertising
@@ -76,6 +77,7 @@ export function TravelProductPage({ controlsAction, privacyState, readingLayout,
             <Button variant="ghost" className="hidden h-9 rounded-full px-3.5 md:inline-flex" onClick={onExplainPrivacy}>
               How privacy works
             </Button>
+            {agentActivityAction}
             {controlsAction}
           </nav>
         </div>
@@ -111,7 +113,7 @@ export function TravelProductPage({ controlsAction, privacyState, readingLayout,
       </section>
 
       <section className="px-5 pb-16 sm:px-8 sm:pb-20" aria-labelledby="upcoming-trips">
-        <h2 id="upcoming-trips" className="mb-7 text-sm font-medium text-muted-foreground">
+        <h2 id="upcoming-trips" tabIndex={-1} className="mb-7 text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
           Upcoming trips
         </h2>
         <div className="grid gap-x-6 gap-y-12 sm:gap-y-20 md:grid-cols-3">

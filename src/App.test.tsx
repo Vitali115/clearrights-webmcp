@@ -108,31 +108,33 @@ afterEach(() => {
 })
 
 describe('privacy settings UI', () => {
-  it('opens the internal privacy architecture page with live demo status', async () => {
+  it('opens the ClearRights developer page with live module and adapter status', async () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller, true)
 
     await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
 
-    expect(screen.getByRole('heading', { name: 'Privacy choices, readable by people and agents.' })).toBeVisible()
-    expect(screen.getByText('WebMCP detected')).toBeVisible()
-    expect(screen.getByText('6 declared uses')).toBeVisible()
-    expect(screen.getByText('0 of 3 on')).toBeVisible()
-    expect(screen.getByText(/createPrivacyRuntime/)).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'ClearRights developer integration' })).toBeVisible()
+    expect(screen.getByText('8 tools registered')).toBeVisible()
+    expect(screen.getByText(/0 of 3 optional on/)).toBeVisible()
+    expect(screen.getByText(/definePrivacyCatalog/)).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Accessibility Preferences' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'ClearRights Site Guide' })).toBeVisible()
     expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Open privacy settings' }))
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
     expect(screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
   })
 
-  it('supports a direct hash route to the privacy architecture page', async () => {
+  it('redirects the legacy privacy hash to the ClearRights developer page', async () => {
     window.history.replaceState(null, '', '#/privacy')
     const controller = await createController()
     renderApp(controller)
 
-    expect(screen.getByRole('heading', { name: 'Privacy choices, readable by people and agents.' })).toBeVisible()
-    expect(screen.getByText('Manual only')).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'ClearRights developer integration' })).toBeVisible()
+    expect(screen.getByText('Unavailable · manual fallback active')).toBeVisible()
+    expect(window.location.hash).toBe('#/clearrights')
   })
 
   it('records Essential only even when the conservative seed already matches it', async () => {
@@ -591,6 +593,27 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByRole('button', { name: 'Open' }))
     expect(window.location.hash).toBe('#/info/cancellation-policy')
     expect(screen.queryByRole('dialog', { name: 'Waypoint Personal Controls' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Cancellation policy' })).toHaveFocus()
+    expect(screen.getByText(/Waypoint Travel is fictional/)).toBeVisible()
+  })
+
+  it('opens the declared bookings anchor and leaves browser Back functional', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    const runtime = testRuntimes.get(controller)!
+    renderApp(controller)
+
+    await act(async () => {
+      await runtime.siteGuide.navigate('bookings', 'human')
+    })
+    expect(window.location.hash).toBe('#/?focus=upcoming-trips')
+    expect(screen.getByRole('heading', { name: 'Upcoming trips' })).toHaveFocus()
+
+    await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
+    expect(window.location.hash).toBe('#/clearrights')
+    act(() => window.history.back())
+    await waitFor(() => expect(window.location.hash).toBe('#/?focus=upcoming-trips'))
+    expect(screen.getByRole('heading', { name: 'Upcoming trips' })).toBeVisible()
   })
 
   it('shows a route-level agent indicator until page engagement and resets every demo store', async () => {
@@ -604,7 +627,7 @@ describe('privacy settings UI', () => {
     })
     expect(screen.getByTestId('agent-activity-dot')).toBeVisible()
     expect(runtime.controlsUi.getSnapshot().agentActivity?.status).toBe('opened')
-    await user.click(screen.getByRole('heading', { name: 'Where do you want to go next?' }))
+    await user.click(screen.getByRole('heading', { name: 'Cancellation policy' }))
     expect(runtime.controlsUi.getSnapshot().agentActivity?.status).toBe('engaged')
 
     act(() => runtime.controlsUi.openPanel('accessibility', { origin: 'human', targetId: 'accessibility' }))

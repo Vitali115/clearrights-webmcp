@@ -10,10 +10,12 @@ import { Button } from '@/components/ui/button'
 import { Sheet } from '@/components/ui/sheet'
 import { AgentActivityIndicator } from '@/ui/AgentActivityIndicator'
 import { PrivacyChoiceBanner } from '@/ui/PrivacyChoiceBanner'
-import { PrivacyExplainerPage } from '@/ui/PrivacyExplainerPage'
 import { TravelProductPage } from '@/ui/TravelProductPage'
+import { ClearRightsExplainerPage } from '@/ui/waypoint/ClearRightsExplainerPage'
 import { PersonalControls } from '@/ui/waypoint/PersonalControls'
+import { WaypointInfoPage } from '@/ui/waypoint/WaypointInfoPage'
 import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
+import { getWaypointInfoPage } from '@/demo/waypoint/info-pages'
 import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
 
 interface AppProps {
@@ -26,10 +28,20 @@ interface AppProps {
   webMcpAvailable: boolean
 }
 
-type AppPage = 'travel' | 'privacy'
+type AppRoute =
+  | { kind: 'home'; focus: string | null }
+  | { kind: 'clearrights' }
+  | { kind: 'info'; id: string }
 
-function pageFromLocation(): AppPage {
-  return window.location.hash === '#/privacy' ? 'privacy' : 'travel'
+function routeFromLocation(): AppRoute {
+  const hash = window.location.hash
+  if (hash === '#/privacy' || hash === '#/clearrights') return { kind: 'clearrights' }
+  if (hash.startsWith('#/info/')) {
+    const id = decodeURIComponent(hash.slice('#/info/'.length).split('?')[0] ?? '')
+    if (getWaypointInfoPage(id)) return { kind: 'info', id }
+  }
+  const focus = hash.startsWith('#/?') ? new URLSearchParams(hash.slice(3)).get('focus') : null
+  return { kind: 'home', focus }
 }
 
 export default function App({
@@ -42,7 +54,7 @@ export default function App({
   webMcpAvailable,
 }: AppProps) {
   const [snapshot, setSnapshot] = useState(() => controller.getSnapshot())
-  const [page, setPage] = useState<AppPage>(pageFromLocation)
+  const [route, setRoute] = useState<AppRoute>(routeFromLocation)
   const [privacyView, setPrivacyView] = useState(() => privacyUi.getSnapshot())
   const [controlsSnapshot, setControlsSnapshot] = useState(() => controlsUi.getSnapshot())
   const [accessibilitySnapshot, setAccessibilitySnapshot] = useState(() => accessibility.getSnapshot())
@@ -52,12 +64,16 @@ export default function App({
 
   useEffect(() => controller.subscribe(setSnapshot), [controller])
   useEffect(() => {
-    const syncPage = () => setPage(pageFromLocation())
-    window.addEventListener('hashchange', syncPage)
-    window.addEventListener('popstate', syncPage)
+    if (window.location.hash === '#/privacy') window.history.replaceState(null, '', '#/clearrights')
+    const syncRoute = () => {
+      if (window.location.hash === '#/privacy') window.history.replaceState(null, '', '#/clearrights')
+      setRoute(routeFromLocation())
+    }
+    window.addEventListener('hashchange', syncRoute)
+    window.addEventListener('popstate', syncRoute)
     return () => {
-      window.removeEventListener('hashchange', syncPage)
-      window.removeEventListener('popstate', syncPage)
+      window.removeEventListener('hashchange', syncRoute)
+      window.removeEventListener('popstate', syncRoute)
     }
   }, [])
   useEffect(() => {
@@ -81,6 +97,13 @@ export default function App({
   useEffect(() => accessibility.subscribe(setAccessibilitySnapshot), [accessibility])
   useEffect(() => siteGuide.subscribe(setSiteGuideSnapshot), [siteGuide])
   useEffect(() => activity.subscribe(setActivitySnapshot), [activity])
+  useEffect(() => {
+    if (route.kind === 'home') {
+      if (route.focus) document.getElementById(route.focus)?.focus()
+      return
+    }
+    document.querySelector<HTMLElement>('[data-route-focus]')?.focus()
+  }, [route])
 
   const setSheetOpen = (open: boolean) => {
     if (open) controlsUi.openPanel(controlsSnapshot.section, { origin: 'human', targetId: controlsSnapshot.section })
@@ -92,10 +115,13 @@ export default function App({
     controlsUi.openPanel('privacy', { origin: 'human', targetId: 'privacy' })
   }
 
-  const navigatePage = (next: AppPage) => {
-    const hash = next === 'privacy' ? '#/privacy' : '#/'
+  const openPersonalControls = () => {
+    controlsUi.openPanel(controlsSnapshot.section, { origin: 'human', targetId: controlsSnapshot.section })
+  }
+
+  const navigate = (hash: string) => {
     window.history.pushState(null, '', hash)
-    setPage(next)
+    setRoute(routeFromLocation())
   }
 
   const resetDemo = async () => {
@@ -106,35 +132,42 @@ export default function App({
     activity.clear()
     controlsUi.close()
     window.history.replaceState(null, '', '#/')
-    setPage('travel')
+    setRoute({ kind: 'home', focus: null })
   }
+
+  const controlsAction = (
+    <Button variant="ghost" className="h-9 rounded-full bg-foreground/5 px-5 hover:bg-foreground/10" onClick={openPersonalControls}>
+      Personal controls
+    </Button>
+  )
+  const agentActivityAction = !controlsSnapshot.open
+    ? <AgentActivityIndicator activity={controlsSnapshot.agentActivity} placement="page" />
+    : null
+
+  const infoPage = route.kind === 'info' ? getWaypointInfoPage(route.id) : null
 
   return (
     <Sheet open={controlsSnapshot.open} onOpenChange={setSheetOpen}>
-      {!controlsSnapshot.open && <AgentActivityIndicator activity={controlsSnapshot.agentActivity} placement="page" />}
       <div
         onClickCapture={() => controlsUi.acknowledge()}
         onKeyDownCapture={() => controlsUi.acknowledge()}
         onScrollCapture={() => controlsUi.acknowledge()}
       >
-      {page === 'travel' ? (
+      {route.kind === 'home' ? (
         <>
           <TravelProductPage
-            onExplainPrivacy={() => navigatePage('privacy')}
+            onExplainPrivacy={() => navigate('#/clearrights')}
             privacyState={snapshot.record.state.processing}
             readingLayout={accessibilitySnapshot.current.readingLayout}
-            controlsAction={(
-              <Button variant="ghost" className="h-9 rounded-full bg-foreground/5 px-5 hover:bg-foreground/10" onClick={() => controlsUi.openPanel('privacy', { origin: 'human', targetId: 'privacy' })}>
-                Personal controls
-              </Button>
-            )}
+            controlsAction={controlsAction}
+            agentActivityAction={agentActivityAction}
           />
           <PrivacyChoiceBanner
             controller={controller}
             pending={snapshot.record.notice.status !== 'recorded'}
             webMcpAvailable={webMcpAvailable}
             onManage={openPrivacySettings}
-            onLearn={() => navigatePage('privacy')}
+            onLearn={() => navigate('#/clearrights')}
             onApplied={() => {
               privacyUi.revokeAgentPreparation()
               activity.record({
@@ -148,12 +181,25 @@ export default function App({
             }}
           />
         </>
-      ) : (
-        <PrivacyExplainerPage
+      ) : route.kind === 'clearrights' ? (
+        <ClearRightsExplainerPage
           snapshot={snapshot}
+          accessibilitySnapshot={accessibilitySnapshot}
+          siteGuideSnapshot={siteGuideSnapshot}
           webMcpAvailable={webMcpAvailable}
-          onBack={() => navigatePage('travel')}
-          onOpenSettings={openPrivacySettings}
+          controlsAction={controlsAction}
+          agentActivityAction={agentActivityAction}
+          onBack={() => navigate('#/')}
+        />
+      ) : infoPage ? (
+        <WaypointInfoPage page={infoPage} controlsAction={controlsAction} agentActivityAction={agentActivityAction} onBack={() => navigate('#/')} />
+      ) : (
+        <TravelProductPage
+          onExplainPrivacy={() => navigate('#/clearrights')}
+          privacyState={snapshot.record.state.processing}
+          readingLayout={accessibilitySnapshot.current.readingLayout}
+          controlsAction={controlsAction}
+          agentActivityAction={agentActivityAction}
         />
       )}
       </div>
