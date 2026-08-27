@@ -94,7 +94,7 @@ export function ClearRightsExplainerPage({
               <DemoStep
                 number="2"
                 title="Adapt the interface"
-                prompt="Make the text larger and reduce motion."
+                prompt="Make the text larger, reduce motion, and use dark mode."
                 note="The local DOM adapter applies the preferences immediately, reads them back, and keeps one Undo."
                 actionLabel="Open Accessibility"
                 onAction={() => onOpenControls('accessibility')}
@@ -179,7 +179,7 @@ export function ClearRightsExplainerPage({
             <Module
               name="Accessibility Preferences"
               contract="inspect → set → readback → Undo"
-              body="Immediate local preferences for text, contrast, motion, and reading layout. This is not an accessibility overlay or a compliance claim."
+              body="Immediate local preferences for text, color scheme, contrast, motion, and reading layout. This is not an accessibility overlay or a compliance claim."
             />
             <Module
               name="ClearRights Site Guide"

@@ -31,7 +31,7 @@ The SDK package has no React, DOM, browser storage, WebMCP, Waypoint, or UI-libr
 Each catalog belongs to the host product:
 
 - Privacy defines processing, controls, capabilities, uses, consequences, policy context, and bounded developer context.
-- Accessibility defines the labels and available options for the four supported primitives.
+- Accessibility defines the labels and available options for the five supported primitives, including the host-mapped `system | light | dark` color scheme.
 - Site Guide defines curated same-origin routes and supported Personal Controls panels.
 
 Developer context is descriptive data. WebMCP exposes it with `contentProvenance: "site_developer"`; an agent must not interpret it as an instruction.

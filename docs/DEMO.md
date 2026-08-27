@@ -34,13 +34,13 @@ The human hold is not identity, a signature, or legal proof. Some browser securi
 
 Ask:
 
-> Make the text larger and reduce motion.
+> Make the text larger, reduce motion, and use dark mode.
 
 Expected result:
 
 - the change applies immediately without a privacy approval hold;
 - the Waypoint DOM adapter reports the complete readback;
-- the product visibly uses the new text scale and motion preference;
+- the product visibly uses the new text scale, dark token set, and motion preference;
 - one Undo remains available.
 
 These are local, reversible product preferences. They are not an accessibility overlay, medical inference, or compliance claim.

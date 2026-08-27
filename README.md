@@ -36,7 +36,7 @@ Review the exact visible plan, complete the human hold, apply it, and inspect th
 
 Then ask:
 
-> Make the text larger, reduce motion and take me to the cancellation policy.
+> Make the text larger, reduce motion, switch to dark mode and take me to the cancellation policy.
 
 This demonstrates immediate accessibility readback, Undo, catalog-constrained navigation, visible focus, and agent activity provenance.
 
@@ -74,7 +74,7 @@ host-authored catalogs
 There is no universal control runtime:
 
 - **ClearRights Privacy** uses deterministic planning, visible human review, apply, readback, and versioned receipts.
-- **ClearRights Accessibility Preferences** applies local reversible preferences immediately and retains one Undo.
+- **ClearRights Accessibility Preferences** applies local reversible text, color-scheme, contrast, motion, and reading-layout preferences immediately and retains one Undo.
 - **ClearRights Site Guide** navigates only to developer-declared routes and panels.
 
 The SDK contains no React, DOM, browser storage, WebMCP, Tailwind, Waypoint content, backend, or compliance engine. Those are host concerns.

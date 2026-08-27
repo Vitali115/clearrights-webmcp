@@ -94,7 +94,7 @@ export const waypointInfoPages: Readonly<Record<string, WaypointInfoPageDefiniti
     sections: [
       {
         heading: 'Preferences, not an overlay',
-        paragraphs: ['Text size, contrast, motion, and reading layout are immediate, reversible product preferences. They are not presented as automated accessibility remediation or proof of conformance.'],
+        paragraphs: ['Text size, color scheme, contrast, motion, and reading layout are immediate, reversible product preferences. They are not presented as automated accessibility remediation or proof of conformance.'],
       },
       {
         heading: 'System settings remain authoritative',

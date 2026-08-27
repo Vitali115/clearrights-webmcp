@@ -65,7 +65,7 @@ Workflow:
 inspect → set → readback → one Undo
 ```
 
-The runtime supports `textScale`, `contrast`, `motion`, and `readingLayout`. It does not perform DOM remediation, diagnose a condition, or claim accessibility compliance.
+The runtime supports `textScale`, `colorScheme`, `contrast`, `motion`, and `readingLayout`. `colorScheme` accepts `system`, `light`, or `dark`; the host maps those values to its own design tokens. The module does not perform DOM remediation, diagnose a condition, or claim accessibility compliance.
 
 ## Site Guide
 
