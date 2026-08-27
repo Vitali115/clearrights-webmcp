@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
@@ -167,6 +167,15 @@ describe('privacy settings UI', () => {
     expect(screen.getByText(/Applied revision 1/)).toBeVisible()
     expect(document.querySelector('[data-clearrights-surface="search"]')).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
+    expect(screen.getAllByText('Hidden in the product')).toHaveLength(2)
+
+    await user.selectOptions(screen.getByLabelText('Inspect a mapped surface'), 'nearby-guide')
+    const surfaceInspector = screen.getByRole('complementary', { name: 'Product surface inspector' })
+    expect(surfaceInspector).toBeVisible()
+    expect(within(surfaceInspector).getByRole('heading', { name: 'Nearby guide' })).toBeVisible()
+    expect(within(surfaceInspector).getByText('Location suggestions · location_suggestions')).toBeVisible()
+    expect(within(surfaceInspector).getByText('hidden')).toBeVisible()
+    expect(within(surfaceInspector).getByText('No receipt verifies this preview value')).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: 'Sandbox' }))
     expect(screen.getByText('Temporary overrides · Preview only · Not applied')).toBeVisible()
@@ -176,6 +185,9 @@ describe('privacy settings UI', () => {
     expect(screen.getByText('Ideas shaped by your travel interests')).toBeVisible()
     expect(screen.getByText('Around your Lisbon stay')).toBeVisible()
     expect(screen.getByText('A flexible rail pass for your saved city trips')).toBeVisible()
+    expect(screen.queryByText('Hidden in the product')).not.toBeInTheDocument()
+    expect(within(surfaceInspector).getByText('visible')).toBeVisible()
+    expect(within(surfaceInspector).getByText('Sandbox override · temporary and unverified')).toBeVisible()
     expect(controller.getSnapshot().record.state.processing).toEqual(expect.objectContaining({
       recommendations: false,
       location_suggestions: false,

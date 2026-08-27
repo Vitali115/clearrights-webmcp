@@ -1,5 +1,8 @@
-import type { ReactNode } from 'react'
-import type { WaypointExperienceViewModel } from '@/demo/waypoint/product-effects'
+import { useState, type ReactNode } from 'react'
+import type {
+  WaypointExperienceViewModel,
+  WaypointProductSurfaceId,
+} from '@/demo/waypoint/product-effects'
 import type {
   WaypointDeveloperPreviewMode,
   WaypointDeveloperPreviewModel,
@@ -8,6 +11,7 @@ import type {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DeveloperSurfaceInspector } from '@/ui/waypoint/DeveloperSurfaceInspector'
 
 interface TravelProductPageProps {
   controlsAction: ReactNode
@@ -58,10 +62,14 @@ function ArtCard({ image, title, leading, trailing }: { image: string; title: st
 function SecondaryContent({
   focused,
   discovery,
+  effectsPreview,
+  onInspect,
   children,
 }: {
   focused: boolean
   discovery: WaypointExperienceViewModel['discovery']
+  effectsPreview: boolean
+  onInspect(surfaceId: WaypointProductSurfaceId): void
   children: ReactNode
 }) {
   if (!focused) return children
@@ -69,8 +77,9 @@ function SecondaryContent({
     <details
       data-clearrights-surface="secondary-content"
       data-clearrights-result="hidden"
-      className="mx-5 mb-16 border-y border-foreground/10 sm:mx-8"
+      className="relative mx-5 mb-16 border-y border-foreground/10 sm:mx-8"
     >
+      {effectsPreview && <SurfaceInspectButton label="Secondary travel content" onClick={() => onInspect('secondary-content')} />}
       <summary className="cursor-pointer py-5 font-medium">
         Travel ideas · {discovery === 'personalised' ? 'Based on your interests' : 'Generic suggestions'}
       </summary>
@@ -91,8 +100,12 @@ export function TravelProductPage({
   onDeveloperPreviewModeChange,
   onDeveloperSandboxChange,
 }: TravelProductPageProps) {
+  const [selectedSurfaceId, setSelectedSurfaceId] = useState<WaypointProductSurfaceId | null>(null)
   const destinations = experience.discovery === 'personalised' ? personalisedDestinations : genericDestinations
   const focused = experience.accessibility.readingLayout === 'focused'
+  const selectedEffect = selectedSurfaceId
+    ? experience.effects.find(({ surfaceId }) => surfaceId === selectedSurfaceId) ?? null
+    : null
 
   return (
     <main data-effects-preview={effectsPreview ? 'true' : undefined} className="min-h-svh bg-background text-foreground">
@@ -102,6 +115,15 @@ export function TravelProductPage({
           onExit={onExitEffectsPreview}
           onModeChange={onDeveloperPreviewModeChange}
           onSandboxChange={onDeveloperSandboxChange}
+          selectedSurfaceId={selectedSurfaceId}
+          onInspect={setSelectedSurfaceId}
+        />
+      )}
+      {effectsPreview && developerPreview && selectedEffect && (
+        <DeveloperSurfaceInspector
+          effect={selectedEffect}
+          preview={developerPreview}
+          onClose={() => setSelectedSurfaceId(null)}
         />
       )}
       <header className="border-b border-foreground/8">
@@ -156,20 +178,21 @@ export function TravelProductPage({
             <h2 id="trip-essentials" className="mt-3 text-2xl font-medium tracking-tight">Trip essentials</h2>
           </div>
           <div className="grid gap-5 sm:grid-cols-3">
-            <EssentialStatus surface="trip-summary" title="Booking ready" body="Your itinerary and passenger details remain available." />
-            <EssentialStatus surface="protection-status" title="Account protected" body="Security checks continue to protect trips and account actions." />
-            <EssentialStatus surface="trip-updates" title="Updates on" body="Confirmations and operational schedule changes can still reach you." />
+            <EssentialStatus surface="trip-summary" title="Booking ready" body="Your itinerary and passenger details remain available." effectsPreview={effectsPreview} onInspect={setSelectedSurfaceId} />
+            <EssentialStatus surface="protection-status" title="Account protected" body="Security checks continue to protect trips and account actions." effectsPreview={effectsPreview} onInspect={setSelectedSurfaceId} />
+            <EssentialStatus surface="trip-updates" title="Updates on" body="Confirmations and operational schedule changes can still reach you." effectsPreview={effectsPreview} onInspect={setSelectedSurfaceId} />
           </div>
         </div>
       </section>
 
-      <SecondaryContent focused={focused} discovery={experience.discovery}>
+      <SecondaryContent focused={focused} discovery={experience.discovery} effectsPreview={effectsPreview} onInspect={setSelectedSurfaceId}>
         <section
           data-clearrights-surface="travel-discovery"
           data-clearrights-result={experience.discovery}
-          className="px-5 py-16 sm:px-8 sm:py-24"
+          className="relative px-5 py-16 sm:px-8 sm:py-24"
           aria-labelledby="destination-ideas"
         >
+          {effectsPreview && <SurfaceInspectButton label="Travel discovery" onClick={() => setSelectedSurfaceId('travel-discovery')} />}
           <div className="mb-8 max-w-2xl">
             <p className="text-sm font-medium text-muted-foreground">
               {experience.discovery === 'personalised' ? 'Personalised discovery' : 'Generic discovery'}
@@ -192,11 +215,15 @@ export function TravelProductPage({
           </div>
         </section>
 
-        {(experience.nearbyGuide === 'visible' || experience.partnerOffer === 'visible') && (
+        {(effectsPreview || experience.nearbyGuide === 'visible' || experience.partnerOffer === 'visible') && (
           <section className="px-5 pb-20 sm:px-8 sm:pb-24" aria-label="Optional travel services">
             <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,24rem),1fr))] gap-6">
-              {experience.nearbyGuide === 'visible' && <NearbyGuide />}
-              {experience.partnerOffer === 'visible' && <PartnerOffer />}
+              {experience.nearbyGuide === 'visible'
+                ? <NearbyGuide effectsPreview={effectsPreview} onInspect={setSelectedSurfaceId} />
+                : effectsPreview && <HiddenSurfacePlaceholder surfaceId="nearby-guide" label="Nearby guide" setting="location_suggestions = false" onInspect={setSelectedSurfaceId} />}
+              {experience.partnerOffer === 'visible'
+                ? <PartnerOffer effectsPreview={effectsPreview} onInspect={setSelectedSurfaceId} />
+                : effectsPreview && <HiddenSurfacePlaceholder surfaceId="partner-offer" label="Partner rail offer" setting="partner_advertising = false" onInspect={setSelectedSurfaceId} />}
             </div>
           </section>
         )}
@@ -218,11 +245,15 @@ function EffectsPreviewBar({
   onExit,
   onModeChange,
   onSandboxChange,
+  selectedSurfaceId,
+  onInspect,
 }: {
   preview: WaypointDeveloperPreviewModel
   onExit(): void
   onModeChange(mode: WaypointDeveloperPreviewMode): void
   onSandboxChange(setting: keyof WaypointPrivacySandboxState, enabled: boolean): void
+  selectedSurfaceId: WaypointProductSurfaceId | null
+  onInspect(surfaceId: WaypointProductSurfaceId): void
 }) {
   const { experience } = preview
   const hidden = experience.effects.filter(({ result }) => result === 'hidden').map(({ surfaceLabel }) => surfaceLabel)
@@ -284,13 +315,41 @@ function EffectsPreviewBar({
           ))}
         </div>
       )}
+      <label className="mt-3 flex max-w-sm flex-col gap-1 text-xs font-medium">
+        Inspect a mapped surface
+        <select
+          className="h-9 border border-blue-950/20 bg-white px-3 text-sm text-blue-950"
+          value={selectedSurfaceId ?? ''}
+          onChange={(event) => {
+            if (event.target.value) onInspect(event.target.value as WaypointProductSurfaceId)
+          }}
+        >
+          <option value="">Choose a surface…</option>
+          {experience.effects.map(({ surfaceId, surfaceLabel, result }) => (
+            <option key={surfaceId} value={surfaceId}>{surfaceLabel} · {result}</option>
+          ))}
+        </select>
+      </label>
     </aside>
   )
 }
 
-function EssentialStatus({ surface, title, body }: { surface: string; title: string; body: string }) {
+function EssentialStatus({
+  surface,
+  title,
+  body,
+  effectsPreview,
+  onInspect,
+}: {
+  surface: Extract<WaypointProductSurfaceId, 'trip-summary' | 'protection-status' | 'trip-updates'>
+  title: string
+  body: string
+  effectsPreview: boolean
+  onInspect(surfaceId: WaypointProductSurfaceId): void
+}) {
   return (
-    <article data-clearrights-surface={surface} data-clearrights-result="required" className="border-t border-foreground/15 pt-4">
+    <article data-clearrights-surface={surface} data-clearrights-result="required" className="relative border-t border-foreground/15 pt-4">
+      {effectsPreview && <SurfaceInspectButton label={title} onClick={() => onInspect(surface)} />}
       <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Required service</p>
       <h3 className="mt-3 font-medium">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
@@ -298,9 +357,10 @@ function EssentialStatus({ surface, title, body }: { surface: string; title: str
   )
 }
 
-function NearbyGuide() {
+function NearbyGuide({ effectsPreview, onInspect }: { effectsPreview: boolean; onInspect(surfaceId: WaypointProductSurfaceId): void }) {
   return (
-    <article data-clearrights-surface="nearby-guide" data-clearrights-result="visible" className="min-h-72 border border-foreground/10 p-6">
+    <article data-clearrights-surface="nearby-guide" data-clearrights-result="visible" className="relative min-h-72 border border-foreground/10 p-6">
+      {effectsPreview && <SurfaceInspectButton label="Nearby guide" onClick={() => onInspect('nearby-guide')} />}
       <p className="text-sm font-medium text-muted-foreground">Nearby guide</p>
       <h2 className="mt-3 text-2xl font-medium tracking-tight">Around your Lisbon stay</h2>
       <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
@@ -315,9 +375,10 @@ function NearbyGuide() {
   )
 }
 
-function PartnerOffer() {
+function PartnerOffer({ effectsPreview, onInspect }: { effectsPreview: boolean; onInspect(surfaceId: WaypointProductSurfaceId): void }) {
   return (
-    <article data-clearrights-surface="partner-offer" data-clearrights-result="visible" className="flex min-h-72 flex-col border border-foreground/10 p-4">
+    <article data-clearrights-surface="partner-offer" data-clearrights-result="visible" className="relative flex min-h-72 flex-col border border-foreground/10 p-4">
+      {effectsPreview && <SurfaceInspectButton label="Partner rail offer" onClick={() => onInspect('partner-offer')} />}
       <img src="/cards/rail-pass.jpg" alt="" className="aspect-[16/9] w-full rounded-lg object-cover" />
       <div className="grid flex-1 gap-6 p-2 pt-6 sm:grid-cols-[1fr_auto] sm:items-end">
         <div>
@@ -330,5 +391,45 @@ function PartnerOffer() {
         <Button variant="outline" className="rounded-full">View offer</Button>
       </div>
     </article>
+  )
+}
+
+function HiddenSurfacePlaceholder({
+  surfaceId,
+  label,
+  setting,
+  onInspect,
+}: {
+  surfaceId: Extract<WaypointProductSurfaceId, 'nearby-guide' | 'partner-offer'>
+  label: string
+  setting: string
+  onInspect(surfaceId: WaypointProductSurfaceId): void
+}) {
+  return (
+    <article
+      data-clearrights-surface={surfaceId}
+      data-clearrights-result="hidden"
+      className="relative flex min-h-48 items-center justify-center border border-dashed border-blue-800/30 bg-blue-50/50 p-6 text-center text-blue-950"
+    >
+      <SurfaceInspectButton label={label} onClick={() => onInspect(surfaceId)} />
+      <div>
+        <p className="text-sm font-medium">{label}</p>
+        <p className="mt-2 text-xs text-blue-900/70">Hidden in the product</p>
+        <p className="mt-1 font-mono text-xs">{setting}</p>
+      </div>
+    </article>
+  )
+}
+
+function SurfaceInspectButton({ label, onClick }: { label: string; onClick(): void }) {
+  return (
+    <button
+      type="button"
+      className="absolute right-2 top-2 z-10 rounded-full border border-blue-800/25 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-950 shadow-sm"
+      aria-label={`Inspect ${label}`}
+      onClick={onClick}
+    >
+      Inspect
+    </button>
   )
 }
