@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type {
+  ActivityCoordinator,
   PrivacyController,
   PrivacyControllerSnapshot,
   PrivacyView,
@@ -15,28 +16,9 @@ import type {
 } from '@/domain'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { AlertTriangle, ArrowLeft, ChevronDown } from 'lucide-react'
-import { AgentActivityIndicator } from './AgentActivityIndicator'
 import { HoldToConfirm } from './HoldToConfirm'
 
 interface PrivacyCenterProps {
@@ -44,7 +26,7 @@ interface PrivacyCenterProps {
   privacyUi: PrivacyViewCoordinator
   privacyView: PrivacyViewSnapshot
   snapshot: PrivacyControllerSnapshot
-  webMcpAvailable: boolean
+  activity: ActivityCoordinator
 }
 
 const VIEW_COPY: Record<PrivacyView, { title: string; description: string }> = {
@@ -83,7 +65,7 @@ export function PrivacyCenter({
   privacyUi,
   privacyView,
   snapshot,
-  webMcpAvailable,
+  activity,
 }: PrivacyCenterProps) {
   const [keepCapabilities, setKeepCapabilities] = useState<CapabilityId[]>(() =>
     snapshot.plan ? [...snapshot.plan.input.keepCapabilities] : activeCapabilities(snapshot))
@@ -135,8 +117,22 @@ export function PrivacyCenter({
         return
       }
       controller.stage({ keepCapabilities, avoidUses })
+      activity.record({
+        source: 'human',
+        module: 'privacy',
+        action: 'staged_plan',
+        outcome: 'succeeded',
+        summary: 'You prepared privacy changes for review.',
+      })
       navigate('review')
     } catch (error) {
+      activity.record({
+        source: 'human',
+        module: 'privacy',
+        action: 'staged_plan',
+        outcome: 'failed',
+        summary: 'Privacy changes could not be prepared.',
+      })
       setActionError(errorMessage(error, 'The changes could not be prepared.'))
     }
   }
@@ -147,24 +143,27 @@ export function PrivacyCenter({
     setActionError(null)
     try {
       await controller.apply(snapshot.plan.id)
+      activity.record({
+        source: 'human',
+        module: 'privacy',
+        action: 'applied_plan',
+        outcome: 'succeeded',
+        summary: 'Your reviewed privacy changes were applied and verified.',
+        targetId: snapshot.plan.id,
+      })
       navigate('receipt')
     } catch (error) {
+      activity.record({
+        source: 'human',
+        module: 'privacy',
+        action: 'applied_plan',
+        outcome: 'failed',
+        summary: 'The reviewed privacy changes failed safely.',
+        targetId: snapshot.plan.id,
+      })
       setActionError(errorMessage(error, 'The reviewed changes could not be applied.'))
     } finally {
       setApplying(false)
-    }
-  }
-
-  const resetDemo = async () => {
-    setActionError(null)
-    try {
-      await controller.resetDemo(true)
-      privacyUi.revokeAgentPreparation()
-      setKeepCapabilities(activeCapabilities(controller.getSnapshot()))
-      setAvoidUses([])
-      navigate('home')
-    } catch (error) {
-      setActionError(errorMessage(error, 'Demo data could not be reset.'))
     }
   }
 
@@ -174,9 +173,8 @@ export function PrivacyCenter({
   )
 
   return (
-    <SheetContent className="gap-0 bg-background p-0 data-[side=right]:w-full data-[side=right]:sm:w-[min(80vw,920px)] data-[side=right]:sm:max-w-none">
-      <AgentActivityIndicator activity={privacyView.agentActivity} />
-      <SheetHeader className="border-b border-foreground/10 px-5 py-5 pr-14 sm:px-8 sm:pr-40">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <header className="border-b border-foreground/10 px-5 py-4 sm:px-8">
         <div className="flex items-start gap-3">
           {!settingsView && (
             <Button variant="ghost" size="icon-sm" className="mt-0.5 rounded-full" aria-label="Back" onClick={goBack}>
@@ -184,16 +182,15 @@ export function PrivacyCenter({
             </Button>
           )}
           <div className="min-w-0">
-            <SheetTitle className="sr-only">Privacy settings panel</SheetTitle>
-            <h1 ref={viewHeadingRef} tabIndex={-1} className="font-heading text-[22px] font-medium tracking-tight text-foreground outline-none">{copy.title}</h1>
-            <SheetDescription className="mt-1.5 font-medium">{copy.description}</SheetDescription>
+            <h1 id="controls-section-title" ref={viewHeadingRef} tabIndex={-1} className="font-heading text-[22px] font-medium tracking-tight text-foreground outline-none">{copy.title}</h1>
+            <p className="mt-1.5 text-sm font-medium text-muted-foreground">{copy.description}</p>
           </div>
         </div>
-      </SheetHeader>
+      </header>
 
       <ScrollArea
         data-testid="privacy-view-content"
-        className="h-[calc(100svh-158px)]"
+        className="min-h-0 flex-1"
         onClickCapture={() => privacyUi.acknowledge()}
         onKeyDownCapture={() => privacyUi.acknowledge()}
         onScrollCapture={() => privacyUi.acknowledge()}
@@ -225,11 +222,22 @@ export function PrivacyCenter({
           )}
           {view === 'review' && (
             <ReviewView
-              controller={controller}
               snapshot={snapshot}
               planMatchesIntent={planMatchesIntent}
               preparedByAgent={preparedByAgent}
               applying={applying}
+              onReviewed={() => {
+                controller.setReviewed(true)
+                activity.record({
+                  source: 'human',
+                  module: 'privacy',
+                  action: 'confirmed_review',
+                  outcome: 'succeeded',
+                  summary: 'You confirmed that you reviewed the prepared privacy changes.',
+                  targetId: snapshot.plan?.id,
+                })
+              }}
+              onReviewRevoked={() => controller.setReviewed(false)}
               onEdit={() => navigate('home')}
               onApply={() => void applyPlan()}
             />
@@ -246,30 +254,7 @@ export function PrivacyCenter({
           )}
         </main>
       </ScrollArea>
-
-      <SheetFooter className="flex-row items-center justify-between gap-3 border-t border-foreground/10 bg-background px-5 py-2.5 sm:px-8">
-        <p className="text-xs font-medium text-muted-foreground">
-          {webMcpAvailable ? 'Agent access available' : 'Manual settings'} · Stored in this browser
-        </p>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground">Reset</Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent size="sm">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Reset demo data?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This turns optional settings off, reopens Privacy choices, and permanently deletes the full change history.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction variant="destructive" onClick={() => void resetDemo()}>Reset data</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </SheetFooter>
-    </SheetContent>
+    </div>
   )
 }
 
@@ -518,19 +503,21 @@ function ReceiptHistoryItem({
 }
 
 function ReviewView({
-  controller,
   snapshot,
   planMatchesIntent,
   preparedByAgent,
   applying,
+  onReviewed,
+  onReviewRevoked,
   onEdit,
   onApply,
 }: {
-  controller: PrivacyController
   snapshot: PrivacyControllerSnapshot
   planMatchesIntent: boolean
   preparedByAgent: boolean
   applying: boolean
+  onReviewed(): void
+  onReviewRevoked(): void
   onEdit(): void
   onApply(): void
 }) {
@@ -612,8 +599,8 @@ function ReviewView({
         <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={snapshot.workflow === 'reviewed'} approvalNeeded />
         <HoldToConfirm
           confirmed={snapshot.workflow === 'reviewed'}
-          onConfirm={() => controller.setReviewed(true)}
-          onRevoke={() => controller.setReviewed(false)}
+          onConfirm={onReviewed}
+          onRevoke={onReviewRevoked}
         />
         <Button
           className="mt-6 h-9 w-full rounded-full"

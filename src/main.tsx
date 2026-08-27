@@ -14,6 +14,10 @@ async function start() {
         <App
           controller={runtime.controller}
           privacyUi={runtime.privacyUi}
+          controlsUi={runtime.controlsUi}
+          accessibility={runtime.accessibility}
+          siteGuide={runtime.siteGuide}
+          activity={runtime.activity}
           webMcpAvailable={runtime.webMcpAvailable}
         />
       </TooltipProvider>

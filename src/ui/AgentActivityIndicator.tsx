@@ -1,13 +1,14 @@
 import { useId, useState } from 'react'
-import type { AgentActivity } from '@/application'
+import type { AgentActivity, ControlsAgentActivity } from '@/application'
 import { Button } from '@/components/ui/button'
 import { Check } from 'lucide-react'
 
 interface AgentActivityIndicatorProps {
-  activity: AgentActivity | null
+  activity: AgentActivity | ControlsAgentActivity | null
+  placement?: 'sheet' | 'page'
 }
 
-export function AgentActivityIndicator({ activity }: AgentActivityIndicatorProps) {
+export function AgentActivityIndicator({ activity, placement = 'sheet' }: AgentActivityIndicatorProps) {
   const [open, setOpen] = useState(false)
   const popoverId = useId()
 
@@ -15,7 +16,7 @@ export function AgentActivityIndicator({ activity }: AgentActivityIndicatorProps
 
   const pending = activity.status === 'opened'
   return (
-    <div className="absolute right-14 top-3 z-10">
+    <div className={placement === 'page' ? 'fixed right-4 top-3 z-40' : 'absolute right-14 top-3 z-10'}>
       <Button
         type="button"
         variant="ghost"

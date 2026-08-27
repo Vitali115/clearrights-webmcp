@@ -1,15 +1,28 @@
-import { useEffect, useState } from 'react'
-import type { PrivacyController, PrivacyViewCoordinator } from '@/application'
+import { useEffect, useRef, useState } from 'react'
+import type {
+  ActivityCoordinator,
+  PersonalControlsCoordinator,
+  PrivacyController,
+  PrivacyViewCoordinator,
+} from '@/application'
+import type { AccessibilityRuntime, SiteGuideRuntime } from '@/domain'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetTrigger } from '@/components/ui/sheet'
-import { PrivacyCenter } from '@/ui/PrivacyCenter'
+import { Sheet } from '@/components/ui/sheet'
+import { AgentActivityIndicator } from '@/ui/AgentActivityIndicator'
 import { PrivacyChoiceBanner } from '@/ui/PrivacyChoiceBanner'
 import { PrivacyExplainerPage } from '@/ui/PrivacyExplainerPage'
 import { TravelProductPage } from '@/ui/TravelProductPage'
+import { PersonalControls } from '@/ui/waypoint/PersonalControls'
+import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
+import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
 
 interface AppProps {
   controller: PrivacyController
   privacyUi: PrivacyViewCoordinator
+  controlsUi: PersonalControlsCoordinator
+  accessibility: AccessibilityRuntime
+  siteGuide: SiteGuideRuntime
+  activity: ActivityCoordinator
   webMcpAvailable: boolean
 }
 
@@ -19,13 +32,23 @@ function pageFromLocation(): AppPage {
   return window.location.hash === '#/privacy' ? 'privacy' : 'travel'
 }
 
-export default function App({ controller, privacyUi, webMcpAvailable }: AppProps) {
+export default function App({
+  controller,
+  privacyUi,
+  controlsUi,
+  accessibility,
+  siteGuide,
+  activity,
+  webMcpAvailable,
+}: AppProps) {
   const [snapshot, setSnapshot] = useState(() => controller.getSnapshot())
   const [page, setPage] = useState<AppPage>(pageFromLocation)
   const [privacyView, setPrivacyView] = useState(() => privacyUi.getSnapshot())
-  const [privacyOpen, setPrivacyOpen] = useState(
-    () => privacyUi.getSnapshot().navigation.origin === 'agent',
-  )
+  const [controlsSnapshot, setControlsSnapshot] = useState(() => controlsUi.getSnapshot())
+  const [accessibilitySnapshot, setAccessibilitySnapshot] = useState(() => accessibility.getSnapshot())
+  const [siteGuideSnapshot, setSiteGuideSnapshot] = useState(() => siteGuide.getSnapshot())
+  const [activitySnapshot, setActivitySnapshot] = useState(() => activity.getSnapshot())
+  const bridgedPrivacySequence = useRef<number | null>(null)
 
   useEffect(() => controller.subscribe(setSnapshot), [controller])
   useEffect(() => {
@@ -40,20 +63,33 @@ export default function App({ controller, privacyUi, webMcpAvailable }: AppProps
   useEffect(() => {
     return privacyUi.subscribe((next) => {
       setPrivacyView(next)
-      if (next.navigation.origin === 'agent') setPrivacyOpen(true)
+      if (
+        next.navigation.origin === 'agent'
+        && next.agentActivity?.status === 'opened'
+        && bridgedPrivacySequence.current !== next.agentActivity.sequence
+      ) {
+        bridgedPrivacySequence.current = next.agentActivity.sequence
+        controlsUi.openPanel('privacy', {
+          origin: 'agent',
+          targetId: `privacy-${next.navigation.view}`,
+          message: next.agentActivity.message,
+        })
+      }
     })
-  }, [privacyUi])
+  }, [controlsUi, privacyUi])
+  useEffect(() => controlsUi.subscribe(setControlsSnapshot), [controlsUi])
+  useEffect(() => accessibility.subscribe(setAccessibilitySnapshot), [accessibility])
+  useEffect(() => siteGuide.subscribe(setSiteGuideSnapshot), [siteGuide])
+  useEffect(() => activity.subscribe(setActivitySnapshot), [activity])
 
   const setSheetOpen = (open: boolean) => {
-    setPrivacyOpen(open)
-    if (open && privacyView.agentActivity?.status !== 'opened') {
-      privacyUi.navigate({ view: 'home', origin: 'human' })
-    }
+    if (open) controlsUi.openPanel(controlsSnapshot.section, { origin: 'human', targetId: controlsSnapshot.section })
+    else controlsUi.close()
   }
 
   const openPrivacySettings = () => {
     privacyUi.navigate({ view: 'home', origin: 'human' })
-    setPrivacyOpen(true)
+    controlsUi.openPanel('privacy', { origin: 'human', targetId: 'privacy' })
   }
 
   const navigatePage = (next: AppPage) => {
@@ -62,19 +98,35 @@ export default function App({ controller, privacyUi, webMcpAvailable }: AppProps
     setPage(next)
   }
 
+  const resetDemo = async () => {
+    await controller.resetDemo(true)
+    await accessibility.reset()
+    privacyUi.revokeAgentPreparation()
+    privacyUi.navigate({ view: 'home', origin: 'human' })
+    activity.clear()
+    controlsUi.close()
+    window.history.replaceState(null, '', '#/')
+    setPage('travel')
+  }
+
   return (
-    <Sheet open={privacyOpen} onOpenChange={setSheetOpen}>
+    <Sheet open={controlsSnapshot.open} onOpenChange={setSheetOpen}>
+      {!controlsSnapshot.open && <AgentActivityIndicator activity={controlsSnapshot.agentActivity} placement="page" />}
+      <div
+        onClickCapture={() => controlsUi.acknowledge()}
+        onKeyDownCapture={() => controlsUi.acknowledge()}
+        onScrollCapture={() => controlsUi.acknowledge()}
+      >
       {page === 'travel' ? (
         <>
           <TravelProductPage
             onExplainPrivacy={() => navigatePage('privacy')}
             privacyState={snapshot.record.state.processing}
-            privacyAction={(
-              <SheetTrigger asChild>
-                <Button variant="ghost" className="h-9 rounded-full bg-foreground/5 px-5 hover:bg-foreground/10">
-                  Privacy settings
-                </Button>
-              </SheetTrigger>
+            readingLayout={accessibilitySnapshot.current.readingLayout}
+            controlsAction={(
+              <Button variant="ghost" className="h-9 rounded-full bg-foreground/5 px-5 hover:bg-foreground/10" onClick={() => controlsUi.openPanel('privacy', { origin: 'human', targetId: 'privacy' })}>
+                Personal controls
+              </Button>
             )}
           />
           <PrivacyChoiceBanner
@@ -83,7 +135,17 @@ export default function App({ controller, privacyUi, webMcpAvailable }: AppProps
             webMcpAvailable={webMcpAvailable}
             onManage={openPrivacySettings}
             onLearn={() => navigatePage('privacy')}
-            onApplied={() => privacyUi.revokeAgentPreparation()}
+            onApplied={() => {
+              privacyUi.revokeAgentPreparation()
+              activity.record({
+                source: 'human',
+                module: 'privacy',
+                action: 'direct_choice',
+                outcome: 'succeeded',
+                summary: 'You recorded a direct privacy choice.',
+                targetId: controller.getReceipt()?.id,
+              })
+            }}
           />
         </>
       ) : (
@@ -94,13 +156,25 @@ export default function App({ controller, privacyUi, webMcpAvailable }: AppProps
           onOpenSettings={openPrivacySettings}
         />
       )}
-      <PrivacyCenter
-        key={snapshot.plan?.id ?? `idle-${snapshot.record.state.revision}`}
+      </div>
+      <PersonalControls
+        key={`controls-${snapshot.plan?.id ?? snapshot.record.state.revision}`}
         controller={controller}
         privacyUi={privacyUi}
         privacyView={privacyView}
-        snapshot={snapshot}
+        privacySnapshot={snapshot}
+        controlsUi={controlsUi}
+        controlsSnapshot={controlsSnapshot}
+        accessibility={accessibility}
+        accessibilityCatalog={waypointAccessibilityCatalog}
+        accessibilitySnapshot={accessibilitySnapshot}
+        siteGuide={siteGuide}
+        siteGuideCatalog={waypointSiteGuideCatalog}
+        siteGuideSnapshot={siteGuideSnapshot}
+        activity={activity}
+        activitySnapshot={activitySnapshot}
         webMcpAvailable={webMcpAvailable}
+        onReset={resetDemo}
       />
     </Sheet>
   )

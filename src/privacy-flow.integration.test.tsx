@@ -98,7 +98,17 @@ describe('agent-guided privacy flow', () => {
       siteGuideCatalog: waypointSiteGuideCatalog,
       activity,
     })
-    render(<App controller={controller} privacyUi={privacyUi} webMcpAvailable />)
+    render(
+      <App
+        controller={controller}
+        privacyUi={privacyUi}
+        controlsUi={controlsUi}
+        accessibility={accessibility}
+        siteGuide={siteGuide}
+        activity={activity}
+        webMcpAvailable
+      />,
+    )
 
     await act(async () => {
       await modelContext.execute('stage_privacy_plan', {

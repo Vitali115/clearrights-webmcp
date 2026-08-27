@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 interface TravelProductPageProps {
-  privacyAction: ReactNode
+  controlsAction: ReactNode
   privacyState: ProcessingState
+  readingLayout: 'standard' | 'focused'
   onExplainPrivacy(): void
 }
 
@@ -47,7 +48,17 @@ function ArtCard({
   )
 }
 
-export function TravelProductPage({ privacyAction, privacyState, onExplainPrivacy }: TravelProductPageProps) {
+function DiscoveryContent({ focused, children }: { focused: boolean; children: ReactNode }) {
+  if (!focused) return children
+  return (
+    <details className="mx-5 mb-16 border-y border-foreground/10 sm:mx-8">
+      <summary className="cursor-pointer py-5 font-medium">More travel ideas and offers</summary>
+      <div className="pt-6">{children}</div>
+    </details>
+  )
+}
+
+export function TravelProductPage({ controlsAction, privacyState, readingLayout, onExplainPrivacy }: TravelProductPageProps) {
   const recommendationsEnabled = privacyState.recommendations
   const locationEnabled = privacyState.location_suggestions
   const partnerOffersEnabled = privacyState.partner_advertising
@@ -65,7 +76,7 @@ export function TravelProductPage({ privacyAction, privacyState, onExplainPrivac
             <Button variant="ghost" className="hidden h-9 rounded-full px-3.5 md:inline-flex" onClick={onExplainPrivacy}>
               How privacy works
             </Button>
-            {privacyAction}
+            {controlsAction}
           </nav>
         </div>
       </header>
@@ -116,7 +127,8 @@ export function TravelProductPage({ privacyAction, privacyState, onExplainPrivac
         </div>
       </section>
 
-      <section className="px-5 pb-20 sm:px-8 sm:pb-24" aria-labelledby="destination-ideas">
+      <DiscoveryContent focused={readingLayout === 'focused'}>
+        <section className="px-5 pb-20 sm:px-8 sm:pb-24" aria-labelledby="destination-ideas">
         <h2 id="destination-ideas" className="mb-7 text-sm font-medium text-muted-foreground">
           {recommendationsEnabled ? 'Suggestions based on your travel interests' : 'Popular destinations'}
         </h2>
@@ -131,9 +143,9 @@ export function TravelProductPage({ privacyAction, privacyState, onExplainPrivac
             />
           ))}
         </div>
-      </section>
+        </section>
 
-      {locationEnabled && (
+        {locationEnabled && (
         <section className="border-y border-foreground/10 px-5 py-12 sm:px-8" aria-labelledby="nearby-lisbon">
           <div className="grid gap-7 md:grid-cols-[0.8fr_1.2fr]">
             <div>
@@ -150,9 +162,9 @@ export function TravelProductPage({ privacyAction, privacyState, onExplainPrivac
             </ul>
           </div>
         </section>
-      )}
+        )}
 
-      {partnerOffersEnabled && (
+        {partnerOffersEnabled && (
         <section className="px-5 py-14 sm:px-8" aria-labelledby="partner-offer">
           <div className="grid gap-5 border border-foreground/10 p-6 sm:grid-cols-[1fr_auto] sm:items-end">
             <div>
@@ -165,7 +177,8 @@ export function TravelProductPage({ privacyAction, privacyState, onExplainPrivac
             <Button variant="outline" className="rounded-full">View offer</Button>
           </div>
         </section>
-      )}
+        )}
+      </DiscoveryContent>
 
       <footer className="flex flex-wrap items-center justify-between gap-3 px-5 pb-16 text-sm font-medium text-muted-foreground sm:px-8">
         <span>Privacy information is declared by the demo service · {optionalEnabled} of 3 optional data uses active.</span>

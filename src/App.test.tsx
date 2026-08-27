@@ -2,14 +2,22 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+  createActivityCoordinator,
+  createPersonalControlsCoordinator,
   createPrivacyController,
   createPrivacyViewCoordinator,
   type PrivacyController,
 } from '@/application'
+import { createAccessibilityRuntime, createSiteGuideRuntime } from '@/domain'
+import { LocalStorageAccessibilityRepository } from '@/adapters/accessibility/local-storage-accessibility-repository'
+import { WaypointDomAccessibilityAdapter } from '@/adapters/accessibility/waypoint-dom-accessibility-adapter'
+import { WaypointNavigationAdapter } from '@/adapters/navigation/waypoint-navigation-adapter'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
 import { LocalDemoEnforcementAdapter } from '@/adapters/enforcement/local-demo-enforcement-adapter'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
+import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
+import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
 import { HOLD_TO_CONFIRM_MS } from '@/ui/HoldToConfirm'
 import App from './App'
 
@@ -20,21 +28,69 @@ class MemoryStorage {
   removeItem(key: string) { this.values.delete(key) }
 }
 
-async function createController(storage = new MemoryStorage()) {
+type TestRuntime = Awaited<ReturnType<typeof createTestRuntime>>
+const testRuntimes = new WeakMap<PrivacyController, TestRuntime>()
+
+async function createTestRuntime(storage = new MemoryStorage()) {
   let tick = 0
-  return createPrivacyController({
+  const controller = await createPrivacyController({
     catalog: travelCatalog,
     repository: new LocalStoragePrivacyRepository(storage, createTravelSeed),
     enforcement: new LocalDemoEnforcementAdapter(storage, createTravelSeed),
     clock: { now: () => `2026-08-27T12:00:0${tick++}.000Z` },
     idGenerator: { next: () => 'receipt-ui-test' },
   })
+  const privacyUi = createPrivacyViewCoordinator()
+  const controlsUi = createPersonalControlsCoordinator()
+  const accessibility = await createAccessibilityRuntime({
+    catalog: waypointAccessibilityCatalog,
+    repository: new LocalStorageAccessibilityRepository(storage),
+    enforcement: new WaypointDomAccessibilityAdapter(document.createElement('html')),
+    idGenerator: { next: () => `accessibility-ui-${tick++}` },
+  })
+  let location = '/#/'
+  const siteGuide = createSiteGuideRuntime({
+    catalog: waypointSiteGuideCatalog,
+    navigator: new WaypointNavigationAdapter({
+      openRoute(path, hash, context) {
+        location = `${path}${hash ?? ''}`
+        window.history.pushState(null, '', location)
+        controlsUi.reportRoute({
+          origin: context.origin,
+          targetId: context.destinationId,
+          message: context.origin === 'agent' ? `The agent opened ${context.label}.` : undefined,
+        })
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      },
+      openPanel(section, context) {
+        controlsUi.openPanel(section, {
+          origin: context.origin,
+          targetId: context.destinationId,
+          message: context.origin === 'agent' ? `The agent opened ${context.label}.` : undefined,
+        })
+      },
+      getLocation: () => location,
+    }),
+  })
+  const activity = createActivityCoordinator({
+    storage,
+    clock: { now: () => `2026-08-27T12:30:0${tick++}.000Z` },
+    idGenerator: { next: () => `activity-ui-${tick}` },
+  })
+  return { controller, privacyUi, controlsUi, accessibility, siteGuide, activity }
+}
+
+async function createController(storage = new MemoryStorage()) {
+  const runtime = await createTestRuntime(storage)
+  testRuntimes.set(runtime.controller, runtime)
+  return runtime.controller
 }
 
 function renderApp(controller: PrivacyController, webMcpAvailable = false) {
-  const privacyUi = createPrivacyViewCoordinator()
-  render(<App controller={controller} privacyUi={privacyUi} webMcpAvailable={webMcpAvailable} />)
-  return privacyUi
+  const runtime = testRuntimes.get(controller)
+  if (!runtime) throw new Error('Missing test runtime.')
+  render(<App {...runtime} webMcpAvailable={webMcpAvailable} />)
+  return runtime.privacyUi
 }
 
 async function holdToConfirm() {
@@ -67,7 +123,7 @@ describe('privacy settings UI', () => {
     expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Open privacy settings' }))
-    expect(screen.getByRole('dialog', { name: 'Privacy settings panel' })).toBeVisible()
+    expect(screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
   })
 
   it('supports a direct hash route to the privacy architecture page', async () => {
@@ -106,7 +162,7 @@ describe('privacy settings UI', () => {
 
     await user.click(screen.getByRole('button', { name: 'Manage choices' }))
 
-    expect(screen.getByRole('dialog', { name: 'Privacy settings panel' })).toBeVisible()
+    expect(screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
     expect(controller.getSnapshot().record.notice.status).toBe('pending')
     expect(controller.getReceipt()).toBeNull()
   })
@@ -143,8 +199,8 @@ describe('privacy settings UI', () => {
     renderApp(controller)
 
     expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
-    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
-    const privacyCenter = screen.getByRole('dialog', { name: 'Privacy settings panel' })
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    const privacyCenter = screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })
     expect(privacyCenter).toBeVisible()
     expect(privacyCenter).toHaveClass(
       'data-[side=right]:w-full',
@@ -152,7 +208,7 @@ describe('privacy settings UI', () => {
       'data-[side=right]:sm:max-w-none',
     )
     await user.keyboard('{Escape}')
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Privacy settings panel' })).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Waypoint Personal Controls' })).not.toBeInTheDocument())
   })
 
   it('uses a compact header that does not expose secondary navigation on mobile', async () => {
@@ -163,14 +219,14 @@ describe('privacy settings UI', () => {
     expect(screen.queryByText('Travel demo')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Trips' })).toHaveClass('hidden', 'sm:inline-flex')
     expect(screen.getByRole('navigation', { name: 'Account navigation' })).toHaveClass('shrink-0')
-    expect(screen.getByRole('button', { name: 'Privacy settings' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Personal controls' })).toBeVisible()
   })
 
   it('completes the manual fallback, verifies a receipt, and resets demo data', async () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
 
     await user.click(screen.getByLabelText('Recommendations'))
     await user.click(screen.getByLabelText('Location suggestions'))
@@ -211,9 +267,9 @@ describe('privacy settings UI', () => {
       })
     })
 
-    expect(await screen.findByRole('dialog', { name: 'Privacy settings panel' })).toBeVisible()
+    expect(await screen.findByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
     expect(screen.getByText('3 changes ready')).toBeVisible()
-    expect(screen.getByText(/Agent access available/)).toBeVisible()
+    expect(screen.getByText(/Agent tools available/)).toBeVisible()
     expect(screen.getByText('Agent check')).toBeVisible()
     expect(screen.getByText('Change set prepared')).toBeVisible()
   })
@@ -282,7 +338,7 @@ describe('privacy settings UI', () => {
       preparedPlanId: plan.id,
       message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
     }))
-    await screen.findByRole('dialog', { name: 'Privacy settings panel' })
+    await screen.findByRole('dialog', { name: 'Waypoint Personal Controls' })
     await user.click(screen.getByText('3 changes ready'))
 
     expect(privacyUi.getSnapshot().agentActivity?.status).toBe('engaged')
@@ -303,7 +359,7 @@ describe('privacy settings UI', () => {
       origin: 'agent',
       message: 'The agent opened the privacy settings overview.',
     }))
-    await screen.findByRole('dialog', { name: 'Privacy settings panel' })
+    await screen.findByRole('dialog', { name: 'Waypoint Personal Controls' })
 
     act(() => {
       controller.stage({
@@ -335,7 +391,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     const privacyUi = renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
     act(() => {
       controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: ['precise_location'] })
       privacyUi.navigate({ view: 'review', origin: 'human' })
@@ -349,7 +405,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     const privacyUi = renderApp(controller, true)
-    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
     act(() => {
       controller.stage({
         keepCapabilities: [
@@ -411,7 +467,7 @@ describe('privacy settings UI', () => {
     const reloaded = await createController(storage)
 
     renderApp(reloaded, true)
-    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
     await user.click(screen.getByRole('button', { name: /Previous changes/ }))
     await user.click(screen.getByText(new RegExp(`^3 changes · ${receipt.id}$`)))
     await user.click(screen.getByRole('button', { name: /Open receipt/ }))
@@ -426,7 +482,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller, true)
-    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
     await user.click(screen.getByLabelText('Recommendations'))
     await user.click(screen.getByLabelText('Location suggestions'))
     await user.click(screen.getByLabelText('Partner advertising'))
@@ -451,7 +507,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
 
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
     expect(screen.getByText('Essential services')).toBeVisible()
@@ -470,7 +526,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
     await user.click(screen.getByLabelText('Recommendations'))
 
     await user.click(screen.getByRole('button', { name: 'Open Recommendations details' }))
@@ -480,5 +536,86 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
     expect(screen.getByLabelText('Recommendations')).toBeChecked()
     expect(screen.getByText('1 pending change')).toBeVisible()
+  })
+
+  it('applies accessibility preferences immediately, exposes one Undo, and records Activity', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    const runtime = testRuntimes.get(controller)!
+    renderApp(controller)
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('tab', { name: 'accessibility' }))
+
+    expect(screen.getByRole('heading', { name: 'Accessibility preferences' })).toBeVisible()
+    await user.click(screen.getByRole('radio', { name: 'Large' }))
+    expect(runtime.accessibility.getSnapshot().current.textScale).toBe('large')
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
+
+    await user.click(screen.getByRole('tab', { name: /Activity/ }))
+    expect(screen.getByText('Text size was updated.')).toBeVisible()
+    await user.click(screen.getByRole('tab', { name: 'accessibility' }))
+    await user.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(runtime.accessibility.getSnapshot().current.textScale).toBe('system')
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
+  })
+
+  it('uses keyboard tabs and moves secondary content into a reachable focused disclosure', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    renderApp(controller)
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    const accessibilityTab = screen.getByRole('tab', { name: 'accessibility' })
+    accessibilityTab.focus()
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('tab', { name: 'Site guide' })).toHaveFocus()
+
+    await user.click(screen.getByRole('tab', { name: 'accessibility' }))
+    await user.click(screen.getByRole('radio', { name: 'Focused' }))
+    await user.keyboard('{Escape}')
+    const disclosure = screen.getByText('More travel ideas and offers').closest('details')
+    expect(disclosure).not.toHaveAttribute('open')
+    expect(screen.getByRole('heading', { name: 'Upcoming trips' })).toBeVisible()
+    expect(screen.getByText('Popular destinations')).not.toBeVisible()
+  })
+
+  it('searches declared Site Guide destinations and preserves browser navigation', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    renderApp(controller)
+    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('tab', { name: 'Site guide' }))
+    await user.type(screen.getByRole('searchbox', { name: 'Search site destinations' }), 'refund')
+
+    expect(screen.getByText('Cancellation policy')).toBeVisible()
+    expect(screen.queryByText('Payment methods')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Open' }))
+    expect(window.location.hash).toBe('#/info/cancellation-policy')
+    expect(screen.queryByRole('dialog', { name: 'Waypoint Personal Controls' })).not.toBeInTheDocument()
+  })
+
+  it('shows a route-level agent indicator until page engagement and resets every demo store', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    const runtime = testRuntimes.get(controller)!
+    renderApp(controller, true)
+
+    await act(async () => {
+      await runtime.siteGuide.navigate('cancellation-policy', 'agent')
+    })
+    expect(screen.getByTestId('agent-activity-dot')).toBeVisible()
+    expect(runtime.controlsUi.getSnapshot().agentActivity?.status).toBe('opened')
+    await user.click(screen.getByRole('heading', { name: 'Where do you want to go next?' }))
+    expect(runtime.controlsUi.getSnapshot().agentActivity?.status).toBe('engaged')
+
+    act(() => runtime.controlsUi.openPanel('accessibility', { origin: 'human', targetId: 'accessibility' }))
+    await user.click(screen.getByRole('radio', { name: 'Large' }))
+    await user.click(screen.getByRole('button', { name: 'Reset' }))
+    await user.click(screen.getByRole('button', { name: 'Reset data' }))
+
+    await waitFor(() => expect(runtime.controlsUi.getSnapshot().open).toBe(false))
+    expect(runtime.accessibility.getSnapshot().current.textScale).toBe('system')
+    expect(runtime.activity.getSnapshot().events).toEqual([])
+    expect(controller.getSnapshot().record.notice.status).toBe('pending')
+    expect(window.location.hash).toBe('#/')
   })
 })
