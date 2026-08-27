@@ -39,7 +39,7 @@ npm run lint       # Oxlint
 3. Turn optional settings on or off. Required settings remain visible and labelled **Required**.
 4. Pending rows are marked **Will turn on/off**; select **Review changes**.
 5. Inspect the exact before/after state and the effect of each change.
-6. Confirm that **Agent check** is prepared when the change set came from WebMCP, then provide the separate **Human check**.
+6. Confirm that **Agent check** is prepared when the change set came from WebMCP, then hold the separate human control for 1.2 seconds.
 7. Select **Apply changes**.
 8. Inspect the verified receipt produced after persisted-state readback. **Previous changes** retains the latest ten receipts, newest first.
 
@@ -57,7 +57,7 @@ The intended agent sequence is:
 4. `apply_privacy_plan` using the staged `planId`.
 5. `get_privacy_receipt` or `get_privacy_history` for later read-only inspection.
 
-Staging always opens **Review changes**, marks the visible **Agent check** as prepared, and creates an `opened` agent-activity event. The independent **Human check** remains incomplete. Apply always opens the verified receipt. Clicking the activity popover or closing the sheet does not acknowledge the view: the blue dot clears only after click, keyboard, or scroll engagement in the view. Engagement never checks the human-confirmation checkbox.
+Staging always opens **Review changes**, ties the visible **Agent check** to the exact deterministic `planId`, and creates an `opened` agent-activity event. Returning to settings and reopening the unchanged plan preserves that check; changing any draft setting revokes it. The independent **Human check** remains incomplete until its pointer or keyboard control is held continuously for 1.2 seconds. Apply always opens the verified receipt. Clicking the activity popover or closing the sheet does not acknowledge the view: the blue dot clears only after click, keyboard, or scroll engagement in the view. Engagement never starts or completes human confirmation.
 
 Example staging input:
 
@@ -118,7 +118,7 @@ WebMCP ───────┘
      └──────────> PrivacyViewCoordinator <────────── React UI
 ```
 
-`domain` and `application` do not import React or access the DOM. The framework-agnostic `PrivacyViewCoordinator` holds only current-session navigation and the latest agent activity (`opened | engaged`); it is created in the browser composition root and shared by React and WebMCP. React never registers tools, and the WebMCP adapter contains mapping and validation rather than privacy business logic.
+`domain` and `application` do not import React or access the DOM. The framework-agnostic `PrivacyViewCoordinator` holds current-session navigation, the latest agent activity (`opened | engaged`), and the `planId` last prepared through WebMCP. It is created in the browser composition root and shared by React and WebMCP. React never registers tools, and the WebMCP adapter contains mapping and validation rather than privacy business logic.
 
 ## Planner and commit rules
 
@@ -156,6 +156,16 @@ The Vitest suite covers:
 ## Interface design
 
 The settings list intentionally has no decorative menu icons, branded setup card, or cleanup funnel. It uses text hierarchy, native-looking switches, and only sparse monochrome outline icons for universal controls such as back, disclosure, and status. This follows the optional, system-oriented approach in the [OpenAI UI guidelines](https://developers.openai.com/plugins/concepts/ui-guidelines); the guidelines do not define a separate required GPT Apps SDK icon pack.
+
+## Confirmation semantics
+
+The two checks deliberately represent different facts:
+
+- **Agent check** means the page's `stage_privacy_plan` tool produced the exact `planId` currently displayed. It survives navigation inside the current page session, but not reload, and it is revoked as soon as the draft changes.
+- **Human check** means the in-page hold control completed and the controller recorded `reviewedAt`. A short hold, pointer cancellation, blur, or early release does not confirm. Space and Enter provide the equivalent keyboard gesture.
+- **Verified receipt** means persisted-state readback matched the reviewed target and plan ID after apply.
+
+These are genuine application events, but they are not cryptographic or legal signatures. The page does not authenticate the agent or person, persist the hold duration, prove that browser input came from a human, or provide non-repudiation. Making those claims would require identity, server-side audit records, trusted timestamps, and signing infrastructure outside this demo's blueprint.
 
 ## Blueprint boundary
 
