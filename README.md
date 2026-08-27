@@ -32,6 +32,7 @@ Manual controls work in an ordinary browser. Page-defined WebMCP tools appear on
 | Route | Purpose |
 | --- | --- |
 | `/#/` | Waypoint Travel home. |
+| `/#/?effects=1` | Non-persistent developer preview of the current product-effect mapping. |
 | `/#/clearrights` | Live ClearRights developer integration page. |
 | `/#/info/<destination-id>` | Developer-declared Waypoint information page. |
 | `/#/privacy` | Legacy route; replaced with `/#/clearrights`. |
@@ -138,6 +139,37 @@ Agent-opened panels and routes show a blue activity dot until the first meaningf
 
 `Reset demo data` restores the privacy seed and pending notice, clears receipts, synchronises local privacy enforcement, resets all accessibility preferences and Undo, clears Activity, closes the sheet, and returns to `/#/` without creating a new event after the clear.
 
+## Host product-effect mapping
+
+Waypoint demonstrates how a product can consume ClearRights state without coupling React components to SDK runtimes or storage:
+
+```text
+ClearRights snapshots
+  → Waypoint product-effect registry
+  → selectWaypointExperience(...)
+  → WaypointExperienceViewModel
+  → React product surfaces
+```
+
+The registry is host configuration in `src/demo/waypoint/product-effects.ts`; it is not part of `@clearrights/sdk`. A Waypoint component receives the final experience view model and never looks up processing IDs, repository keys, or runtime controllers.
+
+| Source setting | Waypoint surface | Current product rule |
+| --- | --- | --- |
+| Trip fulfilment | Trip summary | Required and always present |
+| Account security | Protection status | Required and always present |
+| Transactional updates | Trip updates | Required and always present |
+| Recommendations | Travel discovery | Generic when off; personalised when on |
+| Location suggestions | Nearby guide | Removed when off; visible when on |
+| Partner advertising | Partner rail offer | Removed when off; visible when on |
+| Text size | Root scale | System, 112.5%, or 125% |
+| Contrast | Waypoint tokens | System-aware or higher contrast |
+| Motion | Waypoint motion | System-aware or reduced |
+| Reading layout | Secondary content | Inline or inside a reachable native disclosure |
+
+Every mapped product surface has a `data-clearrights-surface` hook for inspection, but the normal customer experience displays no technical badges. The developer page filters the live mapping by Privacy or Accessibility, shows runtime value and adapter readback, and exposes the complete current view model.
+
+The preview query `effects=1` adds discrete surface outlines and reports hidden surfaces. It does not persist, create Activity, change a preference, record a privacy choice, or add a WebMCP tool. Exiting the preview removes the query while preserving browser history.
+
 ## Storage and migration
 
 Waypoint chooses the storage keys; the SDK does not.
@@ -163,7 +195,7 @@ packages/clearrights-sdk/src/
 src/
   adapters/         Waypoint storage, DOM, navigation, enforcement and WebMCP adapters
   application/      Waypoint Activity and view coordinators
-  demo/waypoint/    developer-authored catalogs and information content
+  demo/waypoint/    developer-authored catalogs, information content and product-effect registry
   ui/waypoint/      host-owned Personal Controls, pages and product UI
 ```
 
@@ -190,4 +222,4 @@ The credible integration claim is: **a developer declares product controls once,
 
 ## Verification
 
-The Vitest suite covers catalog invariants, bounded developer context, deterministic planning, notice and receipt migration, retention, human hold and review revocation, adapter drift/mismatch failures, Accessibility apply/readback/rollback/Undo, Site Guide validation and focus, catalog-derived WebMCP schemas, Activity retention, reset, responsive control composition, and the complete agent-guided flow.
+The Vitest suite covers catalog invariants, bounded developer context, deterministic planning, notice and receipt migration, retention, human hold and review revocation, adapter drift/mismatch failures, Accessibility apply/readback/rollback/Undo, Site Guide validation and focus, catalog-derived WebMCP schemas, Activity retention, reset, all eight optional privacy effect combinations, required-surface invariants, responsive control composition, and the complete agent-guided flow.
