@@ -11,7 +11,11 @@ async function start() {
   root.render(
     <StrictMode>
       <TooltipProvider>
-        <App controller={runtime.controller} webMcpAvailable={runtime.webMcpAvailable} />
+        <App
+          controller={runtime.controller}
+          privacyUi={runtime.privacyUi}
+          webMcpAvailable={runtime.webMcpAvailable}
+        />
       </TooltipProvider>
     </StrictMode>,
   )

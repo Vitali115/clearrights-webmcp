@@ -1,5 +1,10 @@
 import { useState } from 'react'
-import type { PrivacyController, PrivacyControllerSnapshot } from '@/application'
+import type {
+  PrivacyController,
+  PrivacyControllerSnapshot,
+  PrivacyViewCoordinator,
+  PrivacyViewSnapshot,
+} from '@/application'
 import type { CapabilityId, ProcessingId, UseId } from '@/domain'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -64,15 +69,20 @@ import {
   RotateCcw,
   ShieldCheck,
 } from 'lucide-react'
+import { AgentActivityIndicator } from './AgentActivityIndicator'
 
 interface PrivacyCenterProps {
   controller: PrivacyController
+  privacyUi: PrivacyViewCoordinator
+  privacyView: PrivacyViewSnapshot
   snapshot: PrivacyControllerSnapshot
   webMcpAvailable: boolean
 }
 
 export function PrivacyCenter({
   controller,
+  privacyUi,
+  privacyView,
   snapshot,
   webMcpAvailable,
 }: PrivacyCenterProps) {
@@ -137,8 +147,9 @@ export function PrivacyCenter({
 
   return (
     <SheetContent className="gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:w-[min(80vw,1120px)] data-[side=right]:sm:max-w-none">
-      <SheetHeader className="border-b px-6 py-5">
-        <div className="flex items-center gap-2 pr-8">
+      <AgentActivityIndicator activity={privacyView.agentActivity} />
+      <SheetHeader className="border-b px-6 py-5 pr-14 sm:pr-52">
+        <div className="flex flex-wrap items-center gap-2 pr-8">
           <Badge variant="secondary"><ShieldCheck data-icon="inline-start" /> ClearRights</Badge>
           <Badge variant="outline">
             <Bot data-icon="inline-start" /> {webMcpAvailable ? 'Agent tools ready' : 'Manual mode'}
@@ -151,7 +162,12 @@ export function PrivacyCenter({
         </SheetDescription>
       </SheetHeader>
 
-      <ScrollArea className="h-[calc(100svh-186px)]">
+      <ScrollArea
+        className="h-[calc(100svh-186px)]"
+        onClickCapture={() => privacyUi.acknowledge()}
+        onKeyDownCapture={() => privacyUi.acknowledge()}
+        onScrollCapture={() => privacyUi.acknowledge()}
+      >
         <div className="grid min-h-full gap-6 p-6 lg:grid-cols-[minmax(300px,0.8fr)_minmax(440px,1.2fr)]">
           <section className="space-y-5" aria-labelledby="processing-heading">
             <div>

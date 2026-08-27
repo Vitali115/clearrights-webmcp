@@ -1,10 +1,11 @@
-import { createPrivacyController } from '@/application'
+import { createPrivacyController, createPrivacyViewCoordinator } from '@/application'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
 import { startWebMcpAdapter } from '@/adapters/webmcp/webmcp-adapter'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
 
 export async function bootstrapBrowserApp() {
+  const privacyUi = createPrivacyViewCoordinator()
   const repository = new LocalStoragePrivacyRepository(window.localStorage, createTravelSeed)
   const controller = await createPrivacyController({
     catalog: travelCatalog,
@@ -18,6 +19,7 @@ export async function bootstrapBrowserApp() {
 
   return {
     controller,
+    privacyUi,
     webMcpAvailable: webMcp.available,
     dispose: () => webMcp.dispose(),
   }

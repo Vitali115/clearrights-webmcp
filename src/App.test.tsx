@@ -1,7 +1,11 @@
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createPrivacyController } from '@/application'
+import {
+  createPrivacyController,
+  createPrivacyViewCoordinator,
+  type PrivacyController,
+} from '@/application'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
@@ -24,13 +28,19 @@ async function createController(storage = new MemoryStorage()) {
   })
 }
 
+function renderApp(controller: PrivacyController, webMcpAvailable = false) {
+  const privacyUi = createPrivacyViewCoordinator()
+  render(<App controller={controller} privacyUi={privacyUi} webMcpAvailable={webMcpAvailable} />)
+  return privacyUi
+}
+
 afterEach(cleanup)
 
 describe('ClearRights UI', () => {
   it('opens and closes the privacy Sheet over the travel product', async () => {
     const user = userEvent.setup()
     const controller = await createController()
-    render(<App controller={controller} webMcpAvailable={false} />)
+    renderApp(controller)
 
     expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
@@ -47,7 +57,7 @@ describe('ClearRights UI', () => {
 
   it('uses a compact header that does not expose secondary navigation on mobile', async () => {
     const controller = await createController()
-    render(<App controller={controller} webMcpAvailable={false} />)
+    renderApp(controller)
 
     expect(screen.getByText('Travel demo')).toHaveClass('hidden', 'sm:inline-flex')
     expect(screen.getByRole('button', { name: 'Trips' })).toHaveClass('hidden', 'sm:inline-flex')
@@ -58,7 +68,7 @@ describe('ClearRights UI', () => {
   it('completes the manual fallback, verifies a receipt, and resets demo data', async () => {
     const user = userEvent.setup()
     const controller = await createController()
-    render(<App controller={controller} webMcpAvailable={false} />)
+    renderApp(controller)
     await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
 
     await user.click(screen.getByLabelText('Personalised recommendations'))
@@ -82,14 +92,19 @@ describe('ClearRights UI', () => {
     expect(Object.values(controller.getSnapshot().record.state.processing).every(Boolean)).toBe(true)
   })
 
-  it('opens automatically when an agent stages a plan through the shared controller', async () => {
+  it('opens automatically when the shared coordinator reports an agent navigation', async () => {
     const controller = await createController()
-    render(<App controller={controller} webMcpAvailable />)
+    const privacyUi = renderApp(controller, true)
 
     act(() => {
       controller.stage({
         keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
         avoidUses: [],
+      })
+      privacyUi.navigate({
+        view: 'review',
+        origin: 'agent',
+        message: 'The agent prepared the final review of your requested changes.',
       })
     })
 
@@ -98,10 +113,52 @@ describe('ClearRights UI', () => {
     expect(screen.getByText('Agent tools ready')).toBeVisible()
   })
 
+  it('keeps the agent dot until meaningful content engagement, not popover or close', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    const plan = controller.stage({
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+      avoidUses: [],
+    })
+    const privacyUi = renderApp(controller, true)
+
+    act(() => privacyUi.navigate({
+      view: 'review',
+      origin: 'agent',
+      message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
+    }))
+
+    const activityButton = await screen.findByRole('button', { name: 'Agent activity, view awaiting review' })
+    expect(screen.getByTestId('agent-activity-dot')).toBeVisible()
+    await user.click(activityButton)
+    expect(screen.getByText(/The agent prepared the final review/)).toBeVisible()
+    expect(privacyUi.getSnapshot().agentActivity?.status).toBe('opened')
+    expect(screen.getByTestId('agent-activity-dot')).toBeVisible()
+
+    await user.keyboard('{Escape}')
+    expect(privacyUi.getSnapshot().agentActivity?.status).toBe('opened')
+
+    act(() => privacyUi.navigate({
+      view: 'review',
+      origin: 'agent',
+      message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
+    }))
+    await screen.findByRole('dialog', { name: 'Privacy Center' })
+    await user.click(screen.getByRole('heading', { name: 'Privacy plan' }))
+
+    expect(privacyUi.getSnapshot().agentActivity?.status).toBe('engaged')
+    expect(screen.queryByTestId('agent-activity-dot')).not.toBeInTheDocument()
+    expect(controller.getSnapshot().plan?.id).toBe(plan.id)
+    expect(screen.getByLabelText('I reviewed this plan and understand its effects.')).not.toBeChecked()
+
+    await user.click(screen.getByRole('button', { name: 'Agent activity, view review started' }))
+    expect(screen.getByText('You started reviewing this view')).toBeVisible()
+  })
+
   it('shows a conflict when a kept capability needs an avoided use', async () => {
     const user = userEvent.setup()
     const controller = await createController()
-    render(<App controller={controller} webMcpAvailable={false} />)
+    renderApp(controller)
     await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
     await user.click(screen.getByLabelText('Precise location'))
     await user.click(screen.getByRole('button', { name: /Stage privacy plan/ }))
@@ -113,7 +170,7 @@ describe('ClearRights UI', () => {
   it('does not allow reviewing or applying a plan with no changes', async () => {
     const user = userEvent.setup()
     const controller = await createController()
-    render(<App controller={controller} webMcpAvailable />)
+    renderApp(controller, true)
     await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
     await user.click(screen.getByRole('button', { name: /Stage privacy plan/ }))
 
@@ -135,7 +192,7 @@ describe('ClearRights UI', () => {
     const receipt = await controller.apply(plan.id)
     const reloaded = await createController(storage)
 
-    render(<App controller={reloaded} webMcpAvailable />)
+    renderApp(reloaded, true)
     await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
 
     expect(reloaded.getSnapshot().workflow).toBe('idle')
@@ -147,7 +204,7 @@ describe('ClearRights UI', () => {
   it('hides a staged preview and revokes review when the intent changes', async () => {
     const user = userEvent.setup()
     const controller = await createController()
-    render(<App controller={controller} webMcpAvailable />)
+    renderApp(controller, true)
     await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
     await user.click(screen.getByLabelText('Personalised recommendations'))
     await user.click(screen.getByLabelText('Nearby suggestions'))
