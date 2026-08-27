@@ -41,16 +41,16 @@ export function TravelProductPage({ privacyAction }: TravelProductPageProps) {
   return (
     <main className="min-h-svh bg-muted/30 text-foreground">
       <header className="border-b bg-background">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:h-16 sm:px-6 sm:py-0">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground">
               <Plane className="size-4" aria-hidden="true" />
             </div>
             <span className="font-heading text-lg font-semibold tracking-tight">Waypoint</span>
-            <Badge variant="secondary">Travel demo</Badge>
+            <Badge variant="secondary" className="hidden sm:inline-flex">Travel demo</Badge>
           </div>
-          <nav className="flex items-center gap-2" aria-label="Account navigation">
-            <Button variant="ghost">Trips</Button>
+          <nav className="flex shrink-0 items-center gap-2" aria-label="Account navigation">
+            <Button variant="ghost" className="hidden sm:inline-flex">Trips</Button>
             {privacyAction}
           </nav>
         </div>

@@ -44,6 +44,16 @@ describe('ClearRights UI', () => {
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Privacy Center' })).not.toBeInTheDocument())
   })
 
+  it('uses a compact header that does not expose secondary navigation on mobile', async () => {
+    const controller = await createController()
+    render(<App controller={controller} webMcpAvailable={false} />)
+
+    expect(screen.getByText('Travel demo')).toHaveClass('hidden', 'sm:inline-flex')
+    expect(screen.getByRole('button', { name: 'Trips' })).toHaveClass('hidden', 'sm:inline-flex')
+    expect(screen.getByRole('navigation', { name: 'Account navigation' })).toHaveClass('shrink-0')
+    expect(screen.getByRole('button', { name: 'Privacy Center' })).toBeVisible()
+  })
+
   it('completes the manual fallback, verifies a receipt, and resets demo data', async () => {
     const user = userEvent.setup()
     const controller = await createController()
