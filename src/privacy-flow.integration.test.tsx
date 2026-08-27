@@ -1,11 +1,11 @@
-import { act, cleanup, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
 import { startWebMcpAdapter } from '@/adapters/webmcp/webmcp-adapter'
 import { createPrivacyController, createPrivacyViewCoordinator } from '@/application'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
+import { HOLD_TO_CONFIRM_MS } from '@/ui/HoldToConfirm'
 import App from './App'
 
 class MemoryStorage {
@@ -39,7 +39,6 @@ afterEach(cleanup)
 
 describe('agent-guided privacy flow', () => {
   it('requires visible human review between agent staging and agent apply', async () => {
-    const user = userEvent.setup()
     let tick = 0
     const controller = await createPrivacyController({
       catalog: travelCatalog,
@@ -69,7 +68,12 @@ describe('agent-guided privacy flow', () => {
     expect(screen.getByText('Human check')).toBeVisible()
     expect(screen.getByText('Waiting for you')).toBeVisible()
 
-    await user.click(screen.getByLabelText('I reviewed these changes and understand their effects.'))
+    const confirmation = screen.getByRole('button', { name: 'Hold to confirm review' })
+    fireEvent.pointerDown(confirmation, { button: 0, pointerId: 1 })
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, HOLD_TO_CONFIRM_MS + 20))
+    })
+    fireEvent.pointerUp(confirmation, { button: 0, pointerId: 1 })
     expect(screen.getByText('Approved')).toBeVisible()
     await adapter.whenSettled()
     expect(controller.getSnapshot().workflow).toBe('reviewed')

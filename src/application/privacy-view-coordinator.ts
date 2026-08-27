@@ -27,9 +27,14 @@ export interface AgentActivity {
   status: AgentActivityStatus
 }
 
+export interface AgentPreparation {
+  planId: string
+}
+
 export interface PrivacyViewSnapshot {
   navigation: PrivacyNavigation
   agentActivity: AgentActivity | null
+  agentPreparation: AgentPreparation | null
 }
 
 export type PrivacyNavigationRequest = {
@@ -40,6 +45,7 @@ export type PrivacyNavigationRequest = {
 } | {
   origin: 'agent'
   message: string
+  preparedPlanId?: string
 })
 
 export interface PrivacyViewCoordinator {
@@ -47,6 +53,7 @@ export interface PrivacyViewCoordinator {
   subscribe(listener: (snapshot: PrivacyViewSnapshot) => void): () => void
   navigate(request: PrivacyNavigationRequest): void
   acknowledge(): void
+  revokeAgentPreparation(): void
 }
 
 export function createPrivacyViewCoordinator(): PrivacyViewCoordinator {
@@ -58,6 +65,7 @@ export function createPrivacyViewCoordinator(): PrivacyViewCoordinator {
       processingId: null,
     },
     agentActivity: null,
+    agentPreparation: null,
   }
   const listeners = new Set<(snapshot: PrivacyViewSnapshot) => void>()
 
@@ -88,6 +96,9 @@ export function createPrivacyViewCoordinator(): PrivacyViewCoordinator {
               status: 'opened',
             }
           : snapshot.agentActivity,
+        agentPreparation: request.origin === 'agent' && request.preparedPlanId
+          ? { planId: request.preparedPlanId }
+          : snapshot.agentPreparation,
       })
     },
     acknowledge() {
@@ -98,6 +109,13 @@ export function createPrivacyViewCoordinator(): PrivacyViewCoordinator {
           ...snapshot.agentActivity,
           status: 'engaged',
         },
+      })
+    },
+    revokeAgentPreparation() {
+      if (!snapshot.agentPreparation) return
+      publish({
+        ...snapshot,
+        agentPreparation: null,
       })
     },
   }

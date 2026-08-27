@@ -18,6 +18,7 @@ describe('PrivacyViewCoordinator', () => {
         origin: 'human',
       },
       agentActivity: null,
+      agentPreparation: null,
     })
   })
 
@@ -63,6 +64,21 @@ describe('PrivacyViewCoordinator', () => {
       view: 'history',
       status: 'opened',
     }))
+  })
+
+  it('keeps an agent preparation tied to its plan until explicitly revoked', () => {
+    const coordinator = createPrivacyViewCoordinator()
+    coordinator.navigate({
+      view: 'review',
+      origin: 'agent',
+      preparedPlanId: 'plan-1',
+      message: 'The agent prepared plan 1.',
+    })
+    coordinator.navigate({ view: 'home', origin: 'human' })
+
+    expect(coordinator.getSnapshot().agentPreparation).toEqual({ planId: 'plan-1' })
+    coordinator.revokeAgentPreparation()
+    expect(coordinator.getSnapshot().agentPreparation).toBeNull()
   })
 
   it('replaces the last activity when the agent opens another view', () => {

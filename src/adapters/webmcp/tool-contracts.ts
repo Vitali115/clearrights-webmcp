@@ -237,6 +237,7 @@ export function createToolDefinitions(
         privacyUi.navigate({
           view: 'review',
           origin: 'agent',
+          preparedPlanId: plan.id,
           message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
         })
         return plan
@@ -290,6 +291,7 @@ export function createToolDefinitions(
     annotations: { readOnlyHint: false, untrustedContentHint: false },
     execute: (input) => executeValidated(applyInputSchema, privacyReceiptSchema, input, async ({ planId }) => {
       const receipt = await controller.apply(planId)
+      privacyUi.revokeAgentPreparation()
       privacyUi.navigate({
         view: 'receipt',
         origin: 'agent',

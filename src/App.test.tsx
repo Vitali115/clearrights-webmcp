@@ -9,6 +9,7 @@ import {
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
+import { HOLD_TO_CONFIRM_MS } from '@/ui/HoldToConfirm'
 import App from './App'
 
 class MemoryStorage {
@@ -32,6 +33,15 @@ function renderApp(controller: PrivacyController, webMcpAvailable = false) {
   const privacyUi = createPrivacyViewCoordinator()
   render(<App controller={controller} privacyUi={privacyUi} webMcpAvailable={webMcpAvailable} />)
   return privacyUi
+}
+
+async function holdToConfirm() {
+  const control = screen.getByRole('button', { name: 'Hold to confirm review' })
+  fireEvent.pointerDown(control, { button: 0, pointerId: 1 })
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, HOLD_TO_CONFIRM_MS + 20))
+  })
+  fireEvent.pointerUp(control, { button: 0, pointerId: 1 })
 }
 
 afterEach(cleanup)
@@ -77,7 +87,7 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByRole('button', { name: /Review changes/ }))
 
     expect(screen.getByText('3 changes ready')).toBeVisible()
-    await user.click(screen.getByLabelText('I reviewed these changes and understand their effects.'))
+    await holdToConfirm()
     await user.click(screen.getByRole('button', { name: /Apply changes/ }))
 
     expect(await screen.findByRole('heading', { name: 'Verified receipt' })).toBeVisible()
@@ -97,13 +107,14 @@ describe('privacy settings UI', () => {
     const privacyUi = renderApp(controller, true)
 
     act(() => {
-      controller.stage({
+      const plan = controller.stage({
         keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
         avoidUses: [],
       })
       privacyUi.navigate({
         view: 'review',
         origin: 'agent',
+        preparedPlanId: plan.id,
         message: 'The agent prepared the final review of your requested changes.',
       })
     })
@@ -113,6 +124,38 @@ describe('privacy settings UI', () => {
     expect(screen.getByText(/Agent access available/)).toBeVisible()
     expect(screen.getByText('Agent check')).toBeVisible()
     expect(screen.getByText('Change set prepared')).toBeVisible()
+  })
+
+  it('keeps the agent check when returning to an unchanged plan and revokes it after an edit', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    const plan = controller.stage({
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+      avoidUses: [],
+    })
+    const privacyUi = renderApp(controller, true)
+
+    act(() => privacyUi.navigate({
+      view: 'review',
+      origin: 'agent',
+      preparedPlanId: plan.id,
+      message: 'The agent prepared this exact plan.',
+    }))
+    expect(await screen.findByText('Change set prepared')).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
+    expect(privacyUi.getSnapshot().agentPreparation).toEqual({ planId: plan.id })
+    await user.click(screen.getByRole('button', { name: 'Review changes' }))
+    expect(screen.getByText('Change set prepared')).toBeVisible()
+    expect(controller.getSnapshot().plan?.id).toBe(plan.id)
+
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    await user.click(screen.getByRole('switch', { name: 'Partner advertising' }))
+    expect(privacyUi.getSnapshot().agentPreparation).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Review changes' }))
+    expect(screen.getByText('Manual change set')).toBeVisible()
+    expect(screen.queryByText('Change set prepared')).not.toBeInTheDocument()
   })
 
   it('keeps the agent dot until meaningful content engagement, not popover or close', async () => {
@@ -127,6 +170,7 @@ describe('privacy settings UI', () => {
     act(() => privacyUi.navigate({
       view: 'review',
       origin: 'agent',
+      preparedPlanId: plan.id,
       message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
     }))
 
@@ -143,6 +187,7 @@ describe('privacy settings UI', () => {
     act(() => privacyUi.navigate({
       view: 'review',
       origin: 'agent',
+      preparedPlanId: plan.id,
       message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
     }))
     await screen.findByRole('dialog', { name: 'Privacy settings panel' })
@@ -151,7 +196,7 @@ describe('privacy settings UI', () => {
     expect(privacyUi.getSnapshot().agentActivity?.status).toBe('engaged')
     expect(screen.queryByTestId('agent-activity-dot')).not.toBeInTheDocument()
     expect(controller.getSnapshot().plan?.id).toBe(plan.id)
-    expect(screen.getByLabelText('I reviewed these changes and understand their effects.')).not.toBeChecked()
+    expect(screen.getByRole('button', { name: 'Hold to confirm review' })).toHaveAttribute('aria-pressed', 'false')
 
     await user.click(screen.getByRole('button', { name: 'Agent activity, view review started' }))
     expect(screen.getByText('You started reviewing this view')).toBeVisible()
@@ -233,7 +278,7 @@ describe('privacy settings UI', () => {
 
     expect(screen.getByText('You’re already set')).toBeVisible()
     expect(screen.getByText(/nothing to approve or apply/i)).toBeVisible()
-    expect(screen.queryByLabelText('I reviewed these changes and understand their effects.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Hold to confirm review' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Apply changes/ })).not.toBeInTheDocument()
   })
 
@@ -270,7 +315,7 @@ describe('privacy settings UI', () => {
     expect(screen.getByText(/All optional settings are already off/)).toBeVisible()
     expect(screen.getByText('3 essential settings stay on')).toBeVisible()
     expect(screen.queryByText('This required activity cannot be changed')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('I reviewed these changes and understand their effects.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Hold to confirm review' })).not.toBeInTheDocument()
   })
 
   it('shows the latest verified receipt after the controller reloads', async () => {
@@ -306,7 +351,7 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByLabelText('Location suggestions'))
     await user.click(screen.getByLabelText('Partner advertising'))
     await user.click(screen.getByRole('button', { name: /Review changes/ }))
-    await user.click(screen.getByLabelText('I reviewed these changes and understand their effects.'))
+    await holdToConfirm()
 
     expect(controller.getSnapshot().workflow).toBe('reviewed')
     expect(screen.getByText('3 changes ready')).toBeVisible()
@@ -316,10 +361,10 @@ describe('privacy settings UI', () => {
 
     expect(controller.getSnapshot().workflow).toBe('staged')
     expect(screen.getByText('2 pending changes')).toBeVisible()
-    expect(screen.queryByLabelText('I reviewed these changes and understand their effects.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Hold to confirm review' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Review changes/ }))
     expect(screen.getByText('2 changes ready')).toBeVisible()
-    expect(screen.getByLabelText('I reviewed these changes and understand their effects.')).not.toBeChecked()
+    expect(screen.getByRole('button', { name: 'Hold to confirm review' })).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('navigates from current setup to an activity detail and back', async () => {

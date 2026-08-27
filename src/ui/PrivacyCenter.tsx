@@ -36,8 +36,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Field, FieldContent, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -49,6 +47,7 @@ import {
 } from '@/components/ui/sheet'
 import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock3 } from 'lucide-react'
 import { AgentActivityIndicator } from './AgentActivityIndicator'
+import { HoldToConfirm } from './HoldToConfirm'
 
 interface PrivacyCenterProps {
   controller: PrivacyController
@@ -153,6 +152,7 @@ export function PrivacyCenter({
 
   const updateProcessing = (definition: ProcessingDefinition, enabled: boolean) => {
     if (definition.locked) return
+    privacyUi.revokeAgentPreparation()
     if (snapshot.workflow === 'reviewed') controller.setReviewed(false)
     setKeepCapabilities((current) => definition.capabilities.reduce(
       (next, id) => toggleValue(next, id, enabled),
@@ -167,6 +167,10 @@ export function PrivacyCenter({
   const stagePlan = () => {
     setActionError(null)
     try {
+      if (snapshot.plan && planMatchesIntent) {
+        navigate('review')
+        return
+      }
       controller.stage({ keepCapabilities, avoidUses })
       navigate('review')
     } catch (error) {
@@ -192,6 +196,7 @@ export function PrivacyCenter({
     setActionError(null)
     try {
       await controller.resetDemo(true)
+      privacyUi.revokeAgentPreparation()
       setKeepCapabilities(activeCapabilities(controller.getSnapshot()))
       setAvoidUses([])
       navigate('home')
@@ -201,7 +206,9 @@ export function PrivacyCenter({
   }
 
   const settingsView = view === 'home' || view === 'current_setup' || view === 'cleanup'
-  const preparedByAgent = view === 'review' && privacyView.navigation.origin === 'agent'
+  const preparedByAgent = Boolean(
+    snapshot.plan && privacyView.agentPreparation?.planId === snapshot.plan.id,
+  )
 
   return (
     <SheetContent className="gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:w-[min(80vw,920px)] data-[side=right]:sm:max-w-none">
@@ -615,17 +622,11 @@ function ReviewView({
         </CardHeader>
         <CardContent className="space-y-4">
           <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={snapshot.workflow === 'reviewed'} approvalNeeded />
-          <Field orientation="horizontal" className={snapshot.workflow === 'reviewed' ? 'rounded-lg bg-emerald-50 p-3 dark:bg-emerald-950/20' : 'rounded-lg border p-3'}>
-            <Checkbox
-              id="human-review"
-              checked={snapshot.workflow === 'reviewed'}
-              onCheckedChange={(checked) => controller.setReviewed(checked === true)}
-            />
-            <FieldContent>
-              <FieldLabel htmlFor="human-review">I reviewed these changes and understand their effects.</FieldLabel>
-              <FieldDescription>Only this human confirmation enables apply. Editing a setting revokes it.</FieldDescription>
-            </FieldContent>
-          </Field>
+          <HoldToConfirm
+            confirmed={snapshot.workflow === 'reviewed'}
+            onConfirm={() => controller.setReviewed(true)}
+            onRevoke={() => controller.setReviewed(false)}
+          />
           <Button className="w-full" size="lg" disabled={snapshot.workflow !== 'reviewed' || applying} onClick={onApply}>
             {applying ? 'Applying and verifying…' : snapshot.workflow === 'reviewed' ? 'Apply changes' : 'Human approval required'}
           </Button>
