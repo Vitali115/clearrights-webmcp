@@ -1,8 +1,12 @@
-# `@clearrights/sdk` 0.2.0
+# `@clearrights/sdk` v0.2
 
-Headless ClearRights domain modules used by the Waypoint Travel demo.
+Headless domain modules for product controls that can be inspected by people and compatible agents and applied through explicit host adapters.
 
-## Public imports
+## Package status
+
+This package is a **private workspace package** used by the Waypoint Travel hackathon demo. It is typechecked and tested inside the repository but is not currently published to npm and does not provide a compiled distribution directory.
+
+Use the subpath exports inside this workspace:
 
 ```ts
 import * as privacy from "@clearrights/sdk/privacy";
@@ -10,72 +14,88 @@ import * as accessibility from "@clearrights/sdk/accessibility";
 import * as siteGuide from "@clearrights/sdk/site-guide";
 ```
 
-The root export provides the same three namespaces. Subpath imports are recommended so each domain boundary stays explicit.
+The root export exposes only the three namespaces.
 
-The package has no React, DOM, browser storage, WebMCP, UI-library, or Waypoint dependency. It is private to this workspace and is not published to npm.
+## Design boundary
+
+The package contains:
+
+- catalog validation and domain models;
+- deterministic privacy planning and approval state;
+- runtime snapshots and subscriptions;
+- repository, enforcement, and navigation ports;
+- verification and failure semantics.
+
+The package does not contain React, DOM access, local or session storage, WebMCP registration, Tailwind, UI components, Waypoint content, geography rules, legal determinations, or backend integrations.
 
 ## Privacy
 
-`definePrivacyCatalog` validates control modes, sections, processing dependencies, capability/use references, bounded descriptions and developer context, and HTTP(S)-only context URLs. `createPrivacyRuntime` provides deterministic planning, review state, direct choices, adapter application, complete readback, receipt v4 generation, and fail-closed drift handling.
+Main exports:
 
-```ts
-const runtime = await createPrivacyRuntime({
-  catalog: definePrivacyCatalog({
-    version: "product-catalog-1",
-    noticeVersion: "privacy-notice-1",
-    sections,
-    processing,
-    capabilities,
-    uses,
-  }),
-  repository,
-  enforcement,
-  clock,
-  idGenerator,
-});
+- `definePrivacyCatalog`;
+- `createPrivacyRuntime`;
+- `createPrivacyPlan`;
+- `PrivacyRepository`;
+- `PrivacyEnforcementAdapter`;
+- privacy model and receipt types.
+
+Workflow:
+
+```text
+inspect → stage → visible human review → apply → readback → receipt
 ```
 
-Hosts implement `PrivacyRepository` and `PrivacyEnforcementAdapter`. Adapter `apply` should be idempotent for its `operationId`; the runtime issues a verified receipt only after the complete target is read back.
+The host alone decides when a real human interaction is sufficient to call `setReviewed(true, "review_hold")`. The runtime rejects apply before review, stale plan IDs, drift, conflicts, enforcement failures, and mismatched readback.
 
-Detailed plan application requires `review_hold`. Direct preset or managed decisions use `explicit_action` through `applyDirectChoice`. The runtime has no banner copy or component assumptions.
+Controls are `required`, `opt_in`, or `opt_out`. Receipt v4 records the complete decision snapshot, revisions, preparation and approval provenance, adapter scope, and verification readback.
 
 ## Accessibility Preferences
 
-`defineAccessibilityCatalog` configures labels, descriptions, and the available options for the four fixed primitive IDs. `createAccessibilityRuntime` provides snapshots, subscriptions, partial updates, full readback, best-effort rollback, one consumable Undo, and reset.
+Main exports:
 
-```ts
-const runtime = await createAccessibilityRuntime({
-  catalog,
-  repository,
-  enforcement,
-  idGenerator,
-});
+- `defineAccessibilityCatalog`;
+- `createAccessibilityRuntime`;
+- `createDefaultAccessibilityState`;
+- `AccessibilityRepository`;
+- `AccessibilityEnforcementAdapter`.
 
-await runtime.setPreferences({ textScale: "large", motion: "reduced" }, "human");
-await runtime.undo("human");
+Workflow:
+
+```text
+inspect → set → readback → one Undo
 ```
 
-Hosts implement `AccessibilityRepository` and `AccessibilityEnforcementAdapter`. The module does not inspect media queries, modify the DOM, persist medical information, or create privacy receipts.
+The runtime supports `textScale`, `contrast`, `motion`, and `readingLayout`. It does not perform DOM remediation, diagnose a condition, or claim accessibility compliance.
 
 ## Site Guide
 
-`defineSiteGuideCatalog` validates unique IDs and keywords plus safe relative route or known panel targets. `createSiteGuideRuntime` resolves only catalog IDs and delegates visible navigation to `SiteNavigationAdapter`.
+Main exports:
 
-```ts
-const runtime = createSiteGuideRuntime({ catalog, navigator });
-await runtime.navigate("cancellation-policy", "agent");
+- `defineSiteGuideCatalog`;
+- `createSiteGuideRuntime`;
+- `SiteNavigationAdapter`.
+
+Workflow:
+
+```text
+select catalog destination → host navigation
 ```
 
-The module does not crawl pages, accept arbitrary paths, change privacy or accessibility state, or persist navigation history.
+The catalog validates relative same-origin route targets and known panel targets. It does not crawl a site or accept arbitrary URLs.
 
-## Host responsibilities
+## Runnable reference
 
-The SDK does not provide production storage, UI, WebMCP registration, authentication, authorisation, CMP or CRM connectivity, legal analysis, distributed transactions, or operational rollback across external systems. The host owns:
+Start with:
 
-- catalog accuracy and versioning;
-- adapter scope and real side effects;
-- persistence keys and migration policy;
-- UI, focus, navigation, and approval affordances;
-- access control, observability, recovery, and legal review.
+- `examples/minimal-host/` for an independent, typechecked integration;
+- `docs/INTEGRATION.md` for the host adapter boundary;
+- `src/adapters/browser/bootstrap.ts` for Waypoint composition;
+- `src/adapters/webmcp/` for catalog-derived host tools.
 
-Developer-authored descriptions and context are data. Adapters and agents must not interpret them as executable instructions.
+From the repository root:
+
+```bash
+npm run test:example
+npm test -- --run
+npm run build
+```
