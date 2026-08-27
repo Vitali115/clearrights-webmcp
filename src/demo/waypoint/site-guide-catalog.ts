@@ -1,5 +1,13 @@
 import { defineSiteGuideCatalog } from '@clearrights/sdk/site-guide'
 
+export const waypointRelatedPrivacyDestinationIds = [
+  'privacy-notice',
+  'cookie-details',
+  'accessibility-statement',
+  'help-and-support',
+  'contact-waypoint',
+] as const
+
 export const waypointSiteGuideCatalog = defineSiteGuideCatalog({
   version: 'waypoint-site-guide-2026.1',
   destinations: [

@@ -70,7 +70,7 @@ export function AccessibilityPanel({
         module: 'accessibility',
         action: 'undo',
         outcome: 'failed',
-        summary: 'Accessibility preferences could not be restored.',
+        summary: 'Display preferences could not be restored.',
       })
       setError(cause instanceof Error ? cause.message : 'Undo could not be completed.')
     } finally {
@@ -79,12 +79,12 @@ export function AccessibilityPanel({
   }
 
   return (
-    <section className="mx-auto w-full max-w-3xl p-5 sm:px-8 sm:py-7" aria-labelledby="controls-section-title">
+    <section className="mx-auto w-full max-w-3xl p-5 sm:px-8 sm:py-7" aria-labelledby="display-preferences-title">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-foreground/10 pb-6">
         <div>
-          <h1 id="controls-section-title" tabIndex={-1} className="text-[22px] font-medium tracking-tight outline-none">Accessibility preferences</h1>
+          <h1 id="display-preferences-title" tabIndex={-1} className="text-[22px] font-medium tracking-tight outline-none">Display preferences</h1>
           <p className="mt-1.5 max-w-2xl text-sm text-muted-foreground">
-            Local, reversible display preferences. They do not diagnose a condition or claim accessibility compliance.
+            Local, immediate, and reversible display preferences. This is not an accessibility overlay or a compliance claim.
           </p>
         </div>
         <Button variant="outline" className="rounded-full" disabled={!snapshot.undoAvailable || pending !== null} onClick={() => void undo()}>

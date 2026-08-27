@@ -186,7 +186,7 @@ export function PrivacyCenter({
             </Button>
           )}
           <div className="min-w-0">
-            <h1 id="controls-section-title" ref={viewHeadingRef} tabIndex={-1} className="font-heading text-[22px] font-medium tracking-tight text-foreground outline-none">{copy.title}</h1>
+            <h1 id="privacy-section-title" ref={viewHeadingRef} tabIndex={-1} className="font-heading text-[22px] font-medium tracking-tight text-foreground outline-none">{copy.title}</h1>
             <p className="mt-1.5 text-sm font-medium text-muted-foreground">{copy.description}</p>
           </div>
         </div>

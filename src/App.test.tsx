@@ -202,7 +202,7 @@ describe('privacy settings UI', () => {
     expect(screen.queryByRole('complementary', { name: 'Developer product effect preview' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
-    expect(screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
+    expect(screen.getByRole('dialog', { name: 'Waypoint Privacy Settings' })).toBeVisible()
   })
 
   it('offers a manual fallback for every step in the two-minute demo', async () => {
@@ -282,7 +282,7 @@ describe('privacy settings UI', () => {
 
     await user.click(screen.getByRole('button', { name: 'Manage choices' }))
 
-    expect(screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
+    expect(screen.getByRole('dialog', { name: 'Waypoint Privacy Settings' })).toBeVisible()
     expect(controller.getSnapshot().record.notice.status).toBe('pending')
     expect(controller.getReceipt()).toBeNull()
   })
@@ -324,7 +324,7 @@ describe('privacy settings UI', () => {
 
     expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
-    const privacyCenter = screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })
+    const privacyCenter = screen.getByRole('dialog', { name: 'Waypoint Privacy Settings' })
     expect(privacyCenter).toBeVisible()
     expect(screen.getByText('GPC is unavailable in this browser')).toBeVisible()
     expect(privacyCenter).toHaveClass(
@@ -333,7 +333,7 @@ describe('privacy settings UI', () => {
       'data-[side=right]:sm:max-w-none',
     )
     await user.keyboard('{Escape}')
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Waypoint Personal Controls' })).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Waypoint Privacy Settings' })).not.toBeInTheDocument())
   })
 
   it('uses a compact header that does not expose secondary navigation on mobile', async () => {
@@ -392,7 +392,7 @@ describe('privacy settings UI', () => {
       })
     })
 
-    expect(await screen.findByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
+    expect(await screen.findByRole('dialog', { name: 'Waypoint Privacy Settings' })).toBeVisible()
     expect(screen.getByText('3 changes ready')).toBeVisible()
     expect(screen.getByText(/Agent tools available/)).toBeVisible()
     expect(screen.getByText('Agent check')).toBeVisible()
@@ -463,7 +463,7 @@ describe('privacy settings UI', () => {
       preparedPlanId: plan.id,
       message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
     }))
-    await screen.findByRole('dialog', { name: 'Waypoint Personal Controls' })
+    await screen.findByRole('dialog', { name: 'Waypoint Privacy Settings' })
     await user.click(screen.getByText('3 changes ready'))
 
     expect(privacyUi.getSnapshot().agentActivity?.status).toBe('engaged')
@@ -484,7 +484,7 @@ describe('privacy settings UI', () => {
       origin: 'agent',
       message: 'The agent opened the privacy settings overview.',
     }))
-    await screen.findByRole('dialog', { name: 'Waypoint Personal Controls' })
+    await screen.findByRole('dialog', { name: 'Waypoint Privacy Settings' })
 
     act(() => {
       controller.stage({
@@ -671,16 +671,24 @@ describe('privacy settings UI', () => {
     const runtime = testRuntimes.get(controller)!
     renderApp(controller)
     await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
-    await user.click(screen.getByRole('tab', { name: 'accessibility' }))
+    await user.click(screen.getByLabelText('Recommendations'))
+    expect(screen.getAllByRole('tab').map(({ textContent }) => textContent)).toEqual(['Privacy', 'Activity'])
+    expect(screen.queryByRole('tab', { name: 'Display preferences' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Display preferences' }))
 
-    expect(screen.getByRole('heading', { name: 'Accessibility preferences' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Display preferences' })).toBeVisible()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Display preferences' })).toHaveFocus())
+    expect(screen.getByRole('button', { name: 'Back to Privacy' })).toBeVisible()
     await user.click(screen.getByRole('radio', { name: 'Large' }))
     expect(runtime.accessibility.getSnapshot().current.textScale).toBe('large')
     expect(screen.getByRole('button', { name: 'Undo' })).toBeEnabled()
 
+    await user.click(screen.getByRole('button', { name: 'Back to Privacy' }))
+    expect(screen.getByLabelText('Recommendations')).toBeChecked()
+    expect(screen.getByText('1 pending change')).toBeVisible()
     await user.click(screen.getByRole('tab', { name: /Activity/ }))
     expect(screen.getByText('Text size was updated.')).toBeVisible()
-    await user.click(screen.getByRole('tab', { name: 'accessibility' }))
+    await user.click(screen.getByRole('button', { name: 'Display preferences' }))
     await user.click(screen.getByRole('button', { name: 'Undo' }))
     expect(runtime.accessibility.getSnapshot().current.textScale).toBe('system')
     expect(screen.getByRole('button', { name: 'Undo' })).toBeDisabled()
@@ -691,12 +699,14 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller)
     await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
-    const accessibilityTab = screen.getByRole('tab', { name: 'accessibility' })
-    accessibilityTab.focus()
+    const privacyTab = screen.getByRole('tab', { name: 'Privacy' })
+    privacyTab.focus()
     await user.keyboard('{ArrowRight}')
-    expect(screen.getByRole('tab', { name: 'Site guide' })).toHaveFocus()
+    expect(screen.getByRole('tab', { name: 'Activity' })).toHaveFocus()
+    await user.keyboard('{ArrowRight}')
+    expect(screen.getByRole('tab', { name: 'Privacy' })).toHaveFocus()
 
-    await user.click(screen.getByRole('tab', { name: 'accessibility' }))
+    await user.click(screen.getByRole('button', { name: 'Display preferences' }))
     await user.click(screen.getByRole('radio', { name: 'Focused' }))
     await user.keyboard('{Escape}')
     const disclosure = screen.getByText('Travel ideas · Generic suggestions').closest('details')
@@ -705,21 +715,55 @@ describe('privacy settings UI', () => {
     expect(screen.getByText('Popular places, selected without profile data')).not.toBeVisible()
   })
 
-  it('searches declared Site Guide destinations and preserves browser navigation', async () => {
+  it('shows only related privacy pages while preserving the complete Site Guide catalog', async () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
     await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
-    await user.click(screen.getByRole('tab', { name: 'Site guide' }))
-    await user.type(screen.getByRole('searchbox', { name: 'Search site destinations' }), 'refund')
+    await user.click(screen.getByRole('button', { name: 'Site guide' }))
 
-    expect(screen.getByText('Cancellation policy')).toBeVisible()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Related privacy pages' })).toHaveFocus())
+    expect(screen.getByRole('button', { name: 'Back to Privacy' })).toBeVisible()
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument()
+    expect(screen.getByText('Privacy notice')).toBeVisible()
+    expect(screen.getByText('Cookie details')).toBeVisible()
+    expect(screen.getByText('Accessibility statement')).toBeVisible()
+    expect(screen.getByText('Help and support')).toBeVisible()
+    expect(screen.getByText('Contact Waypoint')).toBeVisible()
+    expect(screen.queryByText('Cancellation policy')).not.toBeInTheDocument()
     expect(screen.queryByText('Payment methods')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Open' }))
-    expect(window.location.hash).toBe('#/info/cancellation-policy')
-    expect(screen.queryByRole('dialog', { name: 'Waypoint Personal Controls' })).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Cancellation policy' })).toHaveFocus()
+    expect(waypointSiteGuideCatalog.destinations).toHaveLength(12)
+    expect(waypointSiteGuideCatalog.getDestination('cancellation-policy').label).toBe('Cancellation policy')
+    await user.click(screen.getByRole('button', { name: 'Open Privacy notice' }))
+    expect(window.location.hash).toBe('#/info/privacy-notice')
+    expect(screen.queryByRole('dialog', { name: 'Waypoint Privacy Settings' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Privacy notice' })).toHaveFocus()
     expect(screen.getByText(/Waypoint Travel is fictional/)).toBeVisible()
+  })
+
+  it('opens Display preferences for the agent without treating engagement as privacy approval', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    const runtime = testRuntimes.get(controller)!
+    renderApp(controller, true)
+
+    act(() => runtime.controlsUi.openPanel('accessibility', {
+      origin: 'agent',
+      targetId: 'accessibility-preferences',
+      message: 'The agent opened Display preferences so you can inspect the current local settings.',
+    }))
+
+    expect(await screen.findByRole('dialog', { name: 'Waypoint Privacy Settings' })).toBeVisible()
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Display preferences' })).toHaveFocus())
+    expect(screen.getByTestId('agent-activity-dot')).toBeVisible()
+    expect(runtime.controlsUi.getSnapshot().agentActivity?.status).toBe('opened')
+    expect(controller.getSnapshot().workflow).toBe('idle')
+
+    await user.click(screen.getByRole('heading', { name: 'Display preferences' }))
+
+    expect(runtime.controlsUi.getSnapshot().agentActivity?.status).toBe('engaged')
+    expect(screen.queryByTestId('agent-activity-dot')).not.toBeInTheDocument()
+    expect(controller.getSnapshot().workflow).toBe('idle')
   })
 
   it('opens the declared bookings anchor and leaves browser Back functional', async () => {

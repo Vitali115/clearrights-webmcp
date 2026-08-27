@@ -2,9 +2,9 @@ import type { ActivitySnapshot } from '@/application'
 
 export function ActivityPanel({ snapshot }: { snapshot: ActivitySnapshot }) {
   return (
-    <section className="mx-auto w-full max-w-3xl p-5 sm:px-8 sm:py-7" aria-labelledby="controls-section-title">
-      <h1 id="controls-section-title" tabIndex={-1} className="text-[22px] font-medium tracking-tight outline-none">Activity</h1>
-      <p className="mt-1.5 text-sm text-muted-foreground">Session-only actions across Privacy, Accessibility, and Site guide. Prompts and raw payloads are not stored.</p>
+    <section className="mx-auto w-full max-w-3xl p-5 sm:px-8 sm:py-7" aria-labelledby="activity-section-title">
+      <h1 id="activity-section-title" tabIndex={-1} className="text-[22px] font-medium tracking-tight outline-none">Activity</h1>
+      <p className="mt-1.5 text-sm text-muted-foreground">Session-only actions across Privacy, Display preferences, and Site guide. Prompts and raw payloads are not stored.</p>
       {snapshot.events.length === 0 ? (
         <div className="mt-7 border-t border-foreground/10 py-8">
           <p className="font-medium">No activity in this session</p>

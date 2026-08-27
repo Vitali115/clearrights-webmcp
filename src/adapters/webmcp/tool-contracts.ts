@@ -256,7 +256,7 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
             controlsUi.openPanel('accessibility', {
               origin: 'agent',
               targetId: 'accessibility-preferences',
-              message: 'The agent opened Accessibility so you can inspect the current preferences.',
+              message: 'The agent opened Display preferences so you can inspect the current local settings.',
             })
           }
           return {
@@ -290,8 +290,8 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
             origin: 'agent',
             targetId: 'accessibility-preferences',
             message: changed.changed
-              ? 'The agent applied accessibility preferences and verified the visible result. Undo remains available.'
-              : 'The agent checked accessibility preferences; the requested values were already active.',
+              ? 'The agent applied Display preferences and verified the visible result. Undo remains available.'
+              : 'The agent checked Display preferences; the requested values were already active.',
           })
           return changed
         },

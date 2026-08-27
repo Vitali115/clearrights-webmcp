@@ -1,4 +1,4 @@
-import { useEffect, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type {
   ActivityCoordinator,
   ActivitySnapshot,
@@ -40,11 +40,18 @@ import {
 } from '@/components/ui/sheet'
 import { AgentActivityIndicator } from '@/ui/AgentActivityIndicator'
 import { PrivacyCenter } from '@/ui/PrivacyCenter'
+import { waypointRelatedPrivacyDestinationIds } from '@/demo/waypoint/site-guide-catalog'
 import { AccessibilityPanel } from './AccessibilityPanel'
 import { ActivityPanel } from './ActivityPanel'
 import { SiteGuidePanel } from './SiteGuidePanel'
 
-const primarySections = ['privacy', 'accessibility', 'site_guide'] as const
+const primarySections = ['privacy', 'activity'] as const
+const sectionTitleIds: Record<PersonalControlsSection, string> = {
+  privacy: 'privacy-section-title',
+  accessibility: 'display-preferences-title',
+  site_guide: 'related-privacy-pages-title',
+  activity: 'activity-section-title',
+}
 
 export function PersonalControls({
   controller,
@@ -85,15 +92,24 @@ export function PersonalControls({
 }) {
   const [resetting, setResetting] = useState(false)
   const [resetError, setResetError] = useState<string | null>(null)
+  const focusContentRequest = useRef<PersonalControlsSection | null>(null)
   const section = controlsSnapshot.section
+  const secondarySection = section === 'accessibility' || section === 'site_guide'
 
   useEffect(() => {
-    if (controlsSnapshot.agentActivity?.status === 'opened' && controlsSnapshot.agentActivity.kind === 'panel') {
-      document.getElementById('controls-section-title')?.focus()
-    }
-  }, [controlsSnapshot.agentActivity, controlsSnapshot.focusRequest])
+    if (!controlsSnapshot.open) return
+    const agentOpenedPanel = controlsSnapshot.agentActivity?.status === 'opened'
+      && controlsSnapshot.agentActivity.kind === 'panel'
+    if (focusContentRequest.current !== section && !agentOpenedPanel) return
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(sectionTitleIds[section])?.focus()
+      focusContentRequest.current = null
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [controlsSnapshot.agentActivity, controlsSnapshot.focusRequest, controlsSnapshot.open, section])
 
-  const openSection = (next: PersonalControlsSection) => {
+  const openSection = (next: PersonalControlsSection, focusContent = false) => {
+    focusContentRequest.current = focusContent ? next : null
     controlsUi.acknowledge()
     controlsUi.openPanel(next, { origin: 'human', targetId: next })
   }
@@ -126,40 +142,42 @@ export function PersonalControls({
     <SheetContent className="gap-0 bg-background p-0 data-[side=right]:w-full data-[side=right]:max-w-none data-[side=right]:sm:w-[min(80vw,920px)] data-[side=right]:sm:max-w-none">
       <AgentActivityIndicator activity={controlsSnapshot.agentActivity} />
       <SheetHeader className="border-b border-foreground/10 px-5 py-4 pr-32 sm:px-8 sm:pr-36">
-        <SheetTitle className="text-lg">Waypoint Personal Controls</SheetTitle>
-        <SheetDescription>Privacy settings, with additional display and navigation controls.</SheetDescription>
-        <div role="tablist" aria-label="Personal Controls sections" className="mt-4 flex flex-wrap gap-1" onKeyDown={onTabKeyDown}>
-          {primarySections.map((item) => (
-            <Button
-              key={item}
-              id={`controls-tab-${item}`}
-              role="tab"
-              aria-selected={section === item}
-              aria-controls="personal-controls-panel"
-              variant={section === item ? (item === 'privacy' ? 'default' : 'secondary') : 'ghost'}
-              className={item === 'privacy' ? 'min-w-32 rounded-full capitalize' : 'rounded-full capitalize text-muted-foreground'}
-              onClick={() => openSection(item)}
-            >
-              {item === 'site_guide' ? 'Site guide' : item}
-            </Button>
-          ))}
+        <SheetTitle className="text-lg">Waypoint Privacy Settings</SheetTitle>
+        <SheetDescription>Review Waypoint data use, approve exact changes, and inspect verified activity.</SheetDescription>
+        {secondarySection ? (
           <Button
-            id="controls-tab-activity"
-            role="tab"
-            aria-selected={section === 'activity'}
-            aria-controls="personal-controls-panel"
-            variant={section === 'activity' ? 'secondary' : 'ghost'}
-            className="ml-auto rounded-full"
-            onClick={() => openSection('activity')}
+            variant="ghost"
+            className="mt-4 h-auto w-fit rounded-full px-3 py-1.5 text-muted-foreground"
+            onClick={() => openSection('privacy', true)}
           >
-            Activity{activitySnapshot.events.length ? ` (${activitySnapshot.events.length})` : ''}
+            Back to Privacy
           </Button>
-        </div>
+        ) : (
+          <div role="tablist" aria-label="Privacy settings sections" className="mt-4 flex gap-1" onKeyDown={onTabKeyDown}>
+            {primarySections.map((item) => (
+              <Button
+                key={item}
+                id={`controls-tab-${item}`}
+                role="tab"
+                aria-selected={section === item}
+                aria-controls="personal-controls-panel"
+                variant={section === item ? (item === 'privacy' ? 'default' : 'secondary') : 'ghost'}
+                className={item === 'privacy' ? 'min-w-32 rounded-full' : 'ml-auto rounded-full text-muted-foreground'}
+                onClick={() => openSection(item)}
+              >
+                {item === 'activity' && activitySnapshot.events.length
+                  ? `Activity (${activitySnapshot.events.length})`
+                  : item === 'privacy' ? 'Privacy' : 'Activity'}
+              </Button>
+            ))}
+          </div>
+        )}
       </SheetHeader>
 
       <div
         id="personal-controls-panel"
-        role="tabpanel"
+        role={secondarySection ? undefined : 'tabpanel'}
+        aria-labelledby={secondarySection ? undefined : `controls-tab-${section}`}
         className="flex min-h-0 flex-1 flex-col overflow-y-auto"
         onClickCapture={() => {
           controlsUi.acknowledge()
@@ -174,7 +192,7 @@ export function PersonalControls({
           if (section === 'privacy') privacyUi.acknowledge()
         }}
       >
-        {section === 'privacy' && (
+        <div className={section === 'privacy' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'} aria-hidden={section === 'privacy' ? undefined : true}>
           <PrivacyCenter
             controller={controller}
             privacyUi={privacyUi}
@@ -183,7 +201,7 @@ export function PersonalControls({
             observedPrivacySignals={observedPrivacySignals}
             activity={activity}
           />
-        )}
+        </div>
         {section === 'accessibility' && (
           <AccessibilityPanel
             runtime={accessibility}
@@ -198,35 +216,64 @@ export function PersonalControls({
             catalog={siteGuideCatalog}
             snapshot={siteGuideSnapshot}
             activity={activity}
+            destinationIds={waypointRelatedPrivacyDestinationIds}
           />
         )}
         {section === 'activity' && <ActivityPanel snapshot={activitySnapshot} />}
       </div>
 
-      <SheetFooter className="flex-row items-center justify-between gap-3 border-t border-foreground/10 bg-background px-5 py-2.5 sm:px-8">
-        <p className="text-xs font-medium text-muted-foreground">
-          Built with ClearRights · {webMcpAvailable ? 'Agent tools available' : 'Manual controls'}
-        </p>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground">Reset</Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent size="sm">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Reset demo data?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This resets privacy, receipts, accessibility preferences, Undo, and session Activity, then returns to Waypoint home.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            {resetError && <p role="alert" className="text-sm text-destructive">{resetError}</p>}
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
-              <AlertDialogAction variant="destructive" disabled={resetting} onClick={() => void reset()}>
-                {resetting ? 'Resetting…' : 'Reset data'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+      <SheetFooter className="block gap-0 border-t border-foreground/10 bg-background p-0">
+        <div className="flex flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div>
+            <p className="text-xs font-medium text-foreground">Additional agent-ready controls</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Optional ClearRights modules demonstrated by Waypoint.</p>
+          </div>
+          <nav aria-label="Additional agent-ready controls" className="flex flex-wrap gap-1">
+            <Button
+              variant={section === 'accessibility' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="rounded-full"
+              aria-current={section === 'accessibility' ? 'page' : undefined}
+              onClick={() => openSection('accessibility', true)}
+            >
+              Display preferences
+            </Button>
+            <Button
+              variant={section === 'site_guide' ? 'secondary' : 'ghost'}
+              size="sm"
+              className="rounded-full"
+              aria-current={section === 'site_guide' ? 'page' : undefined}
+              onClick={() => openSection('site_guide', true)}
+            >
+              Site guide
+            </Button>
+          </nav>
+        </div>
+        <div className="flex items-center justify-between gap-3 border-t border-foreground/10 px-5 py-2.5 sm:px-8">
+          <p className="text-xs font-medium text-muted-foreground">
+            Built with ClearRights · {webMcpAvailable ? 'Agent tools available' : 'Manual controls'}
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-muted-foreground">Reset</Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent size="sm">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reset demo data?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This resets privacy, receipts, display preferences, Undo, and session Activity, then returns to Waypoint home.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              {resetError && <p role="alert" className="text-sm text-destructive">{resetError}</p>}
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
+                <AlertDialogAction variant="destructive" disabled={resetting} onClick={() => void reset()}>
+                  {resetting ? 'Resetting…' : 'Reset data'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </SheetFooter>
     </SheetContent>
   )
