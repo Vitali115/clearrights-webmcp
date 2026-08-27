@@ -95,6 +95,10 @@ export function PersonalControls({
   const focusContentRequest = useRef<PersonalControlsSection | null>(null)
   const section = controlsSnapshot.section
   const secondarySection = section === 'accessibility' || section === 'site_guide'
+  const privacySettingsView = privacyView.navigation.view === 'home'
+    || privacyView.navigation.view === 'current_setup'
+    || privacyView.navigation.view === 'cleanup'
+  const showAdditionalModules = section !== 'privacy' || privacySettingsView
 
   useEffect(() => {
     if (!controlsSnapshot.open) return
@@ -227,32 +231,34 @@ export function PersonalControls({
       </div>
 
       <SheetFooter className="block gap-0 border-t border-foreground/10 bg-background p-0">
-        <div className="flex flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <div>
-            <p className="text-xs font-medium text-foreground">Additional agent-ready controls</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Optional ClearRights modules demonstrated by Waypoint.</p>
+        {showAdditionalModules && (
+          <div className="flex flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+            <div>
+              <p className="text-xs font-medium text-foreground">Additional agent-ready controls</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Optional ClearRights modules demonstrated by Waypoint.</p>
+            </div>
+            <nav aria-label="Additional agent-ready controls" className="flex flex-wrap gap-1">
+              <Button
+                variant={section === 'accessibility' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="rounded-full"
+                aria-current={section === 'accessibility' ? 'page' : undefined}
+                onClick={() => openSection('accessibility', true)}
+              >
+                Display preferences
+              </Button>
+              <Button
+                variant={section === 'site_guide' ? 'secondary' : 'ghost'}
+                size="sm"
+                className="rounded-full"
+                aria-current={section === 'site_guide' ? 'page' : undefined}
+                onClick={() => openSection('site_guide', true)}
+              >
+                Site guide
+              </Button>
+            </nav>
           </div>
-          <nav aria-label="Additional agent-ready controls" className="flex flex-wrap gap-1">
-            <Button
-              variant={section === 'accessibility' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="rounded-full"
-              aria-current={section === 'accessibility' ? 'page' : undefined}
-              onClick={() => openSection('accessibility', true)}
-            >
-              Display preferences
-            </Button>
-            <Button
-              variant={section === 'site_guide' ? 'secondary' : 'ghost'}
-              size="sm"
-              className="rounded-full"
-              aria-current={section === 'site_guide' ? 'page' : undefined}
-              onClick={() => openSection('site_guide', true)}
-            >
-              Site guide
-            </Button>
-          </nav>
-        </div>
+        )}
         <div className="flex items-center justify-between gap-3 border-t border-foreground/10 px-5 py-2.5 sm:px-8">
           <p className="text-xs font-medium text-muted-foreground">
             Built with ClearRights · {webMcpAvailable ? 'Agent tools available' : 'Manual controls'}

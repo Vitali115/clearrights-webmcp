@@ -20,13 +20,11 @@ interface TravelProductPageProps {
   effectsPreview: boolean
   developerPreview: WaypointDeveloperPreviewModel | null
   privacyEffectStatus: {
-    revision: number
-    verifiedReceiptId: string | null
     pendingChanges: number
   }
+  showPrivacyEffectSummary: boolean
   onExplainPrivacy(): void
   onOpenControls(): void
-  onOpenReceipt(): void
   onExitEffectsPreview(): void
   onDeveloperPreviewModeChange(mode: WaypointDeveloperPreviewMode): void
   onDeveloperSandboxChange(setting: keyof WaypointPrivacySandboxState, enabled: boolean): void
@@ -101,9 +99,9 @@ export function TravelProductPage({
   effectsPreview,
   developerPreview,
   privacyEffectStatus,
+  showPrivacyEffectSummary,
   onExplainPrivacy,
   onOpenControls,
-  onOpenReceipt,
   onExitEffectsPreview,
   onDeveloperPreviewModeChange,
   onDeveloperSandboxChange,
@@ -168,12 +166,10 @@ export function TravelProductPage({
         </form>
       </section>
 
-      {!effectsPreview && (
+      {!effectsPreview && showPrivacyEffectSummary && (
         <PrivacyEffectSummary
           experience={experience}
           status={privacyEffectStatus}
-          onOpenSettings={onOpenControls}
-          onOpenReceipt={onOpenReceipt}
         />
       )}
 
@@ -260,13 +256,9 @@ export function TravelProductPage({
 function PrivacyEffectSummary({
   experience,
   status,
-  onOpenSettings,
-  onOpenReceipt,
 }: {
   experience: WaypointExperienceViewModel
   status: TravelProductPageProps['privacyEffectStatus']
-  onOpenSettings(): void
-  onOpenReceipt(): void
 }) {
   return (
     <section
@@ -274,7 +266,7 @@ function PrivacyEffectSummary({
       className="border-y border-foreground/10 bg-foreground/[0.02] px-5 py-6 sm:px-8"
       aria-labelledby="waypoint-privacy-effect"
     >
-      <div className="grid gap-6 lg:grid-cols-[0.8fr_1.4fr_auto] lg:items-center">
+      <div className="grid gap-6 lg:grid-cols-[0.8fr_1.4fr] lg:items-center">
         <div>
           <p className="text-[13px] font-medium text-muted-foreground">Applied privacy effect</p>
           <h2 id="waypoint-privacy-effect" className="mt-1 text-xl font-medium tracking-tight">What Waypoint is using now</h2>
@@ -284,20 +276,6 @@ function PrivacyEffectSummary({
           <EffectValue label="Nearby guide" value={experience.nearbyGuide === 'visible' ? 'Visible' : 'Hidden'} />
           <EffectValue label="Partner offer" value={experience.partnerOffer === 'visible' ? 'Visible' : 'Hidden'} />
         </dl>
-        <div className="flex flex-col items-start gap-1 lg:items-end">
-          <p className="text-sm font-medium">
-            {status.verifiedReceiptId ? `Readback matched revision ${status.revision}` : `Applied revision ${status.revision}`}
-          </p>
-          {status.verifiedReceiptId ? (
-            <button type="button" className="text-xs font-medium text-muted-foreground underline underline-offset-4" onClick={onOpenReceipt}>
-              Open verified receipt
-            </button>
-          ) : (
-            <button type="button" className="text-xs font-medium text-muted-foreground underline underline-offset-4" onClick={onOpenSettings}>
-              No matching receipt yet · Open settings
-            </button>
-          )}
-        </div>
       </div>
       {status.pendingChanges > 0 && (
         <div className="mt-5 border-l-2 border-foreground pl-3 text-sm">

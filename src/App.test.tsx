@@ -292,10 +292,7 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller)
 
-    const initialEffect = screen.getByTestId('privacy-effect-summary')
-    expect(within(initialEffect).getByText('Generic')).toBeVisible()
-    expect(within(initialEffect).getAllByText('Hidden')).toHaveLength(2)
-    expect(within(initialEffect).getByText(/No matching receipt yet/)).toBeVisible()
+    expect(screen.queryByTestId('privacy-effect-summary')).not.toBeInTheDocument()
     expect(screen.getByText('Popular places, selected without profile data')).toBeVisible()
     expect(screen.queryByText('Around your Lisbon stay')).not.toBeInTheDocument()
     expect(screen.queryByText('A flexible rail pass for your saved city trips')).not.toBeInTheDocument()
@@ -315,8 +312,7 @@ describe('privacy settings UI', () => {
     const appliedEffect = screen.getByTestId('privacy-effect-summary')
     expect(within(appliedEffect).getByText('Personalised')).toBeVisible()
     expect(within(appliedEffect).getAllByText('Visible')).toHaveLength(2)
-    expect(within(appliedEffect).getByText('Readback matched revision 2')).toBeVisible()
-    expect(within(appliedEffect).getByRole('button', { name: 'Open verified receipt' })).toBeVisible()
+    expect(within(appliedEffect).queryByText(/revision|receipt|readback/i)).not.toBeInTheDocument()
     expect(controller.getReceipt()).toEqual(expect.objectContaining({
       kind: 'initial_choice',
       choiceMethod: 'allow_all',
@@ -324,6 +320,14 @@ describe('privacy settings UI', () => {
         expect.objectContaining({ processingId: 'recommendations', after: true }),
       ]),
     }))
+
+    const directReceipt = controller.getReceipt()!
+    await user.click(screen.getAllByRole('button', { name: 'Privacy settings' })[0]!)
+    await user.click(screen.getByRole('button', { name: /Previous changes/ }))
+    await user.click(screen.getByText(`Initial choice · ${directReceipt.id}`))
+    await user.click(screen.getByRole('button', { name: 'Open receipt' }))
+    expect(screen.getByText(/matched the settings recorded by your direct choice/)).toBeVisible()
+    expect(screen.queryByText(/matched the reviewed changes/)).not.toBeInTheDocument()
   })
 
   it('labels a staged privacy plan as pending while the home keeps applied effects', async () => {
@@ -420,6 +424,7 @@ describe('privacy settings UI', () => {
     expect(screen.getByText(/Agent tools available/)).toBeVisible()
     expect(screen.getByText('Agent check')).toBeVisible()
     expect(screen.getByText('Change set prepared')).toBeVisible()
+    expect(screen.queryByText('Additional agent-ready controls')).not.toBeInTheDocument()
   })
 
   it('keeps the agent check when returning to an unchanged plan and revokes it after an edit', async () => {
@@ -684,9 +689,9 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
     expect(screen.getByLabelText('Recommendations')).toBeChecked()
     expect(screen.getByText('1 pending change')).toBeVisible()
-    expect(screen.getByText('Applied revision 1 · No matching verified receipt yet')).toBeVisible()
-    expect(screen.getByText('1 change prepared · Not applied yet')).toBeVisible()
-    expect(screen.getByText(/Draft: 1 of 3 optional settings on/)).toBeVisible()
+    expect(screen.getByText('Applied · 0 of 3 optional settings on')).toBeVisible()
+    expect(screen.getByText('Draft · 1 change not applied')).toBeVisible()
+    expect(screen.getByText('1 of 3 optional settings will be on after approval.')).toBeVisible()
   })
 
   it('applies accessibility preferences immediately, exposes one Undo, and records Activity', async () => {

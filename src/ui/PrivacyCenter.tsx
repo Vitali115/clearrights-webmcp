@@ -51,7 +51,7 @@ const VIEW_COPY: Record<PrivacyView, { title: string; description: string }> = {
   },
   review: {
     title: 'Review changes',
-    description: 'Two facts, then apply. Only the settings listed below will change.',
+    description: 'Review every listed effect, confirm deliberately, then apply.',
   },
   history: {
     title: 'Previous changes',
@@ -59,7 +59,7 @@ const VIEW_COPY: Record<PrivacyView, { title: string; description: string }> = {
   },
   receipt: {
     title: 'Verified receipt',
-    description: 'The applied settings matched the reviewed changes.',
+    description: 'Adapter readback matched the decision recorded in this receipt.',
   },
 }
 
@@ -290,45 +290,24 @@ function SettingsView({
   const changedCount = travelCatalog.processing.filter((definition) =>
     snapshot.record.state.processing[definition.id]
       !== draftEnabled(definition, keepCapabilities, avoidUses)).length
-  const matchingReceipt = snapshot.record.receipts.find((receipt) =>
-    receipt.afterRevision === snapshot.record.state.revision
-    && receipt.verification.observedRevision === snapshot.record.state.revision)
+  const appliedOptionalEnabled = optional.filter(({ id }) => snapshot.record.state.processing[id]).length
 
   return (
     <div>
-      <section className="mb-8 border-y border-foreground/10 py-5" aria-labelledby="current-privacy-effect">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-[13px] font-medium text-muted-foreground">Applied privacy effect</p>
-            <h2 id="current-privacy-effect" className="mt-1 text-[1.1rem] font-medium tracking-tight">
-              What Waypoint is using now
-            </h2>
-          </div>
-          <Button variant="ghost" className="h-auto px-0 text-foreground" onClick={onHistory}>
-            Previous changes ({snapshot.record.receipts.length})
-          </Button>
-        </div>
-        <dl className="mt-5 grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
-          <Outcome label="Recommendations" value={snapshot.record.state.processing.recommendations ? 'Personalised' : 'Generic'} />
-          <Outcome label="Nearby guide" value={snapshot.record.state.processing.location_suggestions ? 'Visible' : 'Hidden'} />
-          <Outcome label="Partner offer" value={snapshot.record.state.processing.partner_advertising ? 'Visible' : 'Hidden'} />
-        </dl>
-        <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-          {matchingReceipt
-            ? `Readback matched revision ${snapshot.record.state.revision} · Receipt ${matchingReceipt.id}`
-            : `Applied revision ${snapshot.record.state.revision} · No matching verified receipt yet`}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm">
+        <p className="font-medium text-muted-foreground">
+          Applied · {appliedOptionalEnabled} of {optional.length} optional settings on
         </p>
-        {changedCount > 0 && (
-          <div className="mt-4 border-l-2 border-foreground pl-3 text-sm">
-            <p className="font-medium">
-              {changedCount} {changedCount === 1 ? 'change' : 'changes'} prepared · Not applied yet
-            </p>
-            <p className="mt-1 text-muted-foreground">
-              Draft: {draftOptionalEnabled} of {optional.length} optional settings on. Waypoint still reflects the applied values above.
-            </p>
-          </div>
-        )}
-      </section>
+        <Button variant="ghost" className="h-auto px-0 text-foreground" onClick={onHistory}>
+          Previous changes ({snapshot.record.receipts.length})
+        </Button>
+      </div>
+      {changedCount > 0 && (
+        <div className="mb-5 border-l-2 border-foreground pl-3 text-sm">
+          <p className="font-medium">Draft · {changedCount} {changedCount === 1 ? 'change' : 'changes'} not applied</p>
+          <p className="mt-1 text-muted-foreground">{draftOptionalEnabled} of {optional.length} optional settings will be on after approval.</p>
+        </div>
+      )}
 
       <section className="mb-8" aria-labelledby="optional-settings">
         <h2 id="optional-settings" className="text-[13px] font-medium text-muted-foreground">Optional settings</h2>
@@ -373,15 +352,6 @@ function SettingsView({
         </p>
         <Button className="h-9 rounded-full px-5" disabled={changedCount === 0} onClick={onReview}>Review changes</Button>
       </div>
-    </div>
-  )
-}
-
-function Outcome({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 rounded-sm bg-foreground/[0.035] px-3 py-3">
-      <dt className="truncate text-[11px] font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-1 truncate text-sm font-medium">{value}</dd>
     </div>
   )
 }
@@ -671,21 +641,16 @@ function ReviewView({
         <Button variant="ghost" className="h-9 shrink-0 rounded-full px-4" onClick={onEdit}>Edit settings</Button>
       </div>
 
-      <div className="mb-7">
-        <p className="mb-3 text-[13px] font-medium text-muted-foreground">Approval status · both checks stay tied to this plan</p>
-        <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={snapshot.workflow === 'reviewed'} approvalNeeded />
-      </div>
-
       <ul>
         {plan.changes.map((change) => {
           const consequence = plan.consequences.find(({ processingId }) => processingId === change.processingId)
           return (
-            <li key={change.processingId} className="border-t border-foreground/10 py-5">
-              <p className="font-medium tracking-tight">{change.label}</p>
-              <p className="mt-1.5 text-sm font-medium">
-                {change.before ? 'On' : 'Off'} → {change.after ? 'On' : 'Off'}
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{consequence?.message ?? change.reason}</p>
+            <li key={change.processingId} className="border-t border-foreground/10 py-3.5">
+              <div className="flex items-baseline justify-between gap-4">
+                <p className="font-medium tracking-tight">{change.label}</p>
+                <p className="shrink-0 text-sm font-medium">{change.before ? 'On' : 'Off'} → {change.after ? 'On' : 'Off'}</p>
+              </div>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{consequence?.message ?? change.reason}</p>
             </li>
           )
         })}
@@ -704,14 +669,16 @@ function ReviewView({
         </div>
       )}
 
-      <div className="mt-8">
+      <div className="mt-5">
+        <p className="mb-3 text-[13px] font-medium text-muted-foreground">Approval status · tied to {plan.id}</p>
+        <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={snapshot.workflow === 'reviewed'} approvalNeeded />
         <HoldToConfirm
           confirmed={snapshot.workflow === 'reviewed'}
           onConfirm={onReviewed}
           onRevoke={onReviewRevoked}
         />
         <Button
-          className="mt-6 h-9 w-full rounded-full"
+          className="mt-3 h-9 w-full rounded-full"
           disabled={snapshot.workflow !== 'reviewed' || applying}
           onClick={onApply}
         >
@@ -732,7 +699,7 @@ function ApprovalStatus({
   approvalNeeded: boolean
 }) {
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-4" aria-label="Approval status">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-3" aria-label="Approval status">
       <Stamp
         title="Agent check"
         complete={preparedByAgent}
@@ -769,17 +736,17 @@ function Stamp({
   children: string
 }) {
   return (
-    <div className={`grid min-h-36 grid-cols-[auto_1fr] content-start gap-x-3 rounded-sm border p-4 ${complete ? 'border-foreground' : 'border-foreground/20'}`}>
+    <div className={`grid min-w-0 grid-cols-[auto_1fr] content-start gap-x-3 rounded-sm border p-3 ${complete ? 'border-foreground' : 'border-foreground/20'}`}>
       <span
-        className={`mt-0.5 grid size-7 place-items-center rounded-full text-sm font-semibold ${complete ? 'bg-foreground text-background' : 'border border-foreground/25 text-muted-foreground'}`}
+        className={`mt-1 size-2 rounded-full ${complete ? 'bg-foreground' : 'bg-foreground/20'}`}
         aria-hidden="true"
-      >
-        {complete ? '✓' : '·'}
-      </span>
+      />
       <div className="min-w-0">
-        <p className="text-sm font-medium">{title}</p>
-        <p className={`text-sm font-medium ${complete ? 'text-foreground' : 'text-muted-foreground'}`}>{status}</p>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{children}</p>
+        <p className="text-sm font-medium">
+          <span>{title}</span><span aria-hidden="true"> · </span>
+          <span className={complete ? 'text-foreground' : 'text-muted-foreground'}>{status}</span>
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{children}</p>
       </div>
     </div>
   )
@@ -816,25 +783,27 @@ function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHo
     return (
       <div className="border-t border-foreground/10 py-8">
         <p className="font-medium">No verified receipt yet</p>
-        <p className="mt-1 text-sm text-muted-foreground">Apply a human-reviewed change to create one.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Record a direct choice or apply a human-reviewed plan to create one.</p>
       </div>
     )
   }
+  const reviewedPlan = receipt.approvalMethod === 'review_hold'
   return (
     <div>
       <p className="text-sm font-medium">Readback verified</p>
       <p className="mt-2 text-[1.35rem] font-medium tracking-tight">Privacy settings applied</p>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        The {receipt.verification.adapterId} adapter was read after apply and matched the exact human-approved target.
+        {reviewedPlan
+          ? `The ${receipt.verification.adapterId} adapter matched the exact plan you reviewed.`
+          : `The ${receipt.verification.adapterId} adapter matched the settings recorded by your direct choice.`}
       </p>
       <dl className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-3">
         <ProofStep
-          label={receipt.approvalMethod === 'review_hold' ? 'Reviewed plan' : 'Direct choice'}
-          value={receipt.approvalMethod === 'review_hold' ? 'Exact approved target recorded' : 'Explicit human action recorded'}
+          label={reviewedPlan ? 'Reviewed plan' : 'Direct choice'}
+          value={reviewedPlan ? 'Human hold recorded' : 'Explicit action recorded'}
         />
-        <ProofStep label="Adapter applied" value={`${receipt.beforeRevision} → ${receipt.afterRevision}`} />
-        <ProofStep label="Readback matched" value={`${receipt.decisions.length} of ${receipt.decisions.length} settings`} />
-        <ProofStep label="Product source" value={`Applied snapshot · ${receipt.verification.scope.replaceAll('_', ' ')}`} />
+        <ProofStep label="Applied revision" value={`${receipt.beforeRevision} → ${receipt.afterRevision}`} />
+        <ProofStep label="Adapter readback" value={`${receipt.verification.adapterId} · matched`} />
       </dl>
       <p className="mt-4 text-xs text-muted-foreground">
         Receipt · <span className="break-all">{receipt.id}</span>
@@ -851,7 +820,7 @@ function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHo
       <div className="mt-8 border-t border-foreground/10 pt-5 text-sm">
         <p className="font-medium">What verified means</p>
         <p className="mt-1 text-muted-foreground">
-          Adapter readback matched the reviewed target within the {receipt.verification.scope === 'local_demo' ? 'local demo' : 'external adapter'} scope. This is not a signature or legal proof.
+          Adapter readback matched {reviewedPlan ? 'the reviewed plan' : 'the recorded direct choice'} within the {receipt.verification.scope === 'local_demo' ? 'local demo' : 'external adapter'} scope. This is not a signature or legal proof.
         </p>
       </div>
       <Button className="mt-6 h-9 rounded-full px-5" onClick={onHome}>Return to privacy settings</Button>
@@ -862,10 +831,7 @@ function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHo
 function ProofStep({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-sm border border-foreground/10 p-4">
-      <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-        <span className="grid size-5 place-items-center rounded-full bg-foreground text-[11px] text-background" aria-hidden="true">✓</span>
-        {label}
-      </dt>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-2 text-sm font-medium">{value}</dd>
     </div>
   )
