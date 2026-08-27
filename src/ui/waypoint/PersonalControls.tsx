@@ -102,7 +102,7 @@ export function PersonalControls({
       && controlsSnapshot.agentActivity.kind === 'panel'
     if (focusContentRequest.current !== section && !agentOpenedPanel) return
     const frame = window.requestAnimationFrame(() => {
-      document.getElementById(sectionTitleIds[section])?.focus()
+      document.getElementById(sectionTitleIds[section])?.focus({ preventScroll: true })
       focusContentRequest.current = null
     })
     return () => window.cancelAnimationFrame(frame)
@@ -187,7 +187,11 @@ export function PersonalControls({
           controlsUi.acknowledge()
           if (section === 'privacy') privacyUi.acknowledge()
         }}
-        onScrollCapture={() => {
+        onWheelCapture={() => {
+          controlsUi.acknowledge()
+          if (section === 'privacy') privacyUi.acknowledge()
+        }}
+        onTouchMoveCapture={() => {
           controlsUi.acknowledge()
           if (section === 'privacy') privacyUi.acknowledge()
         }}

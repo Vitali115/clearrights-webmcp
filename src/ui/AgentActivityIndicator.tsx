@@ -25,7 +25,10 @@ export function AgentActivityIndicator({ activity, placement = 'sheet' }: AgentA
         aria-expanded={open}
         aria-controls={popoverId}
         aria-label={pending ? 'Agent activity, new agent-opened view' : 'Agent activity, interaction recorded'}
-        onClick={() => setOpen((current) => !current)}
+        onClick={(event) => {
+          event.stopPropagation()
+          setOpen((current) => !current)
+        }}
       >
         <span>Agent</span>
         {pending && (

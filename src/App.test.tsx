@@ -508,7 +508,7 @@ describe('privacy settings UI', () => {
       origin: 'agent',
       message: 'The agent opened the privacy settings overview again.',
     }))
-    fireEvent.scroll(screen.getByTestId('privacy-view-content'))
+    fireEvent.wheel(screen.getByTestId('privacy-view-content'))
     expect(privacyUi.getSnapshot().agentActivity?.status).toBe('engaged')
   })
 

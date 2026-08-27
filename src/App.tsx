@@ -211,7 +211,8 @@ export default function App({
       <div
         onClickCapture={() => controlsUi.acknowledge()}
         onKeyDownCapture={() => controlsUi.acknowledge()}
-        onScrollCapture={() => controlsUi.acknowledge()}
+        onWheelCapture={() => controlsUi.acknowledge()}
+        onTouchMoveCapture={() => controlsUi.acknowledge()}
       >
       {route.kind === 'home' ? (
         <>

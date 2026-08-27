@@ -86,7 +86,7 @@ export function PrivacyCenter({
     : false
 
   useEffect(() => {
-    viewHeadingRef.current?.focus()
+    viewHeadingRef.current?.focus({ preventScroll: true })
   }, [view])
 
   const navigate = (next: PrivacyView, processingId?: ProcessingId) => {
@@ -197,7 +197,8 @@ export function PrivacyCenter({
         className="min-h-0 flex-1"
         onClickCapture={() => privacyUi.acknowledge()}
         onKeyDownCapture={() => privacyUi.acknowledge()}
-        onScrollCapture={() => privacyUi.acknowledge()}
+        onWheelCapture={() => privacyUi.acknowledge()}
+        onTouchMoveCapture={() => privacyUi.acknowledge()}
       >
         <main className="mx-auto w-full max-w-3xl space-y-8 p-5 sm:px-8 sm:py-7">
           {settingsView && (
