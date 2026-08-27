@@ -148,6 +148,24 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
   })
 
+  it('offers a manual fallback for every step in the two-minute demo', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    renderApp(controller, true)
+
+    await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
+
+    expect(await screen.findByRole('heading', { name: 'The two-minute demo' })).toBeVisible()
+    expect(screen.getByText(/Keep booking and account security/)).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Open Accessibility' }))
+    expect(screen.getByRole('heading', { name: 'Accessibility preferences' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    await user.click(screen.getByRole('button', { name: 'Open Site Guide' }))
+    expect(screen.getByRole('heading', { name: 'Site guide' })).toBeVisible()
+  })
+
   it('keeps pending privacy drafts separate from the applied product effects inspector', async () => {
     const controller = await createController()
     controller.stage({

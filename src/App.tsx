@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type {
   ActivityCoordinator,
+  PersonalControlsSection,
   PersonalControlsCoordinator,
   PrivacyController,
   PrivacyViewCoordinator,
@@ -116,8 +117,14 @@ export default function App({
   }
 
   const openPrivacySettings = () => {
-    privacyUi.navigate({ view: 'home', origin: 'human' })
-    controlsUi.openPanel('privacy', { origin: 'human', targetId: 'privacy' })
+    openControlsSection('privacy')
+  }
+
+  const openControlsSection = (section: PersonalControlsSection) => {
+    if (section === 'privacy') {
+      privacyUi.navigate({ view: 'home', origin: 'human' })
+    }
+    controlsUi.openPanel(section, { origin: 'human', targetId: section })
   }
 
   const openPersonalControls = () => {
@@ -210,6 +217,7 @@ export default function App({
             controlsAction={controlsAction}
             agentActivityAction={agentActivityAction}
             onBack={() => navigate('#/')}
+            onOpenControls={openControlsSection}
             onOpenPreview={() => navigate('#/?effects=1')}
           />
         </Suspense>

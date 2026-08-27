@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { AccessibilitySnapshot, SiteGuideSnapshot } from '@/domain'
-import type { PrivacyControllerSnapshot } from '@/application'
+import type { PersonalControlsSection, PrivacyControllerSnapshot } from '@/application'
 import { Button } from '@/components/ui/button'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
@@ -17,6 +17,7 @@ export function ClearRightsExplainerPage({
   controlsAction,
   agentActivityAction,
   onBack,
+  onOpenControls,
   onOpenPreview,
 }: {
   snapshot: PrivacyControllerSnapshot
@@ -27,6 +28,7 @@ export function ClearRightsExplainerPage({
   controlsAction: ReactNode
   agentActivityAction?: ReactNode
   onBack(): void
+  onOpenControls(section: PersonalControlsSection): void
   onOpenPreview(): void
 }) {
   const toolCount = snapshot.workflow === 'reviewed' ? 9 : 8
@@ -65,6 +67,42 @@ export function ClearRightsExplainerPage({
           <p className="mt-5 max-w-3xl font-medium">
             Waypoint Travel is the fictional host application. The SDK workspace is private and is not currently published to npm.
           </p>
+        </section>
+
+        <section className="border-y border-foreground/10" aria-labelledby="two-minute-demo-heading">
+          <div className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-14 sm:w-[min(64rem,calc(100%-4rem))] sm:py-16">
+            <p className="text-sm font-medium text-muted-foreground">Try the running integration</p>
+            <h2 id="two-minute-demo-heading" className="mt-3 text-3xl font-medium tracking-tight">The two-minute demo</h2>
+            <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+              Ask a compatible agent to use the prompts below. In an ordinary browser, open the equivalent Personal Controls section and make the same choice manually.
+            </p>
+            <div className="mt-9 grid border-t border-foreground/10 lg:grid-cols-3">
+              <DemoStep
+                number="1"
+                title="Minimise privacy use"
+                prompt="Keep booking and account security, but disable personalised recommendations, location suggestions and partner offers."
+                note="The agent prepares the exact plan. A person must hold to review before apply becomes available."
+                actionLabel="Open Privacy"
+                onAction={() => onOpenControls('privacy')}
+              />
+              <DemoStep
+                number="2"
+                title="Adapt the interface"
+                prompt="Make the text larger and reduce motion."
+                note="The local DOM adapter applies the preferences immediately, reads them back, and keeps one Undo."
+                actionLabel="Open Accessibility"
+                onAction={() => onOpenControls('accessibility')}
+              />
+              <DemoStep
+                number="3"
+                title="Open a declared destination"
+                prompt="Which pages can you open? Take me to the cancellation policy."
+                note="The agent can select only a catalogued destination. The host performs visible same-origin navigation."
+                actionLabel="Open Site Guide"
+                onAction={() => onOpenControls('site_guide')}
+              />
+            </div>
+          </div>
         </section>
 
         <section className="border-y border-foreground/10 bg-foreground/[0.025]" aria-labelledby="integration-flow-heading">
@@ -226,6 +264,32 @@ export function ClearRightsExplainerPage({
         Built with ClearRights · Waypoint Travel is fictional. The local demo makes no promise of legal compliance.
       </footer>
     </main>
+  )
+}
+
+function DemoStep({
+  number,
+  title,
+  prompt,
+  note,
+  actionLabel,
+  onAction,
+}: {
+  number: string
+  title: string
+  prompt: string
+  note: string
+  actionLabel: string
+  onAction(): void
+}) {
+  return (
+    <article className="flex flex-col border-b border-foreground/10 py-7 lg:border-r lg:pr-7 lg:not-first:pl-7 lg:last:border-r-0">
+      <p className="font-mono text-xs text-muted-foreground">0{number}</p>
+      <h3 className="mt-3 text-lg font-medium tracking-tight">{title}</h3>
+      <blockquote className="mt-5 border-l-2 border-foreground pl-4 text-sm leading-relaxed">“{prompt}”</blockquote>
+      <p className="mt-4 flex-1 text-sm leading-relaxed text-muted-foreground">{note}</p>
+      <Button variant="outline" className="mt-6 self-start" onClick={onAction}>{actionLabel}</Button>
+    </article>
   )
 }
 
