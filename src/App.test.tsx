@@ -126,11 +126,11 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('heading', { name: 'Product effects' })).toBeVisible()
     expect(screen.getByText('Showing applied privacy revision 1.')).toBeVisible()
     expect(screen.queryByText('Pending draft is not shown in this product preview')).not.toBeInTheDocument()
-    expect(screen.getAllByTestId('product-effect-row')).toHaveLength(10)
+    expect(screen.getAllByTestId('product-effect-row')).toHaveLength(11)
     expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Accessibility' }))
-    expect(screen.getAllByTestId('product-effect-row')).toHaveLength(4)
+    expect(screen.getAllByTestId('product-effect-row')).toHaveLength(5)
     await user.click(screen.getByText('Current experience view model'))
     expect(screen.getByText(/"discovery": "generic"/)).toBeVisible()
 

@@ -143,7 +143,7 @@ function validatePartial(catalog: AccessibilityCatalog, partial: Partial<Accessi
   const entries = Object.entries(partial) as Array<[AccessibilityPrimitiveId, AccessibilityState[AccessibilityPrimitiveId]]>
   if (entries.length === 0) throw new AccessibilityError('empty_change', 'At least one accessibility preference is required.')
   for (const [id, value] of entries) {
-    if (!['textScale', 'contrast', 'motion', 'readingLayout'].includes(id) || !catalog.supports(id, value)) {
+    if (!['textScale', 'colorScheme', 'contrast', 'motion', 'readingLayout'].includes(id) || !catalog.supports(id, value)) {
       throw new AccessibilityError('invalid_preference', `${String(value)} is not an available option for ${id}.`)
     }
   }
@@ -177,6 +177,7 @@ function result(
 
 function sameState(left: AccessibilityState, right: AccessibilityState) {
   return left.textScale === right.textScale
+    && left.colorScheme === right.colorScheme
     && left.contrast === right.contrast
     && left.motion === right.motion
     && left.readingLayout === right.readingLayout

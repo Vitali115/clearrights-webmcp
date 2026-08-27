@@ -41,7 +41,7 @@ export async function bootstrapBrowserApp() {
     },
   })
   const accessibilityRepository = new LocalStorageAccessibilityRepository(window.localStorage)
-  const accessibilityEnforcement = new WaypointDomAccessibilityAdapter(document.documentElement)
+  const accessibilityEnforcement = new WaypointDomAccessibilityAdapter(document.documentElement, window.matchMedia.bind(window))
   const accessibilityRecord = await accessibilityRepository.load()
   await accessibilityEnforcement.apply({
     operationId: `bootstrap-accessibility-${accessibilityRecord.revision}`,

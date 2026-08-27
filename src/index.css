@@ -262,6 +262,13 @@ html[data-text-scale="extra_large"] {
     --border: oklch(0.55 0 0);
     --ring: oklch(0.25 0 0);
   }
+
+  html.dark[data-contrast="higher"] {
+    --foreground: oklch(0.99 0 0);
+    --muted-foreground: oklch(0.82 0 0);
+    --border: oklch(0.7 0 0);
+    --ring: oklch(0.88 0 0);
+  }
 }
 
 @media (prefers-contrast: more) and (forced-colors: none) {
@@ -271,6 +278,14 @@ html[data-text-scale="extra_large"] {
     --muted-foreground: oklch(0.32 0 0);
     --border: oklch(0.55 0 0);
     --ring: oklch(0.25 0 0);
+  }
+
+  html.dark:not([data-contrast]),
+  html.dark[data-contrast="system"] {
+    --foreground: oklch(0.99 0 0);
+    --muted-foreground: oklch(0.82 0 0);
+    --border: oklch(0.7 0 0);
+    --ring: oklch(0.88 0 0);
   }
 }
 

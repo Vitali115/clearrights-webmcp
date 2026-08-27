@@ -31,7 +31,17 @@ export class LocalStorageAccessibilityRepository implements AccessibilityReposit
     const stored = this.storage.getItem(ACCESSIBILITY_STORAGE_KEY)
     if (stored) {
       try {
-        return this.schema.parse(JSON.parse(stored)) as AccessibilityRecord
+        const parsed: unknown = JSON.parse(stored)
+        const current = this.schema.safeParse(parsed)
+        if (current.success) return current.data as AccessibilityRecord
+        const legacy = createLegacyRecordSchema(this.schema).safeParse(parsed)
+        if (legacy.success) {
+          return this.persistAndRead({
+            ...legacy.data,
+            current: { ...legacy.data.current, colorScheme: 'system' },
+            previous: legacy.data.previous ? { ...legacy.data.previous, colorScheme: 'system' } : null,
+          } as AccessibilityRecord)
+        }
       } catch {
         // Repair this isolated preference record from non-sensitive defaults.
       }
@@ -62,12 +72,13 @@ export class LocalStorageAccessibilityRepository implements AccessibilityReposit
 }
 
 function createRecordSchema(catalog: AccessibilityCatalog) {
-  const option = (id: 'textScale' | 'contrast' | 'motion' | 'readingLayout') => {
+  const option = (id: 'textScale' | 'colorScheme' | 'contrast' | 'motion' | 'readingLayout') => {
     const values = catalog.getPrimitive(id).options.map(({ value }) => value)
     return z.enum(values as [string, ...string[]])
   }
   const state = z.object({
     textScale: option('textScale'),
+    colorScheme: option('colorScheme'),
     contrast: option('contrast'),
     motion: option('motion'),
     readingLayout: option('readingLayout'),
@@ -77,5 +88,16 @@ function createRecordSchema(catalog: AccessibilityCatalog) {
     revision: z.number().int().positive(),
     current: state,
     previous: state.nullable(),
+  }).strict()
+}
+
+function createLegacyRecordSchema(currentSchema: ReturnType<typeof createRecordSchema>) {
+  const currentState = currentSchema.shape.current
+  const legacyState = currentState.omit({ colorScheme: true })
+  return z.object({
+    schemaVersion: z.literal(1),
+    revision: z.number().int().positive(),
+    current: legacyState,
+    previous: legacyState.nullable(),
   }).strict()
 }

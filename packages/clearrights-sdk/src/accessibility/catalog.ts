@@ -17,15 +17,17 @@ export interface AccessibilityCatalogInput {
   primitives: readonly AccessibilityPrimitiveDefinition[]
 }
 
-const primitiveOrder = ['textScale', 'contrast', 'motion', 'readingLayout'] as const
+const primitiveOrder = ['textScale', 'colorScheme', 'contrast', 'motion', 'readingLayout'] as const
 const allowedValues = {
   textScale: ['system', 'large', 'extra_large'],
+  colorScheme: ['system', 'light', 'dark'],
   contrast: ['system', 'higher'],
   motion: ['system', 'reduced'],
   readingLayout: ['standard', 'focused'],
 } as const
 const defaultValues: AccessibilityState = {
   textScale: 'system',
+  colorScheme: 'system',
   contrast: 'system',
   motion: 'system',
   readingLayout: 'standard',

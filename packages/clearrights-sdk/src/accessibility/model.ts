@@ -1,10 +1,12 @@
 export type TextScale = 'system' | 'large' | 'extra_large'
+export type ColorSchemePreference = 'system' | 'light' | 'dark'
 export type ContrastPreference = 'system' | 'higher'
 export type MotionPreference = 'system' | 'reduced'
 export type ReadingLayout = 'standard' | 'focused'
 
 export interface AccessibilityState {
   textScale: TextScale
+  colorScheme: ColorSchemePreference
   contrast: ContrastPreference
   motion: MotionPreference
   readingLayout: ReadingLayout
@@ -32,6 +34,7 @@ export interface AccessibilityPrimitiveDefinition {
 export interface SystemAccessibilityPreferences {
   prefersReducedMotion: boolean
   prefersHigherContrast: boolean
+  prefersDarkColorScheme: boolean
   forcedColorsActive: boolean
 }
 

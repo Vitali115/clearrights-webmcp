@@ -54,9 +54,9 @@ export const waypointSiteGuideCatalog = defineSiteGuideCatalog({
     {
       id: 'accessibility-preferences',
       label: 'Accessibility preferences',
-      summary: 'Adjust text size, contrast, motion, and reading layout.',
+      summary: 'Adjust text size, color scheme, contrast, motion, and reading layout.',
       category: 'Accessibility',
-      keywords: ['display', 'motion', 'contrast'],
+      keywords: ['display', 'theme', 'dark-mode', 'motion', 'contrast'],
       target: { kind: 'panel', panel: 'personal_controls', section: 'accessibility' },
     },
     {

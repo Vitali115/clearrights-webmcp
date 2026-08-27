@@ -105,6 +105,7 @@ async function setup() {
     readSystemPreferences: () => ({
       prefersReducedMotion: false,
       prefersHigherContrast: false,
+      prefersDarkColorScheme: false,
       forcedColorsActive: false,
     }),
     siteGuideRuntime: siteGuide,
@@ -353,9 +354,15 @@ describe('WebMCP adapter', () => {
     expect(await modelContext.execute('get_accessibility_preferences', {})).toEqual(expect.objectContaining({
       ok: true,
       data: expect.objectContaining({
-        primitives: expect.arrayContaining([expect.objectContaining({ id: 'textScale' })]),
-        current: expect.objectContaining({ textScale: 'system' }),
-        system: expect.objectContaining({ forcedColorsActive: expect.any(Boolean) }),
+        primitives: expect.arrayContaining([
+          expect.objectContaining({ id: 'textScale' }),
+          expect.objectContaining({ id: 'colorScheme' }),
+        ]),
+        current: expect.objectContaining({ textScale: 'system', colorScheme: 'system' }),
+        system: expect.objectContaining({
+          forcedColorsActive: expect.any(Boolean),
+          prefersDarkColorScheme: expect.any(Boolean),
+        }),
       }),
     }))
     expect(controlsUi.getSnapshot().agentActivity).toBeNull()
@@ -366,6 +373,7 @@ describe('WebMCP adapter', () => {
 
     const changed = await modelContext.execute('set_accessibility_preferences', {
       textScale: 'large',
+      colorScheme: 'dark',
       motion: 'reduced',
     })
     expect(changed).toEqual(expect.objectContaining({
@@ -374,6 +382,7 @@ describe('WebMCP adapter', () => {
     }))
     expect(accessibility.getSnapshot().current).toEqual(expect.objectContaining({
       textScale: 'large',
+      colorScheme: 'dark',
       motion: 'reduced',
     }))
     expect(controlsUi.getSnapshot()).toEqual(expect.objectContaining({

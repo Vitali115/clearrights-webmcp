@@ -3,14 +3,17 @@ import { defineAccessibilityCatalog } from '@clearrights/sdk/accessibility'
 import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
 
 describe('accessibility catalog', () => {
-  it('defines the four primitives and configurable available options', () => {
+  it('defines the five primitives and configurable available options', () => {
     expect(waypointAccessibilityCatalog.primitives.map(({ id }) => id)).toEqual([
       'textScale',
+      'colorScheme',
       'contrast',
       'motion',
       'readingLayout',
     ])
     expect(waypointAccessibilityCatalog.supports('textScale', 'extra_large')).toBe(true)
+    expect(waypointAccessibilityCatalog.supports('colorScheme', 'light')).toBe(true)
+    expect(waypointAccessibilityCatalog.supports('colorScheme', 'dark')).toBe(true)
     expect(waypointAccessibilityCatalog.supports('motion', 'reduced')).toBe(true)
   })
 

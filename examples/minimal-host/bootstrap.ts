@@ -27,6 +27,7 @@ import {
 export interface MinimalExperience {
   feed: 'generic' | 'personalised'
   textScale: AccessibilityState['textScale']
+  colorScheme: AccessibilityState['colorScheme']
   readingLayout: AccessibilityState['readingLayout']
 }
 
@@ -84,6 +85,7 @@ export async function createMinimalHost(): Promise<MinimalHost> {
   const selectExperience = (): MinimalExperience => ({
     feed: privacy.getSnapshot().record.state.processing.recommendations ? 'personalised' : 'generic',
     textScale: accessibility.getSnapshot().current.textScale,
+    colorScheme: accessibility.getSnapshot().current.colorScheme,
     readingLayout: accessibility.getSnapshot().current.readingLayout,
   })
 

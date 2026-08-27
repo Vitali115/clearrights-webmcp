@@ -1,7 +1,7 @@
 import { defineAccessibilityCatalog } from '@clearrights/sdk/accessibility'
 
 export const waypointAccessibilityCatalog = defineAccessibilityCatalog({
-  version: 'waypoint-accessibility-2026.1',
+  version: 'waypoint-accessibility-2026.2',
   primitives: [
     {
       id: 'textScale',
@@ -12,6 +12,17 @@ export const waypointAccessibilityCatalog = defineAccessibilityCatalog({
         { value: 'system', label: 'System', summary: 'Use the normal Waypoint text scale.' },
         { value: 'large', label: 'Large', summary: 'Scale text and spacing to 112.5%.' },
         { value: 'extra_large', label: 'Extra large', summary: 'Scale text and spacing to 125%.' },
+      ],
+    },
+    {
+      id: 'colorScheme',
+      label: 'Color scheme',
+      summary: 'Use the system theme or choose a light or dark appearance.',
+      details: 'System follows the operating-system color scheme. Light and Dark are explicit local Waypoint preferences and do not change privacy processing.',
+      options: [
+        { value: 'system', label: 'System', summary: 'Follow the operating-system color scheme.' },
+        { value: 'light', label: 'Light', summary: 'Always use the light Waypoint theme.' },
+        { value: 'dark', label: 'Dark', summary: 'Always use the dark Waypoint theme.' },
       ],
     },
     {

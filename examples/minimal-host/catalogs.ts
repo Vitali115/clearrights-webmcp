@@ -96,6 +96,17 @@ export const minimalAccessibilityCatalog = defineAccessibilityCatalog({
       ],
     },
     {
+      id: 'colorScheme',
+      label: 'Color scheme',
+      summary: 'Choose a system, light, or dark product theme.',
+      details: 'The host maps this preference to its own design tokens and remains responsible for contrast.',
+      options: [
+        { value: 'system', label: 'System', summary: 'Follow the operating-system color scheme.' },
+        { value: 'light', label: 'Light', summary: 'Use the host light token set.' },
+        { value: 'dark', label: 'Dark', summary: 'Use the host dark token set.' },
+      ],
+    },
+    {
       id: 'contrast',
       label: 'Contrast',
       summary: 'Adjust product contrast.',

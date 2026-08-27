@@ -10,6 +10,7 @@ describe('minimal ClearRights host', () => {
     expect(host.selectExperience()).toEqual({
       feed: 'generic',
       textScale: 'system',
+      colorScheme: 'system',
       readingLayout: 'standard',
     })
 
@@ -25,13 +26,15 @@ describe('minimal ClearRights host', () => {
     expect(receipt.verification.readback.recommendations).toBe(true)
     expect(host.selectExperience().feed).toBe('personalised')
 
-    const accessibility = await host.accessibility.setPreferences({ textScale: 'large' }, 'agent')
+    const accessibility = await host.accessibility.setPreferences({ textScale: 'large', colorScheme: 'dark' }, 'agent')
     expect(accessibility.readback.textScale).toBe('large')
+    expect(accessibility.readback.colorScheme).toBe('dark')
     expect(host.selectExperience().textScale).toBe('large')
+    expect(host.selectExperience().colorScheme).toBe('dark')
 
     const navigation = await host.siteGuide.navigate('privacy-controls', 'agent')
     expect(navigation.location).toBe('panel:personal_controls/privacy')
-    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ feed: 'personalised', textScale: 'large' }))
+    expect(listener).toHaveBeenCalledWith(expect.objectContaining({ feed: 'personalised', textScale: 'large', colorScheme: 'dark' }))
 
     unsubscribe()
   })

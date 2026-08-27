@@ -10,6 +10,7 @@ const accessibility: AccessibilitySnapshot = {
   revision: 0,
   current: {
     textScale: 'system',
+    colorScheme: 'system',
     contrast: 'system',
     motion: 'system',
     readingLayout: 'standard',
@@ -33,9 +34,9 @@ function privacyState(bits: number): ProcessingState {
 
 describe('Waypoint product effect registry', () => {
   it('declares unique effect and surface IDs for every mapped product surface', () => {
-    expect(waypointProductEffectRegistry).toHaveLength(10)
-    expect(new Set(waypointProductEffectRegistry.map(({ id }) => id)).size).toBe(10)
-    expect(new Set(waypointProductEffectRegistry.map(({ surfaceId }) => surfaceId)).size).toBe(10)
+    expect(waypointProductEffectRegistry).toHaveLength(11)
+    expect(new Set(waypointProductEffectRegistry.map(({ id }) => id)).size).toBe(11)
+    expect(new Set(waypointProductEffectRegistry.map(({ surfaceId }) => surfaceId)).size).toBe(11)
   })
 
   it.each(Array.from({ length: 8 }, (_, bits) => bits))(
@@ -69,6 +70,7 @@ describe('Waypoint product effect registry', () => {
         ...accessibility,
         current: {
           textScale: 'extra_large',
+          colorScheme: 'dark',
           contrast: 'higher',
           motion: 'reduced',
           readingLayout: 'focused',
@@ -78,6 +80,7 @@ describe('Waypoint product effect registry', () => {
 
     expect(experience.accessibility).toEqual({
       textScale: 'extra_large',
+      colorScheme: 'dark',
       contrast: 'higher',
       motion: 'reduced',
       readingLayout: 'focused',
@@ -97,6 +100,12 @@ describe('Waypoint product effect registry', () => {
       kind: 'accessibility_readback',
       verified: true,
       value: 'extra_large',
+      receiptId: null,
+    })
+    expect(experience.effects.find(({ id }) => id === 'accessibility-color-scheme')?.verification).toEqual({
+      kind: 'accessibility_readback',
+      verified: true,
+      value: 'dark',
       receiptId: null,
     })
   })

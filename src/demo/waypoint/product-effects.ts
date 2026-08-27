@@ -22,6 +22,7 @@ export type WaypointProductSurfaceId =
   | 'nearby-guide'
   | 'partner-offer'
   | 'root-scale'
+  | 'waypoint-color-scheme'
   | 'waypoint-tokens'
   | 'waypoint-motion'
   | 'secondary-content'
@@ -133,6 +134,15 @@ export const waypointProductEffectRegistry: readonly WaypointProductEffectDefini
     surfaceId: 'root-scale',
     surfaceLabel: 'Root text scale',
     technicalCopy: 'Maps the chosen text scale to the Waypoint root element.',
+  },
+  {
+    id: 'accessibility-color-scheme',
+    source: 'accessibility',
+    settingId: 'colorScheme',
+    settingLabel: 'Color scheme',
+    surfaceId: 'waypoint-color-scheme',
+    surfaceLabel: 'Waypoint color scheme',
+    technicalCopy: 'Follows the operating-system theme or applies an explicit light or dark Waypoint token set.',
   },
   {
     id: 'accessibility-tokens',

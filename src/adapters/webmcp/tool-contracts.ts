@@ -525,18 +525,20 @@ function policyContextSchema() {
 }
 
 function createAccessibilitySchemas(catalog: AccessibilityCatalog) {
-  const option = (id: 'textScale' | 'contrast' | 'motion' | 'readingLayout') => stringEnum(
+  const option = (id: 'textScale' | 'colorScheme' | 'contrast' | 'motion' | 'readingLayout') => stringEnum(
     catalog.getPrimitive(id).options.map(({ value }) => value),
     `accessibility ${id}`,
   )
   const state = z.object({
     textScale: option('textScale'),
+    colorScheme: option('colorScheme'),
     contrast: option('contrast'),
     motion: option('motion'),
     readingLayout: option('readingLayout'),
   }).strict()
   const setInput = z.object({
     textScale: option('textScale').optional(),
+    colorScheme: option('colorScheme').optional(),
     contrast: option('contrast').optional(),
     motion: option('motion').optional(),
     readingLayout: option('readingLayout').optional(),
@@ -544,7 +546,7 @@ function createAccessibilitySchemas(catalog: AccessibilityCatalog) {
     message: 'At least one accessibility preference is required.',
   })
   const primitive = z.object({
-    id: z.enum(['textScale', 'contrast', 'motion', 'readingLayout']),
+    id: z.enum(['textScale', 'colorScheme', 'contrast', 'motion', 'readingLayout']),
     label: z.string(),
     summary: z.string().max(240),
     details: z.string().max(2_000),
@@ -569,11 +571,12 @@ function createAccessibilitySchemas(catalog: AccessibilityCatalog) {
     changeOutput,
     overviewOutput: z.object({
       catalogVersion: z.string(),
-      primitives: z.array(primitive).length(4),
+      primitives: z.array(primitive).length(5),
       current: state,
       system: z.object({
         prefersReducedMotion: z.boolean(),
         prefersHigherContrast: z.boolean(),
+        prefersDarkColorScheme: z.boolean(),
         forcedColorsActive: z.boolean(),
       }).strict(),
       undoAvailable: z.boolean(),
