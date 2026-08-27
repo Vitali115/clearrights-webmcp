@@ -1,5 +1,10 @@
 import type { ReactNode } from 'react'
 import type { WaypointExperienceViewModel } from '@/demo/waypoint/product-effects'
+import type {
+  WaypointDeveloperPreviewMode,
+  WaypointDeveloperPreviewModel,
+  WaypointPrivacySandboxState,
+} from '@/demo/waypoint/developer-product-preview'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,9 +14,12 @@ interface TravelProductPageProps {
   agentActivityAction?: ReactNode
   experience: WaypointExperienceViewModel
   effectsPreview: boolean
+  developerPreview: WaypointDeveloperPreviewModel | null
   onExplainPrivacy(): void
   onOpenControls(): void
   onExitEffectsPreview(): void
+  onDeveloperPreviewModeChange(mode: WaypointDeveloperPreviewMode): void
+  onDeveloperSandboxChange(setting: keyof WaypointPrivacySandboxState, enabled: boolean): void
 }
 
 const trips = [
@@ -76,16 +84,26 @@ export function TravelProductPage({
   agentActivityAction,
   experience,
   effectsPreview,
+  developerPreview,
   onExplainPrivacy,
   onOpenControls,
   onExitEffectsPreview,
+  onDeveloperPreviewModeChange,
+  onDeveloperSandboxChange,
 }: TravelProductPageProps) {
   const destinations = experience.discovery === 'personalised' ? personalisedDestinations : genericDestinations
   const focused = experience.accessibility.readingLayout === 'focused'
 
   return (
     <main data-effects-preview={effectsPreview ? 'true' : undefined} className="min-h-svh bg-background text-foreground">
-      {effectsPreview && <EffectsPreviewBar experience={experience} onExit={onExitEffectsPreview} />}
+      {effectsPreview && developerPreview && (
+        <EffectsPreviewBar
+          preview={developerPreview}
+          onExit={onExitEffectsPreview}
+          onModeChange={onDeveloperPreviewModeChange}
+          onSandboxChange={onDeveloperSandboxChange}
+        />
+      )}
       <header className="border-b border-foreground/8">
         <div className="flex h-16 items-center justify-between gap-3 px-5 sm:px-8">
           <span className="text-base font-medium tracking-tight">Waypoint</span>
@@ -195,22 +213,77 @@ export function TravelProductPage({
   )
 }
 
-function EffectsPreviewBar({ experience, onExit }: { experience: WaypointExperienceViewModel; onExit(): void }) {
+function EffectsPreviewBar({
+  preview,
+  onExit,
+  onModeChange,
+  onSandboxChange,
+}: {
+  preview: WaypointDeveloperPreviewModel
+  onExit(): void
+  onModeChange(mode: WaypointDeveloperPreviewMode): void
+  onSandboxChange(setting: keyof WaypointPrivacySandboxState, enabled: boolean): void
+}) {
+  const { experience } = preview
   const hidden = experience.effects.filter(({ result }) => result === 'hidden').map(({ surfaceLabel }) => surfaceLabel)
+  const evidence = preview.evidence.kind === 'applied'
+    ? `Applied revision ${preview.evidence.revision} · ${preview.evidence.verified ? 'Receipt verified' : 'No matching receipt'}`
+    : preview.evidence.kind === 'pending_plan'
+      ? `${preview.evidence.planId} · Preview only · Not applied`
+      : 'Temporary overrides · Preview only · Not applied'
 
   return (
     <aside className="sticky top-0 z-30 border-b border-blue-700/20 bg-blue-50 px-5 py-3 text-blue-950 sm:px-8" aria-label="Developer product effect preview">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium">Developer preview · {experience.effects.length} declared mappings</p>
           <p className="mt-1 text-xs text-blue-900/70">
             Hidden product surfaces: {hidden.length > 0 ? hidden.join(', ') : 'None'}
           </p>
+          <p className="mt-1 text-xs font-medium">{evidence}</p>
         </div>
         <Button variant="outline" className="rounded-full border-blue-950/20 bg-transparent hover:bg-blue-100" onClick={onExit}>
           Exit preview
         </Button>
       </div>
+      <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Developer preview source">
+        {([
+          { id: 'applied', label: 'Applied', disabled: false },
+          { id: 'pending', label: 'Pending plan', disabled: !preview.pendingAvailable },
+          { id: 'sandbox', label: 'Sandbox', disabled: false },
+        ] as const).map(({ id, label, disabled }) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={preview.mode === id}
+            disabled={disabled}
+            className="rounded-full border border-blue-950/20 px-3 py-1.5 text-xs font-medium disabled:cursor-not-allowed disabled:opacity-40 aria-pressed:bg-blue-950 aria-pressed:text-blue-50"
+            onClick={() => onModeChange(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {preview.mode === 'sandbox' && (
+        <div className="mt-3 flex flex-wrap gap-2" aria-label="Sandbox privacy settings">
+          {([
+            ['recommendations', 'Recommendations'],
+            ['location_suggestions', 'Location suggestions'],
+            ['partner_advertising', 'Partner offers'],
+          ] as const).map(([setting, label]) => (
+            <button
+              key={setting}
+              type="button"
+              role="switch"
+              aria-checked={preview.sandbox[setting]}
+              className="rounded-full border border-blue-950/20 bg-white/50 px-3 py-1.5 text-xs font-medium aria-checked:bg-blue-200"
+              onClick={() => onSandboxChange(setting, !preview.sandbox[setting])}
+            >
+              {label}: {preview.sandbox[setting] ? 'On' : 'Off'}
+            </button>
+          ))}
+        </div>
+      )}
     </aside>
   )
 }

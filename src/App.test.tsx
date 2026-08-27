@@ -162,8 +162,25 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
     expect(screen.getByRole('complementary', { name: 'Developer product effect preview' })).toBeVisible()
     expect(screen.getByText(/Hidden product surfaces: Nearby guide, Partner rail offer/)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Applied' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Pending plan' })).toBeDisabled()
+    expect(screen.getByText(/Applied revision 1/)).toBeVisible()
     expect(document.querySelector('[data-clearrights-surface="search"]')).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Sandbox' }))
+    expect(screen.getByText('Temporary overrides · Preview only · Not applied')).toBeVisible()
+    await user.click(screen.getByRole('switch', { name: 'Recommendations: Off' }))
+    await user.click(screen.getByRole('switch', { name: 'Location suggestions: Off' }))
+    await user.click(screen.getByRole('switch', { name: 'Partner offers: Off' }))
+    expect(screen.getByText('Ideas shaped by your travel interests')).toBeVisible()
+    expect(screen.getByText('Around your Lisbon stay')).toBeVisible()
+    expect(screen.getByText('A flexible rail pass for your saved city trips')).toBeVisible()
+    expect(controller.getSnapshot().record.state.processing).toEqual(expect.objectContaining({
+      recommendations: false,
+      location_suggestions: false,
+      partner_advertising: false,
+    }))
 
     await user.click(screen.getByRole('button', { name: 'Exit preview' }))
     expect(window.location.hash).toBe('#/')
@@ -199,6 +216,15 @@ describe('privacy settings UI', () => {
     expect(await screen.findByText('Pending draft is not shown in this product preview')).toBeVisible()
     expect(screen.getByText(/1 change in plan-1-/)).toBeVisible()
     expect(screen.getByText(/continue to use revision 1 until/)).toBeVisible()
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Open live product preview' }))
+    const pendingButton = screen.getByRole('button', { name: 'Pending plan' })
+    expect(pendingButton).toBeEnabled()
+    await user.click(pendingButton)
+    expect(screen.getByText(/plan-1-.*Preview only · Not applied/)).toBeVisible()
+    expect(screen.getByText('Ideas shaped by your travel interests')).toBeVisible()
+    expect(controller.getSnapshot().record.state.processing.recommendations).toBe(false)
   })
 
   it('redirects the legacy privacy hash to the ClearRights developer page', async () => {

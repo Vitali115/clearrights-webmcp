@@ -19,6 +19,11 @@ import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-cata
 import { travelCatalog } from '@/demo/travel-catalog'
 import { getWaypointInfoPage } from '@/demo/waypoint/info-pages'
 import { selectWaypointExperience } from '@/demo/waypoint/product-effects'
+import {
+  createWaypointPrivacySandboxState,
+  selectWaypointDeveloperPreview,
+  type WaypointDeveloperPreviewMode,
+} from '@/demo/waypoint/developer-product-preview'
 import { selectPrivacyTrustTrace } from '@/demo/waypoint/privacy-trust-trace'
 import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
 
@@ -71,6 +76,10 @@ export default function App({
   const [accessibilitySnapshot, setAccessibilitySnapshot] = useState(() => accessibility.getSnapshot())
   const [siteGuideSnapshot, setSiteGuideSnapshot] = useState(() => siteGuide.getSnapshot())
   const [activitySnapshot, setActivitySnapshot] = useState(() => activity.getSnapshot())
+  const [developerPreviewMode, setDeveloperPreviewMode] = useState<WaypointDeveloperPreviewMode>('applied')
+  const [developerSandbox, setDeveloperSandbox] = useState(() => createWaypointPrivacySandboxState(
+    snapshot.record.state.processing,
+  ))
   const bridgedPrivacySequence = useRef<number | null>(null)
 
   useEffect(() => controller.subscribe(setSnapshot), [controller])
@@ -157,6 +166,12 @@ export default function App({
     setRoute(routeFromLocation())
   }
 
+  const openEffectsPreview = () => {
+    setDeveloperPreviewMode('applied')
+    setDeveloperSandbox(createWaypointPrivacySandboxState(controller.getSnapshot().record.state.processing))
+    navigate('#/?effects=1')
+  }
+
   const controlsAction = (
     <Button variant="ghost" className="h-9 rounded-full bg-foreground/5 px-5 hover:bg-foreground/10" onClick={openPersonalControls}>
       Privacy settings
@@ -178,6 +193,18 @@ export default function App({
     catalogVersion: travelCatalog.version,
     noticeVersion: travelCatalog.noticeVersion,
   })
+  const pendingPreviewPlan = snapshot.plan && (snapshot.workflow === 'staged' || snapshot.workflow === 'reviewed')
+    ? { planId: snapshot.plan.id, target: snapshot.plan.target }
+    : null
+  const developerPreview = selectWaypointDeveloperPreview({
+    mode: developerPreviewMode,
+    appliedState: snapshot.record.state.processing,
+    appliedRevision: snapshot.record.state.revision,
+    appliedReceipt: snapshot.record.receipts[0] ?? null,
+    pending: pendingPreviewPlan,
+    sandbox: developerSandbox,
+    accessibility: accessibilitySnapshot,
+  })
 
   return (
     <Sheet open={controlsSnapshot.open} onOpenChange={setSheetOpen}>
@@ -191,8 +218,13 @@ export default function App({
           <TravelProductPage
             onExplainPrivacy={() => navigate('#/clearrights')}
             onOpenControls={openPersonalControls}
-            experience={experience}
+            experience={route.effects ? developerPreview.experience : experience}
             effectsPreview={route.effects}
+            developerPreview={route.effects ? developerPreview : null}
+            onDeveloperPreviewModeChange={setDeveloperPreviewMode}
+            onDeveloperSandboxChange={(setting, enabled) => {
+              setDeveloperSandbox((current) => ({ ...current, [setting]: enabled }))
+            }}
             onExitEffectsPreview={exitEffectsPreview}
             controlsAction={controlsAction}
             agentActivityAction={agentActivityAction}
@@ -230,7 +262,7 @@ export default function App({
             agentActivityAction={agentActivityAction}
             onBack={() => navigate('#/')}
             onOpenControls={openControlsSection}
-            onOpenPreview={() => navigate('#/?effects=1')}
+            onOpenPreview={openEffectsPreview}
           />
         </Suspense>
       ) : infoPage ? (
@@ -241,6 +273,11 @@ export default function App({
           onOpenControls={openPersonalControls}
           experience={experience}
           effectsPreview={false}
+          developerPreview={null}
+          onDeveloperPreviewModeChange={setDeveloperPreviewMode}
+          onDeveloperSandboxChange={(setting, enabled) => {
+            setDeveloperSandbox((current) => ({ ...current, [setting]: enabled }))
+          }}
           onExitEffectsPreview={exitEffectsPreview}
           controlsAction={controlsAction}
           agentActivityAction={agentActivityAction}
