@@ -598,7 +598,7 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByRole('tab', { name: 'accessibility' }))
     await user.click(screen.getByRole('radio', { name: 'Focused' }))
     await user.keyboard('{Escape}')
-    const disclosure = screen.getByText('More travel ideas and offers').closest('details')
+    const disclosure = screen.getByText('Travel ideas · Generic suggestions').closest('details')
     expect(disclosure).not.toHaveAttribute('open')
     expect(screen.getByRole('heading', { name: 'Upcoming trips' })).toBeVisible()
     expect(screen.getByText('Popular places, selected without profile data')).not.toBeVisible()

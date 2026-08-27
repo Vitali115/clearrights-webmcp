@@ -47,7 +47,15 @@ function ArtCard({ image, title, leading, trailing }: { image: string; title: st
   )
 }
 
-function SecondaryContent({ focused, children }: { focused: boolean; children: ReactNode }) {
+function SecondaryContent({
+  focused,
+  discovery,
+  children,
+}: {
+  focused: boolean
+  discovery: WaypointExperienceViewModel['discovery']
+  children: ReactNode
+}) {
   if (!focused) return children
   return (
     <details
@@ -55,7 +63,9 @@ function SecondaryContent({ focused, children }: { focused: boolean; children: R
       data-clearrights-result="hidden"
       className="mx-5 mb-16 border-y border-foreground/10 sm:mx-8"
     >
-      <summary className="cursor-pointer py-5 font-medium">More travel ideas and offers</summary>
+      <summary className="cursor-pointer py-5 font-medium">
+        Travel ideas · {discovery === 'personalised' ? 'Based on your interests' : 'Generic suggestions'}
+      </summary>
       <div className="pt-6">{children}</div>
     </details>
   )
@@ -138,7 +148,7 @@ export function TravelProductPage({
         </div>
       </section>
 
-      <SecondaryContent focused={focused}>
+      <SecondaryContent focused={focused} discovery={experience.discovery}>
         <section
           data-clearrights-surface="travel-discovery"
           data-clearrights-result={experience.discovery}
