@@ -29,5 +29,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "packages/clearrights-sdk/src"]
+  "include": ["src", "packages/clearrights-sdk/src", "examples"]
 }
