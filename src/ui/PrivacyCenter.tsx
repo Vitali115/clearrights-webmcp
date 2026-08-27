@@ -276,7 +276,8 @@ function SettingsView({
   onReview(): void
 }) {
   const optional = travelCatalog.processing.filter(({ control }) => control.mode !== 'required')
-  const optionalEnabled = optional.filter((definition) =>
+  const appliedOptionalEnabled = optional.filter(({ id }) => snapshot.record.state.processing[id]).length
+  const draftOptionalEnabled = optional.filter((definition) =>
     draftEnabled(definition, keepCapabilities, avoidUses)).length
   const changedCount = travelCatalog.processing.filter((definition) =>
     snapshot.record.state.processing[definition.id]
@@ -284,10 +285,17 @@ function SettingsView({
 
   return (
     <div>
-      <div className="mb-7 flex flex-wrap items-center justify-between gap-3 text-sm font-medium text-muted-foreground">
-        <p>
-          {optionalEnabled} of {optional.length} optional settings on · Revision {snapshot.record.state.revision}
-        </p>
+      <div className="mb-7 flex flex-wrap items-start justify-between gap-3 text-sm font-medium text-muted-foreground">
+        <div className="space-y-1">
+          <p>
+            Applied · {appliedOptionalEnabled} of {optional.length} optional settings on · Revision {snapshot.record.state.revision}
+          </p>
+          {changedCount > 0 && (
+            <p className="text-foreground">
+              Draft · {draftOptionalEnabled} of {optional.length} optional settings on · {changedCount} {changedCount === 1 ? 'change' : 'changes'} not applied
+            </p>
+          )}
+        </div>
         <Button variant="ghost" className="h-auto px-0 text-foreground" onClick={onHistory}>
           Previous changes ({snapshot.record.receipts.length})
         </Button>

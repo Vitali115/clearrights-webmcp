@@ -88,7 +88,7 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
     {
       name: 'get_privacy_overview',
       title: 'Get privacy overview',
-      description: 'Read the service-declared privacy activities, current states, planner options, and workflow status.',
+      description: 'Read the applied privacy state, any separate pending plan, planner options, and workflow status.',
       inputSchema: z.toJSONSchema(revealInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
       execute: (input) => executeValidated(revealInputSchema, schemas.overviewOutput, input, ({ reveal = false }) => {
@@ -112,6 +112,19 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
           workflow: snapshot.workflow,
           revision: snapshot.record.state.revision,
           applyAvailable: snapshot.workflow === 'reviewed',
+          pendingPlan: snapshot.plan && (snapshot.workflow === 'staged' || snapshot.workflow === 'reviewed')
+            ? {
+                id: snapshot.plan.id,
+                status: snapshot.workflow,
+                baseRevision: snapshot.plan.baseRevision,
+                changes: snapshot.plan.changes.map(({ processingId, label, before, after }) => ({
+                  processingId,
+                  label,
+                  before,
+                  after,
+                })),
+              }
+            : null,
           processing: catalog.processing.map((item) => ({
             id: item.id,
             sectionId: item.sectionId,
@@ -448,6 +461,17 @@ function createCatalogSchemas(catalog: ProcessingCatalog) {
     workflow: z.enum(['idle', 'staged', 'reviewed', 'applied']),
     revision: z.number().int().positive(),
     applyAvailable: z.boolean(),
+    pendingPlan: z.object({
+      id: z.string(),
+      status: z.enum(['staged', 'reviewed']),
+      baseRevision: z.number().int().positive(),
+      changes: z.array(z.object({
+        processingId,
+        label: z.string(),
+        before: z.boolean(),
+        after: z.boolean(),
+      }).strict()),
+    }).strict().nullable(),
     processing: z.array(z.object({
       id: processingId,
       sectionId,

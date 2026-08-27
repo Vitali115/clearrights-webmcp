@@ -560,6 +560,8 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
     expect(screen.getByLabelText('Recommendations')).toBeChecked()
     expect(screen.getByText('1 pending change')).toBeVisible()
+    expect(screen.getByText('Applied · 0 of 3 optional settings on · Revision 1')).toBeVisible()
+    expect(screen.getByText('Draft · 1 of 3 optional settings on · 1 change not applied')).toBeVisible()
   })
 
   it('applies accessibility preferences immediately, exposes one Undo, and records Activity', async () => {

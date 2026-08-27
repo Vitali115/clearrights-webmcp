@@ -254,6 +254,7 @@ describe('WebMCP adapter', () => {
     expect(overview).toEqual(expect.objectContaining({
       ok: true,
       data: expect.objectContaining({
+        pendingPlan: null,
         processing: expect.arrayContaining([
           expect.objectContaining({
             id: 'recommendations',
@@ -266,6 +267,24 @@ describe('WebMCP adapter', () => {
     }))
     expect(JSON.stringify(overview)).not.toContain('factualBackground')
     expect(JSON.stringify(overview)).not.toContain('decisionFactors')
+
+    dependencies.privacyController.stage({
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates', 'personalised_recommendations'],
+      avoidUses: [],
+    }, 'webmcp_tool')
+    const stagedOverview = await modelContext.execute('get_privacy_overview', {})
+    expect(stagedOverview).toEqual(expect.objectContaining({
+      ok: true,
+      data: expect.objectContaining({
+        pendingPlan: expect.objectContaining({
+          status: 'staged',
+          baseRevision: 1,
+          changes: expect.arrayContaining([
+            expect.objectContaining({ processingId: 'recommendations', before: false, after: true }),
+          ]),
+        }),
+      }),
+    }))
 
     const inspection = await modelContext.execute('inspect_processing', {
       processingId: 'recommendations',
