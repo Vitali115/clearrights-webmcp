@@ -21,6 +21,17 @@
   }
 }
 
+[data-effects-preview='true'] [data-clearrights-surface]:not([data-clearrights-result='hidden']) {
+  outline: 1px solid color-mix(in oklab, var(--color-blue-600) 55%, transparent);
+  outline-offset: -1px;
+}
+
+@media (forced-colors: active) {
+  [data-effects-preview='true'] [data-clearrights-surface]:not([data-clearrights-result='hidden']) {
+    outline: 2px solid Highlight;
+  }
+}
+
 @theme inline {
 
   --font-heading: var(--font-sans);

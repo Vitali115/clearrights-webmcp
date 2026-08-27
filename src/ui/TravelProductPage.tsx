@@ -8,8 +8,10 @@ interface TravelProductPageProps {
   controlsAction: ReactNode
   agentActivityAction?: ReactNode
   experience: WaypointExperienceViewModel
+  effectsPreview: boolean
   onExplainPrivacy(): void
   onOpenControls(): void
+  onExitEffectsPreview(): void
 }
 
 const trips = [
@@ -63,14 +65,17 @@ export function TravelProductPage({
   controlsAction,
   agentActivityAction,
   experience,
+  effectsPreview,
   onExplainPrivacy,
   onOpenControls,
+  onExitEffectsPreview,
 }: TravelProductPageProps) {
   const destinations = experience.discovery === 'personalised' ? personalisedDestinations : genericDestinations
   const focused = experience.accessibility.readingLayout === 'focused'
 
   return (
-    <main className="min-h-svh bg-background text-foreground">
+    <main data-effects-preview={effectsPreview ? 'true' : undefined} className="min-h-svh bg-background text-foreground">
+      {effectsPreview && <EffectsPreviewBar experience={experience} onExit={onExitEffectsPreview} />}
       <header className="border-b border-foreground/8">
         <div className="flex h-16 items-center justify-between gap-3 px-5 sm:px-8">
           <span className="text-base font-medium tracking-tight">Waypoint</span>
@@ -180,6 +185,27 @@ export function TravelProductPage({
         </nav>
       </footer>
     </main>
+  )
+}
+
+function EffectsPreviewBar({ experience, onExit }: { experience: WaypointExperienceViewModel; onExit(): void }) {
+  const hidden = experience.effects.filter(({ result }) => result === 'hidden').map(({ surfaceLabel }) => surfaceLabel)
+  const visibleCount = experience.effects.length - hidden.length
+
+  return (
+    <aside className="sticky top-0 z-30 border-b border-blue-700/20 bg-blue-50 px-5 py-3 text-blue-950 sm:px-8" aria-label="Developer product effect preview">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">Developer preview · {visibleCount} mapped effects active</p>
+          <p className="mt-1 text-xs text-blue-900/70">
+            Hidden surfaces: {hidden.length > 0 ? hidden.join(', ') : 'None'}
+          </p>
+        </div>
+        <Button variant="outline" className="rounded-full border-blue-950/20 bg-transparent hover:bg-blue-100" onClick={onExit}>
+          Exit preview
+        </Button>
+      </div>
+    </aside>
   )
 }
 

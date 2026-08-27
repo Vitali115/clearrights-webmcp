@@ -30,7 +30,7 @@ interface AppProps {
 }
 
 type AppRoute =
-  | { kind: 'home'; focus: string | null }
+  | { kind: 'home'; focus: string | null; effects: boolean }
   | { kind: 'clearrights' }
   | { kind: 'info'; id: string }
 
@@ -41,8 +41,8 @@ function routeFromLocation(): AppRoute {
     const id = decodeURIComponent(hash.slice('#/info/'.length).split('?')[0] ?? '')
     if (getWaypointInfoPage(id)) return { kind: 'info', id }
   }
-  const focus = hash.startsWith('#/?') ? new URLSearchParams(hash.slice(3)).get('focus') : null
-  return { kind: 'home', focus }
+  const parameters = hash.startsWith('#/?') ? new URLSearchParams(hash.slice(3)) : new URLSearchParams()
+  return { kind: 'home', focus: parameters.get('focus'), effects: parameters.get('effects') === '1' }
 }
 
 export default function App({
@@ -133,7 +133,12 @@ export default function App({
     activity.clear()
     controlsUi.close()
     window.history.replaceState(null, '', '#/')
-    setRoute({ kind: 'home', focus: null })
+    setRoute({ kind: 'home', focus: null, effects: false })
+  }
+
+  const exitEffectsPreview = () => {
+    window.history.replaceState(null, '', '#/')
+    setRoute(routeFromLocation())
   }
 
   const controlsAction = (
@@ -164,10 +169,12 @@ export default function App({
             onExplainPrivacy={() => navigate('#/clearrights')}
             onOpenControls={openPersonalControls}
             experience={experience}
+            effectsPreview={route.effects}
+            onExitEffectsPreview={exitEffectsPreview}
             controlsAction={controlsAction}
             agentActivityAction={agentActivityAction}
           />
-          <PrivacyChoiceBanner
+          {!route.effects && <PrivacyChoiceBanner
             controller={controller}
             pending={snapshot.record.notice.status !== 'recorded'}
             webMcpAvailable={webMcpAvailable}
@@ -184,7 +191,7 @@ export default function App({
                 targetId: controller.getReceipt()?.id,
               })
             }}
-          />
+          />}
         </>
       ) : route.kind === 'clearrights' ? (
         <ClearRightsExplainerPage
@@ -205,6 +212,8 @@ export default function App({
           onExplainPrivacy={() => navigate('#/clearrights')}
           onOpenControls={openPersonalControls}
           experience={experience}
+          effectsPreview={false}
+          onExitEffectsPreview={exitEffectsPreview}
           controlsAction={controlsAction}
           agentActivityAction={agentActivityAction}
         />

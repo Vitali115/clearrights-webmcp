@@ -133,6 +133,13 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByRole('button', { name: 'Open live product preview' }))
     expect(window.location.hash).toBe('#/?effects=1')
     expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
+    expect(screen.getByRole('complementary', { name: 'Developer product effect preview' })).toBeVisible()
+    expect(screen.getByText(/Hidden surfaces: Nearby guide, Partner rail offer/)).toBeVisible()
+    expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Exit preview' }))
+    expect(window.location.hash).toBe('#/')
+    expect(screen.queryByRole('complementary', { name: 'Developer product effect preview' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Personal controls' }))
     expect(screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
