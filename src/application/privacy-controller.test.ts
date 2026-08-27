@@ -1,0 +1,99 @@
+import { describe, expect, it } from 'vitest'
+import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
+import { travelCatalog } from '@/demo/travel-catalog'
+import { createTravelSeed } from '@/demo/travel-seed'
+import { ApplicationError, createPrivacyController } from './index'
+
+class MemoryStorage {
+  private readonly values = new Map<string, string>()
+
+  getItem(key: string) {
+    return this.values.get(key) ?? null
+  }
+
+  setItem(key: string, value: string) {
+    this.values.set(key, value)
+  }
+}
+
+function dependencies(storage = new MemoryStorage()) {
+  let time = 0
+  let id = 0
+  return {
+    storage,
+    repository: new LocalStoragePrivacyRepository(storage, createTravelSeed),
+    clock: { now: () => `2026-08-27T10:00:0${time++}.000Z` },
+    idGenerator: { next: () => `receipt-${++id}` },
+  }
+}
+
+describe('PrivacyController', () => {
+  it('moves through staged, reviewed and applied with a verified receipt', async () => {
+    const deps = dependencies()
+    const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
+    const plan = controller.stage({
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
+    })
+
+    expect(controller.getSnapshot().workflow).toBe('staged')
+    controller.setReviewed(true)
+    expect(controller.getSnapshot().workflow).toBe('reviewed')
+
+    const receipt = await controller.apply(plan.id)
+    expect(controller.getSnapshot().workflow).toBe('applied')
+    expect(receipt.verified).toBe(true)
+    expect(receipt.verification.method).toBe('persisted_state_readback')
+    expect(receipt.changes).toHaveLength(3)
+
+    const reloaded = await createPrivacyController({ catalog: travelCatalog, ...deps })
+    expect(reloaded.getSnapshot().workflow).toBe('idle')
+    expect(reloaded.getReceipt()?.id).toBe(receipt.id)
+    expect(reloaded.getSnapshot().record.state.processing.recommendations).toBe(false)
+  })
+
+  it('revokes review when a plan is replaced', async () => {
+    const deps = dependencies()
+    const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
+    controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: [] })
+    controller.setReviewed(true)
+    controller.stage({ keepCapabilities: ['partner_offers'], avoidUses: [] })
+
+    expect(controller.getSnapshot()).toEqual(expect.objectContaining({
+      workflow: 'staged',
+      reviewedAt: null,
+    }))
+  })
+
+  it('rejects apply without review and after a stale revision', async () => {
+    const deps = dependencies()
+    const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
+    const plan = controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: [] })
+
+    await expect(controller.apply(plan.id)).rejects.toMatchObject({ code: 'review_required' })
+    controller.setReviewed(true)
+
+    const current = await deps.repository.load()
+    await deps.repository.commit(current.state.revision, {
+      ...current,
+      state: { ...current.state, revision: current.state.revision + 1 },
+    })
+
+    await expect(controller.apply(plan.id)).rejects.toMatchObject({ code: 'stale_plan' })
+  })
+
+  it('requires confirmation and resets demo state and receipt', async () => {
+    const deps = dependencies()
+    const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
+    const plan = controller.stage({ keepCapabilities: [], avoidUses: [] })
+    controller.setReviewed(true)
+    await controller.apply(plan.id)
+
+    await expect(controller.resetDemo(false)).rejects.toBeInstanceOf(ApplicationError)
+    await controller.resetDemo(true)
+
+    expect(controller.getSnapshot().workflow).toBe('idle')
+    expect(controller.getReceipt()).toBeNull()
+    expect(Object.values(controller.getSnapshot().record.state.processing).every(Boolean)).toBe(true)
+  })
+})

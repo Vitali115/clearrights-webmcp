@@ -115,6 +115,23 @@ export interface PrivacyPlan {
   isNoOp: boolean
 }
 
+export interface PrivacyReceipt {
+  id: string
+  planId: string
+  catalogVersion: string
+  issuedAt: string
+  reviewedAt: string
+  beforeRevision: number
+  afterRevision: number
+  changes: readonly PlanChange[]
+  finalState: ProcessingState
+  verified: true
+  verification: {
+    observedRevision: number
+    method: 'persisted_state_readback'
+  }
+}
+
 export type WorkflowStatus = 'idle' | 'staged' | 'reviewed' | 'applied'
 
 export type WorkflowEvent = 'stage' | 'review' | 'revoke_review' | 'apply' | 'reset'
