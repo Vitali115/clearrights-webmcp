@@ -14,8 +14,8 @@ export function createPresetInput(
     }
   }
 
-  const required = catalog.processing.filter(({ locked }) => locked)
-  const optional = catalog.processing.filter(({ locked }) => !locked)
+  const required = catalog.processing.filter(({ control }) => control.mode === 'required')
+  const optional = catalog.processing.filter(({ control }) => control.mode !== 'required')
   return {
     keepCapabilities: [...new Set(required.flatMap(({ capabilities }) => capabilities))],
     avoidUses: [...new Set(optional.flatMap(({ uses }) => uses))],

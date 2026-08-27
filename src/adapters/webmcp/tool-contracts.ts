@@ -78,10 +78,11 @@ export function createToolDefinitions(
             id: item.id,
             sectionId: item.sectionId,
             label: item.label,
-            group: item.group,
+            summary: item.description.summary,
+            controlMode: item.control.mode,
             enabled: snapshot.record.state.processing[item.id],
-            locked: item.locked,
-            declaredLegalBasis: item.declaredLegalBasis,
+            mutable: item.control.mutable,
+            policyContextIds: item.policyContexts.map(({ id }) => id),
           })),
           plannerOptions: {
             capabilities: catalog.capabilities.map(({ id, label }) => ({ id, label })),
@@ -106,7 +107,7 @@ export function createToolDefinitions(
             message: `The agent opened ${inspection.definition.label} so you can review its purpose, data, dependencies, and consequences.`,
           })
         }
-        return inspection
+        return { ...inspection, contentProvenance: 'site_developer' as const }
       }),
     },
     {
@@ -199,16 +200,26 @@ function createCatalogSchemas(catalog: ProcessingCatalog) {
     id: processingId,
     sectionId,
     label: z.string(),
-    group: z.enum(['required', 'optional']),
-    locked: z.boolean(),
-    defaultEnabled: z.boolean(),
+    description: z.object({
+      summary: z.string().max(240),
+      details: z.string().max(4_000),
+    }).strict(),
     purpose: z.string(),
     data: z.array(z.string()),
-    declaredLegalBasis: z.enum(['contract', 'legitimate_interest', 'consent']),
-    control: z.string(),
+    control: z.object({
+      mode: z.enum(['required', 'opt_in', 'opt_out']),
+      mutable: z.boolean(),
+      defaultEnabled: z.boolean(),
+    }).strict(),
     dependencies: z.array(processingId),
-    consequence: z.string(),
-    policyReference: z.string(),
+    consequences: z.object({ whenEnabled: z.string(), whenDisabled: z.string() }).strict(),
+    policyContexts: z.array(policyContextSchema()),
+    developerContext: z.object({
+      factualBackground: z.string().max(4_000),
+      decisionFactors: z.array(z.string().max(500)).max(12),
+      limitations: z.array(z.string().max(500)).max(12),
+      references: z.array(contextReferenceSchema()).max(8),
+    }).strict().optional(),
     capabilities: z.array(capabilityId),
     uses: z.array(useId),
   }).strict()
@@ -290,10 +301,11 @@ function createCatalogSchemas(catalog: ProcessingCatalog) {
       id: processingId,
       sectionId,
       label: z.string(),
-      group: z.enum(['required', 'optional']),
+      summary: z.string().max(240),
+      controlMode: z.enum(['required', 'opt_in', 'opt_out']),
       enabled: z.boolean(),
-      locked: z.boolean(),
-      declaredLegalBasis: z.enum(['contract', 'legitimate_interest', 'consent']),
+      mutable: z.boolean(),
+      policyContextIds: z.array(z.string()),
     }).strict()),
     plannerOptions: z.object({
       capabilities: z.array(z.object({ id: capabilityId, label: z.string() }).strict()),
@@ -307,10 +319,34 @@ function createCatalogSchemas(catalog: ProcessingCatalog) {
     privacyPlan,
     privacyReceipt,
     overviewOutput,
-    inspectionOutput: z.object({ definition: processingDefinition, enabled: z.boolean() }).strict(),
+    inspectionOutput: z.object({
+      definition: processingDefinition,
+      enabled: z.boolean(),
+      contentProvenance: z.literal('site_developer'),
+    }).strict(),
     receiptOutput: z.object({ receipt: privacyReceipt.nullable() }).strict(),
     historyOutput: z.object({ receipts: z.array(privacyReceipt).max(10) }).strict(),
   }
+}
+
+function contextReferenceSchema() {
+  return z.object({
+    label: z.string(),
+    citation: z.string().optional(),
+    url: z.string().url().optional(),
+  }).strict()
+}
+
+function policyContextSchema() {
+  return z.object({
+    id: z.string(),
+    label: z.string(),
+    rationale: z.string().max(4_000),
+    legalBasis: z.string().optional(),
+    category: z.string().optional(),
+    userAction: z.string().optional(),
+    references: z.array(contextReferenceSchema()).max(8),
+  }).strict()
 }
 
 function stringEnum(values: readonly string[], kind: string) {

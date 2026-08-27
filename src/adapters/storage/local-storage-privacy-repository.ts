@@ -25,7 +25,7 @@ const processingIdSchema = z.enum(
 const processingStateSchema = z.object(Object.fromEntries(
   travelCatalog.processing.map(({ id }) => [id, z.boolean()]),
 )).strict().superRefine((state, context) => {
-  for (const id of travelCatalog.processing.filter(({ locked }) => locked).map(({ id }) => id)) {
+  for (const id of travelCatalog.processing.filter(({ control }) => control.mode === 'required').map(({ id }) => id)) {
     if (!state[id]) {
       context.addIssue({
         code: 'custom',

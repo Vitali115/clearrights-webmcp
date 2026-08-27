@@ -17,7 +17,7 @@ export interface EnforcementStorageLike {
 const processingStateSchema = z.object(Object.fromEntries(
   travelCatalog.processing.map(({ id }) => [id, z.boolean()]),
 )).strict().superRefine((state, context) => {
-  for (const { id } of travelCatalog.processing.filter(({ locked }) => locked)) {
+  for (const { id } of travelCatalog.processing.filter(({ control }) => control.mode === 'required')) {
     if (!state[id]) {
       context.addIssue({ code: 'custom', path: [id], message: 'Required processing must remain enabled.' })
     }

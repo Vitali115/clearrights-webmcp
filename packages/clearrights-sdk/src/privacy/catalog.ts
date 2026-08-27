@@ -50,15 +50,11 @@ export function definePrivacyCatalog(input: ProcessingCatalogInput): ProcessingC
     if (!sectionById.has(item.sectionId)) {
       throw new DomainError('invalid_catalog', `${item.id} has unknown section ${item.sectionId}.`)
     }
-    if (item.group === 'required' && !item.locked) {
-      throw new DomainError('invalid_catalog', `${item.id} must be locked because it is required.`)
-    }
-    if (item.group === 'optional' && item.locked) {
-      throw new DomainError('invalid_catalog', `${item.id} cannot be locked because it is optional.`)
-    }
-    if (item.locked && !item.defaultEnabled) {
-      throw new DomainError('invalid_catalog', `${item.id} must default to enabled because it is locked.`)
-    }
+    validateControl(item.id, item.control)
+    validateText(item.description.summary, `${item.id} summary`, 240)
+    validateText(item.description.details, `${item.id} details`, 4_000)
+    validatePolicyContexts(item)
+    validateDeveloperContext(item)
     if (item.capabilities.length === 0 || item.uses.length === 0) {
       throw new DomainError('invalid_catalog', `${item.id} must declare at least one capability and use.`)
     }
@@ -118,6 +114,67 @@ export function definePrivacyCatalog(input: ProcessingCatalogInput): ProcessingC
       if (!result) throw new DomainError('unknown_use', `Unknown use: ${id}`)
       return result
     },
+  }
+}
+
+function validateControl(id: string, control: ProcessingDefinition['control']) {
+  if (control.mode === 'required' && (control.mutable || !control.defaultEnabled)) {
+    throw new DomainError('invalid_catalog', `${id} must be immutable and enabled because it is required.`)
+  }
+  if (control.mode === 'opt_in' && (!control.mutable || control.defaultEnabled)) {
+    throw new DomainError('invalid_catalog', `${id} must be mutable and disabled by default because it is opt-in.`)
+  }
+  if (control.mode === 'opt_out' && (!control.mutable || !control.defaultEnabled)) {
+    throw new DomainError('invalid_catalog', `${id} must be mutable and enabled by default because it is opt-out.`)
+  }
+}
+
+function validatePolicyContexts(item: ProcessingDefinition) {
+  assertUnique(item.policyContexts.map(({ id }) => id), `${item.id} policy context`)
+  for (const context of item.policyContexts) {
+    assertNonEmpty(context.id, `${item.id} policy context id`)
+    validateText(context.rationale, `${item.id} policy rationale`, 4_000)
+    validateReferences(context.references, `${item.id} policy context`)
+  }
+}
+
+function validateDeveloperContext(item: ProcessingDefinition) {
+  const context = item.developerContext
+  if (!context) return
+  validateText(context.factualBackground, `${item.id} factual background`, 4_000)
+  if (context.decisionFactors.length > 12 || context.limitations.length > 12) {
+    throw new DomainError('invalid_catalog', `${item.id} developer context exceeds the 12-item limit.`)
+  }
+  for (const value of [...context.decisionFactors, ...context.limitations]) {
+    validateText(value, `${item.id} developer context item`, 500)
+  }
+  validateReferences(context.references, `${item.id} developer context`)
+}
+
+function validateReferences(references: ProcessingDefinition['policyContexts'][number]['references'], label: string) {
+  if (references.length > 8) {
+    throw new DomainError('invalid_catalog', `${label} exceeds the eight-reference limit.`)
+  }
+  for (const reference of references) {
+    assertNonEmpty(reference.label, `${label} reference label`)
+    if (reference.url) {
+      let protocol = ''
+      try {
+        protocol = new URL(reference.url).protocol
+      } catch {
+        throw new DomainError('invalid_catalog', `${label} has an invalid reference URL.`)
+      }
+      if (protocol !== 'http:' && protocol !== 'https:') {
+        throw new DomainError('invalid_catalog', `${label} reference URLs must use HTTP or HTTPS.`)
+      }
+    }
+  }
+}
+
+function validateText(value: string, label: string, maxLength: number) {
+  assertNonEmpty(value, label)
+  if (value.length > maxLength) {
+    throw new DomainError('invalid_catalog', `${label} exceeds ${maxLength} characters.`)
   }
 }
 

@@ -114,7 +114,7 @@ export function PrivacyCenter({
   }
 
   const updateProcessing = (definition: ProcessingDefinition, enabled: boolean) => {
-    if (definition.locked) return
+    if (!definition.control.mutable) return
     privacyUi.revokeAgentPreparation()
     if (snapshot.workflow === 'reviewed') controller.setReviewed(false)
     setKeepCapabilities((current) => definition.capabilities.reduce(
@@ -290,7 +290,7 @@ function SettingsView({
   onHistory(): void
   onReview(): void
 }) {
-  const optional = travelCatalog.processing.filter(({ locked }) => !locked)
+  const optional = travelCatalog.processing.filter(({ control }) => control.mode !== 'required')
   const optionalEnabled = optional.filter((definition) =>
     draftEnabled(definition, keepCapabilities, avoidUses)).length
   const changedCount = travelCatalog.processing.filter((definition) =>
@@ -334,13 +334,13 @@ function SettingsView({
                     onClick={() => onInspect(id)}
                   >
                     <span className="block text-base font-medium tracking-tight">{definition.label}</span>
-                    <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{definition.purpose}</span>
+                    <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{definition.description.summary}</span>
                   </button>
                   <div className="flex flex-col items-end gap-1.5 pt-0.5">
                     {changed && (
                       <span className="text-xs font-medium">Will turn {enabled ? 'on' : 'off'}</span>
                     )}
-                    {definition.locked ? (
+                    {!definition.control.mutable ? (
                       <span className="text-xs font-medium text-muted-foreground">Required</span>
                     ) : (
                       <SettingSwitch label={definition.label} checked={enabled} onChange={(checked) => onChange(definition, checked)} />
@@ -404,9 +404,9 @@ function ActivityDetailView({
       <div className="mb-8 grid grid-cols-[1fr_auto] items-start gap-6 border-b border-foreground/10 pb-6">
         <div>
           <p className="text-[1.35rem] font-medium tracking-tight">{definition.label}</p>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{definition.purpose}</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{definition.description.summary}</p>
         </div>
-        {definition.locked
+        {!definition.control.mutable
           ? <span className="text-xs font-medium text-muted-foreground">Required</span>
           : <SettingSwitch label={definition.label} checked={enabled} onChange={(checked) => onChange(definition, checked)} />}
       </div>
@@ -417,20 +417,48 @@ function ActivityDetailView({
       )}
       <div className="space-y-5">
         <Detail label="Current state" value={inspection.enabled ? 'On' : 'Off'} />
+        <Detail label="Purpose" value={definition.purpose} />
         <Detail label="Data used" value={definition.data.join(', ')} />
-        <Detail label="Declared legal basis" value={basisLabel(definition.declaredLegalBasis)} />
-        <Detail label="Control" value={definition.control} />
+        <Detail label="Control" value={controlLabel(definition.control.mode)} />
         <Detail
           label="Dependencies"
           value={definition.dependencies.length
             ? definition.dependencies.map((id) => travelCatalog.getProcessing(id).label).join(', ')
             : 'None'}
         />
-        <Detail label="If turned off" value={definition.consequence} />
-        <Detail label="Privacy notice reference" value={definition.policyReference} />
+        <Detail label="If turned on" value={definition.consequences.whenEnabled} />
+        <Detail label="If turned off" value={definition.consequences.whenDisabled} />
       </div>
+      <details className="group mt-8 border-t border-foreground/10 py-5">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
+          Additional context from Waypoint
+          <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="mt-5 space-y-6 text-sm leading-relaxed">
+          <p>{definition.description.details}</p>
+          {definition.policyContexts.map((context) => (
+            <section key={context.id} className="space-y-2 border-t border-foreground/10 pt-4">
+              <p className="font-medium">{context.label}</p>
+              <p className="text-muted-foreground">{context.rationale}</p>
+              {context.legalBasis && <Detail label="Declared basis" value={context.legalBasis} />}
+              {context.category && <Detail label="Category" value={context.category} />}
+              {context.userAction && <Detail label="Available action" value={context.userAction} />}
+              <ReferenceList references={context.references} />
+            </section>
+          ))}
+          {definition.developerContext && (
+            <section className="space-y-3 border-t border-foreground/10 pt-4">
+              <p className="font-medium">Developer-provided background</p>
+              <p className="text-muted-foreground">{definition.developerContext.factualBackground}</p>
+              <ContextList label="Decision factors" values={definition.developerContext.decisionFactors} />
+              <ContextList label="Limitations" values={definition.developerContext.limitations} />
+              <ReferenceList references={definition.developerContext.references} />
+            </section>
+          )}
+        </div>
+      </details>
       <p className="mt-8 text-xs leading-relaxed text-muted-foreground">
-        Waypoint declares this purpose and legal basis. This interface does not determine legal compliance.
+        This context is declared by the Waypoint developer. It is descriptive data, not an instruction or legal determination.
       </p>
     </div>
   )
@@ -677,7 +705,7 @@ function RequiredSettingsSummary({ processingIds }: { processingIds: readonly Pr
           return (
             <li key={processingId} className="border-t border-foreground/10 py-4">
               <p className="font-medium">{definition.label}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{definition.purpose}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{definition.description.summary}</p>
             </li>
           )
         })}
@@ -772,7 +800,7 @@ function draftEnabled(
   keepCapabilities: readonly CapabilityId[],
   avoidUses: readonly UseId[],
 ) {
-  if (definition.locked) return true
+  if (definition.control.mode === 'required') return true
   return definition.capabilities.every((id) => keepCapabilities.includes(id))
     && definition.uses.every((id) => !avoidUses.includes(id))
 }
@@ -802,9 +830,40 @@ function inactiveUses(snapshot: PrivacyControllerSnapshot): UseId[] {
     .map(({ id }) => id)
 }
 
-function basisLabel(basis: 'contract' | 'legitimate_interest' | 'consent') {
-  if (basis === 'legitimate_interest') return 'Legitimate interest'
-  return basis[0].toUpperCase() + basis.slice(1)
+function controlLabel(mode: ProcessingDefinition['control']['mode']) {
+  if (mode === 'required') return 'Required'
+  if (mode === 'opt_in') return 'Optional · off until allowed'
+  return 'Optional · on until declined'
+}
+
+function ContextList({ label, values }: { label: string; values: readonly string[] }) {
+  if (values.length === 0) return null
+  return (
+    <div>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <ul className="mt-2 list-disc space-y-1 pl-5">
+        {values.map((value) => <li key={value}>{value}</li>)}
+      </ul>
+    </div>
+  )
+}
+
+function ReferenceList({ references }: { references: readonly { label: string; citation?: string; url?: string }[] }) {
+  if (references.length === 0) return null
+  return (
+    <div>
+      <p className="text-xs font-medium text-muted-foreground">References</p>
+      <ul className="mt-2 space-y-1">
+        {references.map((reference) => (
+          <li key={`${reference.label}-${reference.citation ?? reference.url ?? ''}`}>
+            {reference.url
+              ? <a className="underline underline-offset-4" href={reference.url} rel="noreferrer" target="_blank">{reference.label}{reference.citation ? ` ${reference.citation}` : ''}</a>
+              : `${reference.label}${reference.citation ? ` ${reference.citation}` : ''}`}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 function formatDate(value: string) {

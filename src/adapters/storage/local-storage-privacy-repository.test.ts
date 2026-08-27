@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
 import {
   LEGACY_PRIVACY_STORAGE_KEY,
@@ -73,7 +74,7 @@ describe('LocalStoragePrivacyRepository', () => {
         processing: { ...createTravelSeed().processing, trip_fulfilment: false },
       },
       notice: {
-        version: 'waypoint-privacy-choices-2026.2',
+        version: travelCatalog.noticeVersion,
         status: 'pending',
         recordedAt: null,
         method: null,
@@ -142,7 +143,7 @@ describe('LocalStoragePrivacyRepository', () => {
       schemaVersion: 3,
       state: createTravelSeed(),
       notice: {
-        version: 'waypoint-privacy-choices-2026.2',
+        version: travelCatalog.noticeVersion,
         status: 'pending',
         recordedAt: null,
         method: null,

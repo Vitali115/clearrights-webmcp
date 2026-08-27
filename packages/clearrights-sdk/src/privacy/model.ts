@@ -3,9 +3,46 @@ export type CapabilityId = string
 export type UseId = string
 export type PrivacySectionId = string
 
-export type ProcessingGroup = 'required' | 'optional'
+export type ControlMode = 'required' | 'opt_in' | 'opt_out'
 
-export type DeclaredLegalBasis = 'contract' | 'legitimate_interest' | 'consent'
+export interface ProcessingControl {
+  mode: ControlMode
+  mutable: boolean
+  defaultEnabled: boolean
+}
+
+export interface ProcessingDescription {
+  summary: string
+  details: string
+}
+
+export interface ProcessingConsequences {
+  whenEnabled: string
+  whenDisabled: string
+}
+
+export interface ContextReference {
+  label: string
+  citation?: string
+  url?: string
+}
+
+export interface PolicyContext {
+  id: string
+  label: string
+  rationale: string
+  legalBasis?: string
+  category?: string
+  userAction?: string
+  references: readonly ContextReference[]
+}
+
+export interface DeveloperContext {
+  factualBackground: string
+  decisionFactors: readonly string[]
+  limitations: readonly string[]
+  references: readonly ContextReference[]
+}
 
 export interface PrivacySectionDefinition {
   id: PrivacySectionId
@@ -29,16 +66,14 @@ export interface ProcessingDefinition {
   id: ProcessingId
   sectionId: PrivacySectionId
   label: string
-  group: ProcessingGroup
-  locked: boolean
-  defaultEnabled: boolean
+  description: ProcessingDescription
   purpose: string
   data: readonly string[]
-  declaredLegalBasis: DeclaredLegalBasis
-  control: string
+  control: ProcessingControl
   dependencies: readonly ProcessingId[]
-  consequence: string
-  policyReference: string
+  consequences: ProcessingConsequences
+  policyContexts: readonly PolicyContext[]
+  developerContext?: DeveloperContext
   capabilities: readonly CapabilityId[]
   uses: readonly UseId[]
 }

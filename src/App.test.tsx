@@ -460,7 +460,7 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('heading', { name: 'Setting details' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Setting details' })).toHaveFocus()
     expect(screen.getByText('Travel preferences, Viewed destinations, Past trips')).toBeVisible()
-    expect(screen.getByText('Waypoint Demo Privacy Notice §3.1')).toBeVisible()
+    expect(screen.getAllByText('Waypoint Demo Privacy Notice §3.1')).not.toHaveLength(0)
     await user.click(screen.getByRole('button', { name: 'Back' }))
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toHaveFocus()

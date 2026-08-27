@@ -31,7 +31,7 @@ export function createPrivacyPlan(
     catalog.processing.map((item) => [item.id, false]),
   ) as ProcessingState
   const requiredClosure = new Set<ProcessingId>()
-  for (const required of catalog.processing.filter(({ locked }) => locked)) {
+  for (const required of catalog.processing.filter(({ control }) => control.mode === 'required')) {
     enableWithDependencies(catalog, required.id, target, requiredClosure)
   }
   const capabilityClosures = new Map<CapabilityId, Set<ProcessingId>>()
@@ -50,7 +50,7 @@ export function createPrivacyPlan(
   const conflicts = normalizedInput.keepCapabilities.flatMap((capabilityId) => {
     const closure = capabilityClosures.get(capabilityId) ?? new Set<ProcessingId>()
     return catalog.processing.flatMap((item) =>
-      !item.locked && closure.has(item.id)
+      item.control.mode !== 'required' && closure.has(item.id)
         ? item.uses
             .filter((useId) => avoidedUses.has(useId))
             .map((useId) => ({
@@ -64,7 +64,7 @@ export function createPrivacyPlan(
   })
 
   const blockedItems = catalog.processing.flatMap((item) =>
-    item.locked
+    item.control.mode === 'required'
       ? item.uses
           .filter((useId) => avoidedUses.has(useId))
           .map((useId) => ({
@@ -100,7 +100,7 @@ export function createPrivacyPlan(
       : {
           processingId: item.id,
           kind: 'disabled' as const,
-          message: item.consequence,
+          message: item.consequences.whenDisabled,
         }
   })
 

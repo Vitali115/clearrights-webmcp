@@ -35,7 +35,7 @@ export function PrivacyExplainerPage({
   onBack,
   onOpenSettings,
 }: PrivacyExplainerPageProps) {
-  const optional = travelCatalog.processing.filter(({ locked }) => !locked)
+  const optional = travelCatalog.processing.filter(({ control }) => control.mode !== 'required')
   const optionalEnabled = optional.filter(({ id }) => snapshot.record.state.processing[id]).length
 
   return (

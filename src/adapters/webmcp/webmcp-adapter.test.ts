@@ -177,6 +177,47 @@ describe('WebMCP adapter', () => {
     adapter.dispose()
   })
 
+  it('keeps the overview compact and exposes full developer-authored context only on inspect', async () => {
+    const { controller, privacyUi, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+
+    const overview = await modelContext.execute('get_privacy_overview', {})
+    expect(overview).toEqual(expect.objectContaining({
+      ok: true,
+      data: expect.objectContaining({
+        processing: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'recommendations',
+            summary: expect.any(String),
+            controlMode: 'opt_in',
+            policyContextIds: ['waypoint-personalisation-choice'],
+          }),
+        ]),
+      }),
+    }))
+    expect(JSON.stringify(overview)).not.toContain('factualBackground')
+    expect(JSON.stringify(overview)).not.toContain('decisionFactors')
+
+    const inspection = await modelContext.execute('inspect_processing', {
+      processingId: 'recommendations',
+    })
+    expect(inspection).toEqual(expect.objectContaining({
+      ok: true,
+      data: expect.objectContaining({
+        contentProvenance: 'site_developer',
+        definition: expect.objectContaining({
+          description: expect.objectContaining({ details: expect.any(String) }),
+          developerContext: expect.objectContaining({
+            factualBackground: expect.any(String),
+            decisionFactors: expect.any(Array),
+            limitations: expect.any(Array),
+          }),
+        }),
+      }),
+    }))
+    adapter.dispose()
+  })
+
   it('opens review whenever a plan is staged and returns receipt history newest-first', async () => {
     const { controller, privacyUi, modelContext } = await setup()
     const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
