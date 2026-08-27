@@ -82,6 +82,28 @@ describe('PrivacyController', () => {
     await expect(controller.apply(plan.id)).rejects.toMatchObject({ code: 'stale_plan' })
   })
 
+  it('does not review, apply, or create a receipt for a no-op plan', async () => {
+    const deps = dependencies()
+    const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
+    const plan = controller.stage({
+      keepCapabilities: [
+        'book_and_manage_trips',
+        'protect_account',
+        'receive_trip_updates',
+        'personalised_recommendations',
+        'nearby_suggestions',
+        'partner_offers',
+      ],
+      avoidUses: [],
+    })
+
+    expect(plan.isNoOp).toBe(true)
+    expect(() => controller.setReviewed(true)).toThrowError(expect.objectContaining({ code: 'no_changes' }))
+    await expect(controller.apply(plan.id)).rejects.toMatchObject({ code: 'review_required' })
+    expect(controller.getSnapshot().record.state.revision).toBe(1)
+    expect(controller.getReceipt()).toBeNull()
+  })
+
   it('requires confirmation and resets demo state and receipt', async () => {
     const deps = dependencies()
     const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })

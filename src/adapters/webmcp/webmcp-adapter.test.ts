@@ -87,6 +87,27 @@ describe('WebMCP adapter', () => {
     adapter.dispose()
   })
 
+  it('never registers apply for a no-op plan', async () => {
+    const { controller, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog)
+    controller.stage({
+      keepCapabilities: [
+        'book_and_manage_trips',
+        'protect_account',
+        'receive_trip_updates',
+        'personalised_recommendations',
+        'nearby_suggestions',
+        'partner_offers',
+      ],
+      avoidUses: [],
+    })
+
+    expect(() => controller.setReviewed(true)).toThrowError(expect.objectContaining({ code: 'no_changes' }))
+    await adapter.whenSettled()
+    expect(modelContext.tools.has('apply_privacy_plan')).toBe(false)
+    adapter.dispose()
+  })
+
   it('validates inputs and outputs and avoids duplicate apply registration', async () => {
     const { controller, modelContext } = await setup()
     const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog)

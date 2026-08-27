@@ -103,6 +103,9 @@ export async function createPrivacyController({
     },
     setReviewed(reviewed) {
       if (!reviewed && snapshot.workflow === 'staged') return
+      if (reviewed && snapshot.plan?.isNoOp) {
+        throw new ApplicationError('no_changes', 'A plan with no preference changes cannot be reviewed or applied.')
+      }
       const event = reviewed ? 'review' : 'revoke_review'
       publish({
         ...snapshot,
@@ -116,6 +119,9 @@ export async function createPrivacyController({
       }
       if (snapshot.plan.id !== planId) {
         throw new ApplicationError('plan_mismatch', 'The supplied plan ID is not the reviewed plan.')
+      }
+      if (snapshot.plan.isNoOp) {
+        throw new ApplicationError('no_changes', 'A plan with no preference changes cannot be applied.')
       }
 
       const reviewedPlan = clone(snapshot.plan)

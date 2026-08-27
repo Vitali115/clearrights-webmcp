@@ -98,4 +98,17 @@ describe('ClearRights UI', () => {
     expect(screen.getByText('Conflict')).toBeVisible()
     expect(screen.getByText(/Nearby suggestions needs precise location/)).toBeVisible()
   })
+
+  it('does not allow reviewing or applying a plan with no changes', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    render(<App controller={controller} webMcpAvailable />)
+    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+    await user.click(screen.getByRole('button', { name: /Stage privacy plan/ }))
+
+    expect(screen.getByText('No changes')).toBeVisible()
+    expect(screen.getByText('There are no preference changes to review or apply.')).toBeVisible()
+    expect(screen.getByLabelText('I reviewed this plan and understand its effects.')).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Review plan to apply/ })).toBeDisabled()
+  })
 })

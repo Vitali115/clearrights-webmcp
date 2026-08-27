@@ -337,16 +337,21 @@ export function PrivacyCenter({
                         <Checkbox
                           id="human-review"
                           checked={snapshot.workflow === 'reviewed'}
+                          disabled={snapshot.plan.isNoOp}
                           onCheckedChange={(checked) => controller.setReviewed(checked === true)}
                         />
                         <FieldContent>
                           <FieldLabel htmlFor="human-review">I reviewed this plan and understand its effects.</FieldLabel>
-                          <FieldDescription>Changing the intent or clearing this box revokes review.</FieldDescription>
+                          <FieldDescription>
+                            {snapshot.plan.isNoOp
+                              ? 'There are no preference changes to review or apply.'
+                              : 'Changing the intent or clearing this box revokes review.'}
+                          </FieldDescription>
                         </FieldContent>
                       </Field>
                       <Button
                         className="w-full"
-                        disabled={snapshot.workflow !== 'reviewed' || applying}
+                        disabled={snapshot.plan.isNoOp || snapshot.workflow !== 'reviewed' || applying}
                         onClick={() => void applyPlan()}
                       >
                         <FileCheck2 data-icon="inline-start" />
