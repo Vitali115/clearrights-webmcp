@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 
 interface TravelProductPageProps {
   privacyAction: ReactNode
+  onExplainPrivacy(): void
 }
 
 const trips = [
@@ -44,7 +45,7 @@ function ArtCard({
   )
 }
 
-export function TravelProductPage({ privacyAction }: TravelProductPageProps) {
+export function TravelProductPage({ privacyAction, onExplainPrivacy }: TravelProductPageProps) {
   return (
     <main className="min-h-svh bg-background text-foreground">
       <header className="border-b border-foreground/8">
@@ -53,6 +54,9 @@ export function TravelProductPage({ privacyAction }: TravelProductPageProps) {
           <nav className="flex shrink-0 items-center gap-1" aria-label="Account navigation">
             <Button variant="ghost" className="hidden h-9 rounded-full px-3.5 sm:inline-flex">
               Trips
+            </Button>
+            <Button variant="ghost" className="hidden h-9 rounded-full px-3.5 md:inline-flex" onClick={onExplainPrivacy}>
+              How privacy works
             </Button>
             {privacyAction}
           </nav>
@@ -122,8 +126,9 @@ export function TravelProductPage({ privacyAction }: TravelProductPageProps) {
         </div>
       </section>
 
-      <footer className="px-5 pb-16 text-sm font-medium text-muted-foreground sm:px-8">
-        Privacy information and legal bases are declared by the demo service.
+      <footer className="flex flex-wrap items-center justify-between gap-3 px-5 pb-16 text-sm font-medium text-muted-foreground sm:px-8">
+        <span>Privacy information and legal bases are declared by the demo service.</span>
+        <button type="button" className="text-foreground" onClick={onExplainPrivacy}>How privacy works</button>
       </footer>
     </main>
   )

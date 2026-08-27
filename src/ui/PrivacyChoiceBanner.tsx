@@ -2,14 +2,14 @@ import { useState } from 'react'
 import type { PrivacyController } from '@/application'
 import type { PrivacyPreset } from '@/domain'
 import { Button } from '@/components/ui/button'
-
-export const AGENT_PRIVACY_PROMPT = `Inspect the privacy settings exposed by this site. Explain which optional data uses are active and the consequence of changing each one. Prepare the least-data plan that keeps the capabilities I need. Do not apply anything until I have reviewed and confirmed the exact plan in the page.`
+import { CopyAgentInstructionsButton } from './CopyAgentInstructionsButton'
 
 interface PrivacyChoiceBannerProps {
   controller: PrivacyController
   pending: boolean
   webMcpAvailable: boolean
   onManage(): void
+  onLearn(): void
 }
 
 export function PrivacyChoiceBanner({
@@ -17,10 +17,10 @@ export function PrivacyChoiceBanner({
   pending,
   webMcpAvailable,
   onManage,
+  onLearn,
 }: PrivacyChoiceBannerProps) {
   const [applying, setApplying] = useState<PrivacyPreset | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
 
   if (!pending) return null
 
@@ -33,17 +33,6 @@ export function PrivacyChoiceBanner({
       setError(cause instanceof Error ? cause.message : 'The privacy choice could not be applied.')
     } finally {
       setApplying(null)
-    }
-  }
-
-  const copyPrompt = async () => {
-    setError(null)
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error('Clipboard access is unavailable in this browser.')
-      await navigator.clipboard.writeText(AGENT_PRIVACY_PROMPT)
-      setCopied(true)
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The agent instructions could not be copied.')
     }
   }
 
@@ -99,15 +88,15 @@ export function PrivacyChoiceBanner({
               ? 'Structured agent access detected in this browser.'
               : 'Structured agent access is unavailable here; manual choices still work.'}
           </p>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="mt-3 h-8 rounded-full px-3"
-            onClick={() => void copyPrompt()}
-          >
-            {copied ? 'Instructions copied' : 'Copy agent instructions'}
-          </Button>
+          <div className="mt-3 flex flex-wrap gap-1">
+            <CopyAgentInstructionsButton
+              className="h-8 rounded-full px-3"
+              onError={setError}
+            />
+            <Button type="button" variant="ghost" size="sm" className="h-8 rounded-full px-3" onClick={onLearn}>
+              How it works
+            </Button>
+          </div>
         </div>
       </div>
       {error && <p role="alert" className="mt-4 text-sm text-destructive">{error}</p>}

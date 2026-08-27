@@ -46,9 +46,39 @@ async function holdToConfirm() {
   fireEvent.pointerUp(control, { button: 0, pointerId: 1 })
 }
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  window.history.replaceState(null, '', '#/')
+})
 
 describe('privacy settings UI', () => {
+  it('opens the internal privacy architecture page with live demo status', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    renderApp(controller, true)
+
+    await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
+
+    expect(screen.getByRole('heading', { name: 'Privacy choices, readable by people and agents.' })).toBeVisible()
+    expect(screen.getByText('WebMCP detected')).toBeVisible()
+    expect(screen.getByText('6 declared uses')).toBeVisible()
+    expect(screen.getByText('0 of 3 on')).toBeVisible()
+    expect(screen.getByText(/createPrivacyRuntime/)).toBeVisible()
+    expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Open privacy settings' }))
+    expect(screen.getByRole('dialog', { name: 'Privacy settings panel' })).toBeVisible()
+  })
+
+  it('supports a direct hash route to the privacy architecture page', async () => {
+    window.history.replaceState(null, '', '#/privacy')
+    const controller = await createController()
+    renderApp(controller)
+
+    expect(screen.getByRole('heading', { name: 'Privacy choices, readable by people and agents.' })).toBeVisible()
+    expect(screen.getByText('Manual only')).toBeVisible()
+  })
+
   it('records Essential only even when the conservative seed already matches it', async () => {
     const user = userEvent.setup()
     const controller = await createController()
