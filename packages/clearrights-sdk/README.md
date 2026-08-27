@@ -1,6 +1,6 @@
 # `@clearrights/sdk` v0.2
 
-Headless domain modules for product controls that can be inspected by people and compatible agents and applied through explicit host adapters.
+Headless privacy infrastructure for controls that people and compatible agents inspect through the same declared model and that hosts apply through explicit, verifiable adapters. Accessibility Preferences and Site Guide are independent supporting modules.
 
 ## Package status
 
@@ -14,7 +14,7 @@ import * as accessibility from "@clearrights/sdk/accessibility";
 import * as siteGuide from "@clearrights/sdk/site-guide";
 ```
 
-The root export exposes only the three namespaces.
+The root export exposes only the three namespaces. ClearRights Privacy is the primary product and recommended starting point.
 
 ## Design boundary
 
@@ -28,7 +28,7 @@ The package contains:
 
 The package does not contain React, DOM access, local or session storage, WebMCP registration, Tailwind, UI components, Waypoint content, geography rules, legal determinations, or backend integrations.
 
-## Privacy
+## ClearRights Privacy
 
 Main exports:
 
@@ -49,7 +49,7 @@ The host alone decides when a real human interaction is sufficient to call `setR
 
 Controls are `required`, `opt_in`, or `opt_out`. Receipt v4 records the complete decision snapshot, revisions, preparation and approval provenance, adapter scope, and verification readback.
 
-## Accessibility Preferences
+## Additional module: Accessibility Preferences
 
 Main exports:
 
@@ -67,7 +67,7 @@ inspect → set → readback → one Undo
 
 The runtime supports `textScale`, `colorScheme`, `contrast`, `motion`, and `readingLayout`. `colorScheme` accepts `system`, `light`, or `dark`; the host maps those values to its own design tokens. The module does not perform DOM remediation, diagnose a condition, or claim accessibility compliance.
 
-## Site Guide
+## Additional module: Site Guide
 
 Main exports:
 

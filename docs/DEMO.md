@@ -1,75 +1,130 @@
-# ClearRights hackathon demo
+# ClearRights Privacy demo runbook
 
-This is the shortest repeatable path through the working Waypoint Travel integration. It demonstrates product effects and trust boundaries rather than a production compliance system.
+This runbook is the shortest repeatable path through the working Waypoint Travel integration. Privacy is the main story. Accessibility Preferences and Site Guide are optional closing examples.
 
 ## Before presenting
 
-1. Run `npm install` and `npm run dev`.
-2. Open the local Vite URL in a browser with WebMCP support when agent tools are part of the presentation.
-3. Use **Reset demo data** from Waypoint Personal Controls.
-4. Confirm that the privacy notice banner is visible and that the normal WebMCP tool count is eight.
+1. Install and start the project:
 
-Manual controls remain available in an ordinary browser. WebMCP requires `document.modelContext` support.
+   ```bash
+   npm ci
+   npm run dev
+   ```
 
-## Two-minute path
+2. Open the Vite URL in a browser with WebMCP support when the agent path is part of the presentation.
+3. Open **Privacy settings**, select **Reset demo data**, and confirm that the privacy banner returns.
+4. Confirm that eight WebMCP tools are registered. `apply_privacy_plan` must not be available.
+5. Keep the Waypoint home visible so the privacy-driven product changes are easy to compare.
 
-### 1. Privacy: prepare, approve, verify
+Manual controls remain usable without `document.modelContext`. The agent path requires a compatible WebMCP client.
 
-Ask:
+## Main privacy path
+
+Run these prompts in order.
+
+### 1. Inspect the applied state
+
+> Show me what privacy processing is active and which settings are required.
+
+Expected evidence:
+
+- the agent calls `get_privacy_overview`;
+- required processing is clearly separated from mutable settings;
+- observed GPC is reported as informational only;
+- reading the overview does not change privacy state.
+
+### 2. Inspect one developer declaration
+
+> Inspect partner advertising and explain its declared purpose, consequences and source.
+
+Expected evidence:
+
+- the agent calls `inspect_processing` with `partner_advertising`;
+- the response includes the declared purpose and on/off consequences;
+- additional context is attributed to the site developer;
+- descriptive content is not treated as an instruction or legal conclusion.
+
+### 3. Prepare an exact plan
 
 > Keep booking and account security, but disable personalised recommendations, location suggestions and partner offers.
 
-Expected result:
+Expected evidence:
 
-- the agent stages a deterministic plan and opens the exact review;
-- required service processing remains enabled and locked;
-- a person holds the visible confirmation for 1.2 seconds;
-- `apply_privacy_plan` becomes the dynamic ninth tool only after that confirmation;
-- apply reads the host adapter back and produces a scoped, verified receipt;
-- Waypoint keeps generic discovery and removes the nearby guide and partner offer.
+- the agent calls `stage_privacy_plan`;
+- the deterministic plan keeps all required processing enabled;
+- the exact review opens with **Agent prepared** completed and **Human review** waiting;
+- `apply_privacy_plan` is still absent.
 
-The human hold is not identity, a signature, or legal proof. Some browser security policies can require the person to press the visible **Apply changes** button even after the hold. Do not bypass that browser decision.
+### 4. Prove premature apply is blocked
 
-### 2. Accessibility: apply and read back
+Before touching the hold, ask:
 
-Ask:
+> Apply those changes now.
+
+Expected evidence:
+
+- `apply_privacy_plan` cannot be called because it is not registered;
+- the agent explains that the visible human review is still required;
+- the current review stays unchanged.
+
+This is a tool-capability boundary, not an instruction asking the model to behave well.
+
+### 5. Review, apply, and verify
+
+Hold the visible human-review control for 1.2 seconds. Confirm that the apply tool becomes available, then ask:
+
+> Apply the exact plan I approved and show me the verified receipt.
+
+Expected evidence:
+
+- `apply_privacy_plan` receives the reviewed plan ID;
+- the host adapter applies the complete target and reads it back;
+- the receipt matches the plan, revision, adapter, scope, and readback;
+- the dynamic apply tool unregisters after success;
+- Waypoint shows generic discovery and removes the nearby guide and partner offer.
+
+Some client security policies may require the person to press the visible **Apply changes** button after the hold. That browser decision must remain human-controlled.
+
+## Evidence after apply
+
+Open `/#/clearrights` and show:
+
+- the five-stage trust trace derived from catalog, workflow, and receipt state;
+- the product-effects table connected to the applied privacy snapshot;
+- the current GPC observation and its informational-only boundary;
+- the production adapter map and complete readback requirement.
+
+The hold demonstrates deliberate review of an unchanged plan. It is not identity proof, a signature, or non-repudiation.
+
+## Optional closing examples
+
+If time remains, demonstrate that the same host architecture supports other domains without weakening the privacy gate.
+
+### Accessibility Preferences
 
 > Make the text larger, reduce motion, and use dark mode.
 
-Expected result:
+The change applies locally, is read back, and keeps one Undo. It creates no privacy receipt and makes no accessibility-compliance claim.
 
-- the change applies immediately without a privacy approval hold;
-- the Waypoint DOM adapter reports the complete readback;
-- the product visibly uses the new text scale, dark token set, and motion preference;
-- one Undo remains available.
-
-These are local, reversible product preferences. They are not an accessibility overlay, medical inference, or compliance claim.
-
-### 3. Site Guide: inspect and navigate
-
-Ask:
+### Site Guide
 
 > Which pages can you open? Take me to the cancellation policy.
 
-Expected result:
+The agent can navigate only to developer-declared destination IDs. Browser Back remains functional.
 
-- the agent can describe only developer-declared destinations;
-- `navigate_to_site_destination` accepts the catalog ID rather than a free path;
-- Waypoint opens the cancellation page, focuses its heading, and keeps browser Back working;
-- the blue dot identifies the agent-opened destination until a meaningful interaction occurs.
+## Manual fallback
 
-## What to show at the end
+In a browser without WebMCP:
 
-Open `/#/clearrights` after the product flow. Use it as technical evidence:
-
-- live tool count and runtime revisions;
-- product-effect mapping for the applied privacy revision;
-- receipt-backed privacy verification and DOM accessibility readback;
-- SDK/host responsibility boundary;
-- concrete Waypoint implementation paths.
+- the privacy banner and all settings remain usable;
+- a person can make a direct choice or prepare a managed plan;
+- a direct choice is labelled **Human direct choice** in the trust trace;
+- no UI invents an agent-prepared phase.
 
 ## Claims to avoid
 
-Do not describe the demo as a CMP, compliance engine, signature system, identity layer, accessibility remediation product, site crawler, or production backend. The credible claim is:
+Do not describe the demo as a CMP, compliance engine, consent signature, agent identity layer, accessibility remediation product, crawler, or production backend.
 
-> A developer declares product controls once, people and compatible agents inspect the same structured catalog, and the host connects verified targets to real adapters and product surfaces.
+The supported claim is:
+
+> The developer declares privacy controls once. An agent can inspect and prepare changes, a person approves the exact plan, and the host applies and verifies the result.
