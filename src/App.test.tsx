@@ -116,10 +116,18 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller)
 
+    expect(screen.getByText('Popular destinations')).toBeVisible()
+    expect(screen.queryByText('Near your Lisbon trip')).not.toBeInTheDocument()
+    expect(screen.queryByText('Personalised partner offer')).not.toBeInTheDocument()
+    expect(screen.getByText(/0 of 3 optional data uses active/)).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Accept all' }))
 
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument())
     expect(controller.getSnapshot().record.state.processing.recommendations).toBe(true)
+    expect(screen.getByText('Suggestions based on your travel interests')).toBeVisible()
+    expect(screen.getByText('Near your Lisbon trip')).toBeVisible()
+    expect(screen.getByText('Personalised partner offer')).toBeVisible()
+    expect(screen.getByText(/3 of 3 optional data uses active/)).toBeVisible()
     expect(controller.getReceipt()).toEqual(expect.objectContaining({
       kind: 'initial_choice',
       choiceMethod: 'accept_all',

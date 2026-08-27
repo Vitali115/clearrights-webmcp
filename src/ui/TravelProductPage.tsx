@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
+import type { ProcessingState } from '@/domain'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 interface TravelProductPageProps {
   privacyAction: ReactNode
+  privacyState: ProcessingState
   onExplainPrivacy(): void
 }
 
@@ -45,7 +47,12 @@ function ArtCard({
   )
 }
 
-export function TravelProductPage({ privacyAction, onExplainPrivacy }: TravelProductPageProps) {
+export function TravelProductPage({ privacyAction, privacyState, onExplainPrivacy }: TravelProductPageProps) {
+  const recommendationsEnabled = privacyState.recommendations
+  const locationEnabled = privacyState.location_suggestions
+  const partnerOffersEnabled = privacyState.partner_advertising
+  const optionalEnabled = [recommendationsEnabled, locationEnabled, partnerOffersEnabled].filter(Boolean).length
+
   return (
     <main className="min-h-svh bg-background text-foreground">
       <header className="border-b border-foreground/8">
@@ -111,7 +118,7 @@ export function TravelProductPage({ privacyAction, onExplainPrivacy }: TravelPro
 
       <section className="px-5 pb-20 sm:px-8 sm:pb-24" aria-labelledby="destination-ideas">
         <h2 id="destination-ideas" className="mb-7 text-sm font-medium text-muted-foreground">
-          Destination ideas
+          {recommendationsEnabled ? 'Suggestions based on your travel interests' : 'Popular destinations'}
         </h2>
         <div className="grid gap-x-6 gap-y-12 sm:gap-y-20 md:grid-cols-3">
           {destinations.map((destination) => (
@@ -126,8 +133,42 @@ export function TravelProductPage({ privacyAction, onExplainPrivacy }: TravelPro
         </div>
       </section>
 
+      {locationEnabled && (
+        <section className="border-y border-foreground/10 px-5 py-12 sm:px-8" aria-labelledby="nearby-lisbon">
+          <div className="grid gap-7 md:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Location suggestions on</p>
+              <h2 id="nearby-lisbon" className="mt-3 text-2xl font-medium tracking-tight">Near your Lisbon trip</h2>
+              <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                These suggestions use the destination context and precise-location setting represented by the local demo adapter.
+              </p>
+            </div>
+            <ul className="grid gap-0 sm:grid-cols-3">
+              {['Alfama viewpoints', 'Riverside walks', 'Neighbourhood cafés'].map((place) => (
+                <li key={place} className="border-t border-foreground/10 py-4 text-sm font-medium sm:pr-4">{place}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
+      {partnerOffersEnabled && (
+        <section className="px-5 py-14 sm:px-8" aria-labelledby="partner-offer">
+          <div className="grid gap-5 border border-foreground/10 p-6 sm:grid-cols-[1fr_auto] sm:items-end">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Personalised partner offer</p>
+              <h2 id="partner-offer" className="mt-3 text-2xl font-medium tracking-tight">A flexible rail pass for your saved city trips</h2>
+              <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                Shown because Partner advertising is active in this local demo.
+              </p>
+            </div>
+            <Button variant="outline" className="rounded-full">View offer</Button>
+          </div>
+        </section>
+      )}
+
       <footer className="flex flex-wrap items-center justify-between gap-3 px-5 pb-16 text-sm font-medium text-muted-foreground sm:px-8">
-        <span>Privacy information and legal bases are declared by the demo service.</span>
+        <span>Privacy information is declared by the demo service · {optionalEnabled} of 3 optional data uses active.</span>
         <button type="button" className="text-foreground" onClick={onExplainPrivacy}>How privacy works</button>
       </footer>
     </main>
