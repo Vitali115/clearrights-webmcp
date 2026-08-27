@@ -34,6 +34,27 @@ function dependencies(storage = new MemoryStorage()) {
 }
 
 describe('PrivacyController', () => {
+  it('fails closed when adapter state drifts from the stored decision at startup', async () => {
+    const deps = dependencies()
+    const drifted = {
+      ...createTravelSeed().processing,
+      recommendations: true,
+    }
+
+    await expect(createPrivacyController({
+      catalog: travelCatalog,
+      repository: deps.repository,
+      enforcement: {
+        id: 'drifted-demo',
+        scope: 'local_demo',
+        apply: async () => undefined,
+        readCurrentState: async () => drifted,
+      },
+      clock: deps.clock,
+      idGenerator: deps.idGenerator,
+    })).rejects.toMatchObject({ code: 'enforcement_drift' })
+  })
+
   it('moves through staged, reviewed and applied with a verified receipt', async () => {
     const deps = dependencies()
     const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })

@@ -9,6 +9,8 @@ export async function bootstrapBrowserApp() {
   const privacyUi = createPrivacyViewCoordinator()
   const repository = new LocalStoragePrivacyRepository(window.localStorage, createTravelSeed)
   const enforcement = new LocalDemoEnforcementAdapter(window.localStorage, createTravelSeed)
+  const initialRecord = await repository.load()
+  await enforcement.synchronize(initialRecord.state.processing, initialRecord.state.revision)
   const controller = await createPrivacyController({
     catalog: travelCatalog,
     repository,

@@ -84,7 +84,13 @@ export async function createPrivacyRuntime({
   idGenerator,
 }: PrivacyRuntimeDependencies): Promise<PrivacyController> {
   const initialRecord = await repository.load()
-  await enforcement.readCurrentState()
+  const initialEnforcedState = await enforcement.readCurrentState()
+  if (!sameState(catalog, initialEnforcedState, initialRecord.state.processing)) {
+    throw new ApplicationError(
+      'enforcement_drift',
+      `The ${enforcement.id} adapter state does not match the stored privacy decision.`,
+    )
+  }
   let snapshot: PrivacyControllerSnapshot = {
     workflow: 'idle',
     record: initialRecord,

@@ -10,6 +10,7 @@ interface PrivacyChoiceBannerProps {
   webMcpAvailable: boolean
   onManage(): void
   onLearn(): void
+  onApplied(): void
 }
 
 export function PrivacyChoiceBanner({
@@ -18,6 +19,7 @@ export function PrivacyChoiceBanner({
   webMcpAvailable,
   onManage,
   onLearn,
+  onApplied,
 }: PrivacyChoiceBannerProps) {
   const [applying, setApplying] = useState<PrivacyPreset | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -29,6 +31,7 @@ export function PrivacyChoiceBanner({
     setError(null)
     try {
       await controller.applyInitialChoice(preset)
+      onApplied()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'The privacy choice could not be applied.')
     } finally {

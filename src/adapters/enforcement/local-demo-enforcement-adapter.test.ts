@@ -35,4 +35,15 @@ describe('LocalDemoEnforcementAdapter', () => {
 
     expect(await adapter.readCurrentState()).toEqual(createTravelSeed().processing)
   })
+
+  it('can explicitly synchronize the local demo during bootstrap migration', async () => {
+    const storage = new MemoryStorage()
+    const adapter = new LocalDemoEnforcementAdapter(storage, createTravelSeed)
+    const migrated = { ...createTravelSeed().processing, recommendations: true }
+
+    await adapter.synchronize(migrated, 7)
+
+    expect(await adapter.readCurrentState()).toEqual(migrated)
+    expect(storage.getItem(DEMO_ENFORCEMENT_STORAGE_KEY)).toContain('bootstrap-sync-7')
+  })
 })

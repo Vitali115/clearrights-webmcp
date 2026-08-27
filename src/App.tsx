@@ -83,6 +83,7 @@ export default function App({ controller, privacyUi, webMcpAvailable }: AppProps
             webMcpAvailable={webMcpAvailable}
             onManage={openPrivacySettings}
             onLearn={() => navigatePage('privacy')}
+            onApplied={() => privacyUi.revokeAgentPreparation()}
           />
         </>
       ) : (

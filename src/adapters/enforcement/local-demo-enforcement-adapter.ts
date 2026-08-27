@@ -65,6 +65,15 @@ export class LocalDemoEnforcementAdapter implements PrivacyEnforcementAdapter {
     return clone(this.loadRecord().state)
   }
 
+  async synchronize(state: ProcessingState, revision: number): Promise<void> {
+    const synchronized = recordSchema.parse({
+      schemaVersion: 1,
+      state,
+      lastOperationId: `bootstrap-sync-${revision}`,
+    })
+    this.storage.setItem(DEMO_ENFORCEMENT_STORAGE_KEY, JSON.stringify(synchronized))
+  }
+
   private loadRecord() {
     const stored = this.storage.getItem(DEMO_ENFORCEMENT_STORAGE_KEY)
     if (stored) {
