@@ -26,18 +26,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
 import {
   SheetContent,
   SheetDescription,
@@ -45,7 +35,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock3 } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ChevronDown } from 'lucide-react'
 import { AgentActivityIndicator } from './AgentActivityIndicator'
 import { HoldToConfirm } from './HoldToConfirm'
 
@@ -103,7 +93,7 @@ const VIEW_COPY: Record<PrivacyView, { title: string; description: string }> = {
   },
   review: {
     title: 'Review changes',
-    description: 'Check each effect before you approve and apply.',
+    description: 'Two facts, then apply. Only the settings listed below will change.',
   },
   history: {
     title: 'Previous changes',
@@ -211,19 +201,19 @@ export function PrivacyCenter({
   )
 
   return (
-    <SheetContent className="gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:w-[min(80vw,920px)] data-[side=right]:sm:max-w-none">
+    <SheetContent className="gap-0 bg-background p-0 data-[side=right]:w-full data-[side=right]:sm:w-[min(80vw,920px)] data-[side=right]:sm:max-w-none">
       <AgentActivityIndicator activity={privacyView.agentActivity} />
-      <SheetHeader className="min-h-[104px] border-b px-5 py-4 pr-14 sm:px-8 sm:pr-40">
+      <SheetHeader className="border-b border-foreground/10 px-5 py-5 pr-14 sm:px-8 sm:pr-40">
         <div className="flex items-start gap-3">
           {!settingsView && (
-            <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={goBack}>
+            <Button variant="ghost" size="icon-sm" className="mt-0.5 rounded-full" aria-label="Back" onClick={goBack}>
               <ArrowLeft />
             </Button>
           )}
           <div className="min-w-0">
             <SheetTitle className="sr-only">Privacy settings panel</SheetTitle>
-            <h1 ref={viewHeadingRef} tabIndex={-1} className="font-heading text-xl font-medium text-foreground outline-none">{copy.title}</h1>
-            <SheetDescription>{copy.description}</SheetDescription>
+            <h1 ref={viewHeadingRef} tabIndex={-1} className="font-heading text-[22px] font-medium tracking-tight text-foreground outline-none">{copy.title}</h1>
+            <SheetDescription className="mt-1.5 font-medium">{copy.description}</SheetDescription>
           </div>
         </div>
       </SheetHeader>
@@ -235,7 +225,7 @@ export function PrivacyCenter({
         onKeyDownCapture={() => privacyUi.acknowledge()}
         onScrollCapture={() => privacyUi.acknowledge()}
       >
-        <main className="mx-auto w-full max-w-3xl space-y-6 p-5 sm:p-8">
+        <main className="mx-auto w-full max-w-3xl space-y-8 p-5 sm:px-8 sm:py-7">
           {settingsView && (
             <SettingsView
               snapshot={snapshot}
@@ -284,13 +274,13 @@ export function PrivacyCenter({
         </main>
       </ScrollArea>
 
-      <SheetFooter className="flex-row items-center justify-between gap-3 border-t bg-background px-5 py-2.5 sm:px-8">
-        <p className="text-xs text-muted-foreground">
+      <SheetFooter className="flex-row items-center justify-between gap-3 border-t border-foreground/10 bg-background px-5 py-2.5 sm:px-8">
+        <p className="text-xs font-medium text-muted-foreground">
           {webMcpAvailable ? 'Agent access available' : 'Manual settings'} · Stored in this browser
         </p>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm">Reset</Button>
+            <Button variant="ghost" size="sm" className="text-muted-foreground">Reset</Button>
           </AlertDialogTrigger>
           <AlertDialogContent size="sm">
             <AlertDialogHeader>
@@ -335,64 +325,62 @@ function SettingsView({
       !== draftEnabled(definition, keepCapabilities, avoidUses)).length
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4 text-sm">
-        <p className="text-muted-foreground">
+    <div>
+      <div className="mb-7 flex flex-wrap items-center justify-between gap-3 text-sm font-medium text-muted-foreground">
+        <p>
           {optionalEnabled} of {optional.length} optional settings on · Revision {snapshot.record.state.revision}
         </p>
-        <Button variant="link" className="h-auto px-0" onClick={onHistory}>
+        <Button variant="ghost" className="h-auto px-0 text-foreground" onClick={onHistory}>
           Previous changes ({snapshot.record.receipts.length})
         </Button>
       </div>
 
-      <div className="space-y-5" aria-label="Privacy settings list">
+      <div aria-label="Privacy settings list">
         {SETTING_GROUPS.map(({ title, description, ids }) => (
-          <section key={title} className="overflow-hidden rounded-xl border bg-card" aria-labelledby={`settings-${ids[0]}`}>
-            <div className="border-b bg-muted/25 px-4 py-3">
-              <h2 id={`settings-${ids[0]}`} className="font-heading text-sm font-semibold">{title}</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-            </div>
-            <div className="divide-y">
-              {ids.map((id) => {
-                const definition = travelCatalog.getProcessing(id)
-                const enabled = draftEnabled(definition, keepCapabilities, avoidUses)
-                const changed = snapshot.record.state.processing[id] !== enabled
-                return (
-                  <div
-                    key={id}
-                    data-testid={`setting-row-${id}`}
-                    className={changed ? 'flex items-center gap-3 bg-blue-50/60 px-4 py-3 dark:bg-blue-950/20' : 'flex items-center gap-3 px-4 py-3'}
+          <section key={title} className="mb-9" aria-labelledby={`settings-${ids[0]}`}>
+            <h2 id={`settings-${ids[0]}`} className="text-[13px] font-medium text-muted-foreground">{title}</h2>
+            <p className="mt-1 mb-1 text-[13px] text-muted-foreground">{description}</p>
+            {ids.map((id) => {
+              const definition = travelCatalog.getProcessing(id)
+              const enabled = draftEnabled(definition, keepCapabilities, avoidUses)
+              const changed = snapshot.record.state.processing[id] !== enabled
+              return (
+                <div
+                  key={id}
+                  data-testid={`setting-row-${id}`}
+                  className="grid grid-cols-[1fr_auto] items-start gap-x-6 gap-y-2 border-t border-foreground/10 py-[18px]"
+                >
+                  <button
+                    type="button"
+                    className="min-w-0 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                    aria-label={`Open ${definition.label} details`}
+                    onClick={() => onInspect(id)}
                   >
-                    <button
-                      type="button"
-                      className="min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                      aria-label={`Open ${definition.label} details`}
-                      onClick={() => onInspect(id)}
-                    >
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{definition.label}</span>
-                        {changed && <Badge variant="secondary">Will turn {enabled ? 'on' : 'off'}</Badge>}
-                      </span>
-                      <span className="mt-0.5 block text-sm text-muted-foreground">{definition.purpose}</span>
-                    </button>
+                    <span className="block text-base font-medium tracking-tight">{definition.label}</span>
+                    <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{definition.purpose}</span>
+                  </button>
+                  <div className="flex flex-col items-end gap-1.5 pt-0.5">
+                    {changed && (
+                      <span className="text-xs font-medium">Will turn {enabled ? 'on' : 'off'}</span>
+                    )}
                     {definition.locked ? (
-                      <span className="shrink-0 text-xs font-medium text-muted-foreground">Required</span>
+                      <span className="text-xs font-medium text-muted-foreground">Required</span>
                     ) : (
                       <SettingSwitch label={definition.label} checked={enabled} onChange={(checked) => onChange(definition, checked)} />
                     )}
                   </div>
-                )
-              })}
-            </div>
+                </div>
+              )
+            })}
           </section>
         ))}
       </div>
 
-      <div className="sticky bottom-0 flex items-center justify-between gap-3 rounded-xl border bg-background/95 p-4 shadow-sm backdrop-blur">
+      <div className="sticky bottom-0 -mx-5 mt-4 flex items-center justify-between gap-3 bg-gradient-to-t from-background from-70% to-transparent px-5 pt-8 pb-1 sm:-mx-8 sm:px-8">
         <p className="text-sm font-medium">
           {changedCount ? `${changedCount} pending ${changedCount === 1 ? 'change' : 'changes'}` : 'No pending changes'}
         </p>
-        <Button disabled={changedCount === 0} onClick={onReview}>Review changes</Button>
+        <Button className="h-9 rounded-full px-5" disabled={changedCount === 0} onClick={onReview}>Review changes</Button>
       </div>
     </div>
   )
@@ -405,10 +393,10 @@ function SettingSwitch({ label, checked, onChange }: { label: string; checked: b
       role="switch"
       aria-label={label}
       aria-checked={checked}
-      className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${checked ? 'border-primary bg-primary' : 'border-input bg-muted'}`}
+      className={`relative h-[26px] w-11 shrink-0 rounded-full transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${checked ? 'bg-foreground' : 'bg-muted-foreground/25'}`}
       onClick={() => onChange(!checked)}
     >
-      <span className={`absolute top-0.5 size-4 rounded-full bg-background shadow-sm transition-transform ${checked ? 'left-5' : 'left-1'}`} />
+      <span className={`absolute top-[3px] size-5 rounded-full bg-background transition-transform ${checked ? 'left-[22px]' : 'left-[3px]'}`} />
     </button>
   )
 }
@@ -434,39 +422,36 @@ function ActivityDetailView({
   const changed = snapshot.record.state.processing[processingId] !== enabled
 
   return (
-    <div className="space-y-5">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">{definition.label}</CardTitle>
-          <CardDescription>{definition.purpose}</CardDescription>
-          <CardAction>
-            {definition.locked
-              ? <Badge variant="outline">Required</Badge>
-              : <SettingSwitch label={definition.label} checked={enabled} onChange={(checked) => onChange(definition, checked)} />}
-          </CardAction>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {changed && (
-            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
-              Pending change: this setting will turn {enabled ? 'on' : 'off'} after review and approval.
-            </div>
-          )}
-          <Detail label="Current state" value={inspection.enabled ? 'On' : 'Off'} />
-          <Separator />
-          <Detail label="Data used" value={definition.data.join(', ')} />
-          <Detail label="Declared legal basis" value={basisLabel(definition.declaredLegalBasis)} />
-          <Detail label="Control" value={definition.control} />
-          <Detail
-            label="Dependencies"
-            value={definition.dependencies.length
-              ? definition.dependencies.map((id) => travelCatalog.getProcessing(id).label).join(', ')
-              : 'None'}
-          />
-          <Detail label="If turned off" value={definition.consequence} />
-          <Detail label="Privacy notice reference" value={definition.policyReference} />
-        </CardContent>
-      </Card>
-      <p className="text-xs leading-relaxed text-muted-foreground">
+    <div>
+      <div className="mb-8 grid grid-cols-[1fr_auto] items-start gap-6 border-b border-foreground/10 pb-6">
+        <div>
+          <p className="text-[1.35rem] font-medium tracking-tight">{definition.label}</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{definition.purpose}</p>
+        </div>
+        {definition.locked
+          ? <span className="text-xs font-medium text-muted-foreground">Required</span>
+          : <SettingSwitch label={definition.label} checked={enabled} onChange={(checked) => onChange(definition, checked)} />}
+      </div>
+      {changed && (
+        <p className="mb-6 text-sm font-medium">
+          Pending change: this setting will turn {enabled ? 'on' : 'off'} after review and approval.
+        </p>
+      )}
+      <div className="space-y-5">
+        <Detail label="Current state" value={inspection.enabled ? 'On' : 'Off'} />
+        <Detail label="Data used" value={definition.data.join(', ')} />
+        <Detail label="Declared legal basis" value={basisLabel(definition.declaredLegalBasis)} />
+        <Detail label="Control" value={definition.control} />
+        <Detail
+          label="Dependencies"
+          value={definition.dependencies.length
+            ? definition.dependencies.map((id) => travelCatalog.getProcessing(id).label).join(', ')
+            : 'None'}
+        />
+        <Detail label="If turned off" value={definition.consequence} />
+        <Detail label="Privacy notice reference" value={definition.policyReference} />
+      </div>
+      <p className="mt-8 text-xs leading-relaxed text-muted-foreground">
         Waypoint declares this purpose and legal basis. This interface does not determine legal compliance.
       </p>
     </div>
@@ -475,16 +460,16 @@ function ActivityDetailView({
 
 function HistoryView({ snapshot, onLatestReceipt }: { snapshot: PrivacyControllerSnapshot; onLatestReceipt(): void }) {
   return (
-    <section className="space-y-3" aria-labelledby="receipt-history-heading">
-      <div className="flex items-center justify-between gap-3">
+    <section aria-labelledby="receipt-history-heading">
+      <div className="mb-6 flex items-end justify-between gap-3">
         <div>
-          <h2 id="receipt-history-heading" className="font-heading text-lg font-semibold">Change history</h2>
-          <p className="text-sm text-muted-foreground">Up to ten receipts are kept in this browser.</p>
+          <h2 id="receipt-history-heading" className="font-heading text-base font-medium tracking-tight">Change history</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Up to ten receipts are kept in this browser.</p>
         </div>
-        <Badge variant="outline">Current revision {snapshot.record.state.revision}</Badge>
+        <p className="text-sm font-medium text-muted-foreground">Current revision {snapshot.record.state.revision}</p>
       </div>
       {snapshot.record.receipts.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-8 text-center">
+        <div className="border-t border-foreground/10 py-8">
           <p className="font-medium">No previous changes</p>
           <p className="mt-1 text-sm text-muted-foreground">Applied changes will appear here.</p>
         </div>
@@ -505,18 +490,18 @@ function ReceiptHistoryItem({
   onOpenLatest(): void
 }) {
   return (
-    <details className="group rounded-xl border bg-card open:ring-1 open:ring-primary/10">
-      <summary className="flex cursor-pointer list-none items-center gap-3 p-4 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+    <details className="group border-t border-foreground/10">
+      <summary className="flex cursor-pointer list-none items-center gap-3 py-4 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
         <span className="min-w-0 flex-1">
           <span className="block font-medium">{formatDate(receipt.issuedAt)}</span>
           <span className="block truncate text-sm text-muted-foreground">{receipt.changes.length} changes · {receipt.id}</span>
         </span>
-        {latest && <Badge variant="secondary">Latest</Badge>}
+        {latest && <span className="text-xs font-medium">Latest</span>}
         <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
       </summary>
-      <div className="space-y-4 border-t p-4">
+      <div className="space-y-4 pb-5">
         <ReceiptDetails receipt={receipt} />
-        {latest && <Button variant="outline" onClick={onOpenLatest}>Open receipt</Button>}
+        {latest && <Button variant="ghost" className="h-9 rounded-full px-5" onClick={onOpenLatest}>Open receipt</Button>}
       </div>
     </details>
   )
@@ -542,96 +527,92 @@ function ReviewView({
   const plan = snapshot.plan
   if (!plan || !planMatchesIntent) {
     return (
-      <div className="rounded-xl border border-dashed p-8 text-center">
+      <div className="border-t border-foreground/10 py-8">
         <p className="font-medium">These settings changed after preparation.</p>
         <p className="mt-1 text-sm text-muted-foreground">Return to settings and prepare the current draft again.</p>
-        <Button className="mt-4" onClick={onEdit}>Return to settings</Button>
+        <Button className="mt-5 h-9 rounded-full px-5" onClick={onEdit}>Return to settings</Button>
       </div>
     )
   }
 
   if (plan.isNoOp) {
     return (
-      <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>You’re already set</CardTitle>
-            <CardDescription>
-              {plan.blockedItems.length
-                ? 'All optional settings are already off. No changes need approval.'
-                : 'The requested settings already match the current setup. There is nothing to approve or apply.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={false} approvalNeeded={false} />
-            <Button variant="outline" onClick={onEdit}>Back to settings</Button>
-          </CardContent>
-        </Card>
+      <div>
+        <p className="text-[1.1rem] font-medium tracking-tight">You’re already set</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          {plan.blockedItems.length
+            ? 'All optional settings are already off. No changes need approval.'
+            : 'The requested settings already match the current setup. There is nothing to approve or apply.'}
+        </p>
+        <div className="mt-6">
+          <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={false} approvalNeeded={false} />
+        </div>
+        <Button variant="ghost" className="mt-6 h-9 rounded-full px-5" onClick={onEdit}>Back to settings</Button>
         {plan.blockedItems.length > 0 && (
-          <RequiredSettingsSummary processingIds={plan.blockedItems.map(({ processingId }) => processingId)} />
+          <div className="mt-8">
+            <RequiredSettingsSummary processingIds={plan.blockedItems.map(({ processingId }) => processingId)} />
+          </div>
         )}
       </div>
     )
   }
 
   return (
-    <div className="space-y-5">
-      <Card>
-        <CardHeader>
-          <CardTitle>{plan.changes.length} {plan.changes.length === 1 ? 'change' : 'changes'} ready</CardTitle>
-          <CardDescription>Only the settings listed below will change.</CardDescription>
-          <CardAction><Button variant="outline" size="sm" onClick={onEdit}>Edit settings</Button></CardAction>
-        </CardHeader>
-        <CardContent>
-          <ul className="divide-y rounded-lg border">
-            {plan.changes.map((change) => {
-              const consequence = plan.consequences.find(({ processingId }) => processingId === change.processingId)
-              return (
-                <li key={change.processingId} className="border-l-4 border-l-blue-600 p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-medium">{change.label}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{consequence?.message ?? change.reason}</p>
-                    </div>
-                    <Badge variant={change.after ? 'secondary' : 'outline'}>
-                      {change.before ? 'On' : 'Off'} → {change.after ? 'On' : 'Off'}
-                    </Badge>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        </CardContent>
-      </Card>
+    <div>
+      <div className="mb-2 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[1.1rem] font-medium tracking-tight">
+            {plan.changes.length} {plan.changes.length === 1 ? 'change' : 'changes'} ready
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Only the settings listed below will change.</p>
+        </div>
+        <Button variant="ghost" className="h-9 shrink-0 rounded-full px-4" onClick={onEdit}>Edit settings</Button>
+      </div>
+
+      <ul>
+        {plan.changes.map((change) => {
+          const consequence = plan.consequences.find(({ processingId }) => processingId === change.processingId)
+          return (
+            <li key={change.processingId} className="border-t border-foreground/10 py-5">
+              <p className="font-medium tracking-tight">{change.label}</p>
+              <p className="mt-1.5 text-sm font-medium">
+                {change.before ? 'On' : 'Off'} → {change.after ? 'On' : 'Off'}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{consequence?.message ?? change.reason}</p>
+            </li>
+          )
+        })}
+      </ul>
 
       {plan.conflicts.map((conflict) => (
-        <Alert key={`${conflict.capabilityId}-${conflict.useId}`} variant="destructive">
+        <Alert key={`${conflict.capabilityId}-${conflict.useId}`} variant="destructive" className="mt-4">
           <AlertTriangle />
           <AlertTitle>Conflicting request</AlertTitle>
           <AlertDescription>{conflict.message}</AlertDescription>
         </Alert>
       ))}
       {plan.blockedItems.length > 0 && (
-        <RequiredSettingsSummary processingIds={plan.blockedItems.map(({ processingId }) => processingId)} />
+        <div className="mt-4">
+          <RequiredSettingsSummary processingIds={plan.blockedItems.map(({ processingId }) => processingId)} />
+        </div>
       )}
 
-      <Card className="ring-2 ring-primary/10">
-        <CardHeader>
-          <CardTitle>Approval</CardTitle>
-          <CardDescription>Agent preparation and human approval are separate and both remain visible.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={snapshot.workflow === 'reviewed'} approvalNeeded />
-          <HoldToConfirm
-            confirmed={snapshot.workflow === 'reviewed'}
-            onConfirm={() => controller.setReviewed(true)}
-            onRevoke={() => controller.setReviewed(false)}
-          />
-          <Button className="w-full" size="lg" disabled={snapshot.workflow !== 'reviewed' || applying} onClick={onApply}>
-            {applying ? 'Applying and verifying…' : snapshot.workflow === 'reviewed' ? 'Apply changes' : 'Human approval required'}
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="mt-8">
+        <p className="mb-4 text-[13px] font-medium text-muted-foreground">Two stamps. Both stay on this review.</p>
+        <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={snapshot.workflow === 'reviewed'} approvalNeeded />
+        <HoldToConfirm
+          confirmed={snapshot.workflow === 'reviewed'}
+          onConfirm={() => controller.setReviewed(true)}
+          onRevoke={() => controller.setReviewed(false)}
+        />
+        <Button
+          className="mt-6 h-9 w-full rounded-full"
+          disabled={snapshot.workflow !== 'reviewed' || applying}
+          onClick={onApply}
+        >
+          {applying ? 'Applying and verifying…' : snapshot.workflow === 'reviewed' ? 'Apply changes' : 'Human approval required'}
+        </Button>
+      </div>
     </div>
   )
 }
@@ -646,49 +627,73 @@ function ApprovalStatus({
   approvalNeeded: boolean
 }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-2" aria-label="Approval status">
-      <div className={preparedByAgent ? 'flex items-center gap-3 rounded-lg bg-emerald-50 p-3 dark:bg-emerald-950/20' : 'flex items-center gap-3 rounded-lg bg-muted/50 p-3'}>
-        <StatusMark complete={preparedByAgent} />
-        <div>
-          <p className="text-sm font-medium">Agent check</p>
-          <p className="text-xs text-muted-foreground">{preparedByAgent ? 'Change set prepared' : 'Manual change set'}</p>
-        </div>
-      </div>
-      <div className={humanReviewed ? 'flex items-center gap-3 rounded-lg bg-emerald-50 p-3 dark:bg-emerald-950/20' : 'flex items-center gap-3 rounded-lg bg-muted/50 p-3'}>
-        <StatusMark complete={humanReviewed || !approvalNeeded} />
-        <div>
-          <p className="text-sm font-medium">Human check</p>
-          <p className="text-xs text-muted-foreground">{humanReviewed ? 'Approved' : approvalNeeded ? 'Waiting for you' : 'Not needed'}</p>
-        </div>
+    <div className="grid gap-4 overflow-visible sm:grid-cols-2" aria-label="Approval status">
+      <Stamp
+        title="Agent check"
+        complete={preparedByAgent}
+        status={preparedByAgent ? 'Change set prepared' : 'Manual change set'}
+      >
+        {preparedByAgent
+          ? 'The page tool prepared this exact change set. It is a recorded preparation, not a signature.'
+          : 'This change set was prepared in the page, not by the agent tool.'}
+      </Stamp>
+      <Stamp
+        title="Human check"
+        complete={humanReviewed || !approvalNeeded}
+        status={humanReviewed ? 'Approved' : approvalNeeded ? 'Waiting for you' : 'Not needed'}
+      >
+        {humanReviewed
+          ? 'A 1.2 second hold recorded that you reviewed this plan.'
+          : approvalNeeded
+            ? 'Hold for 1.2 seconds to record that you reviewed this plan. Early release does not confirm.'
+            : 'Human approval is not needed for this plan.'}
+      </Stamp>
+    </div>
+  )
+}
+
+function Stamp({
+  title,
+  complete,
+  status,
+  children,
+}: {
+  title: string
+  complete: boolean
+  status: string
+  children: string
+}) {
+  return (
+    <div className={`flex min-h-48 flex-col justify-between rounded-sm border p-4 ${complete ? 'border-foreground' : 'border-foreground/20'}`}>
+      <p className="text-sm font-medium">{title}</p>
+      <span
+        className={`mx-auto size-14 rounded-full ${complete ? 'bg-foreground' : 'border-2 border-foreground/25'}`}
+        aria-hidden="true"
+      />
+      <div>
+        <p className={`text-sm font-medium ${complete ? 'text-foreground' : 'text-muted-foreground'}`}>{status}</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{children}</p>
       </div>
     </div>
   )
 }
 
-function StatusMark({ complete }: { complete: boolean }) {
-  return complete ? (
-    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white" aria-hidden="true">
-      <Check className="size-4" />
-    </span>
-  ) : <span className="size-6 shrink-0 rounded-full border-2 border-muted-foreground/35" aria-hidden="true" />
-}
-
 function RequiredSettingsSummary({ processingIds }: { processingIds: readonly ProcessingId[] }) {
   const uniqueIds = [...new Set(processingIds)]
   return (
-    <details className="group rounded-xl border bg-card">
-      <summary className="flex cursor-pointer list-none items-center gap-3 p-4 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+    <details className="group border-t border-foreground/10">
+      <summary className="flex cursor-pointer list-none items-center gap-3 py-5 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
         <span className="min-w-0 flex-1">
           <span className="block font-medium">{uniqueIds.length} essential {uniqueIds.length === 1 ? 'setting stays' : 'settings stay'} on</span>
           <span className="block text-sm text-muted-foreground">Required to deliver trips, account security, or service messages.</span>
         </span>
         <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
       </summary>
-      <ul className="divide-y border-t">
+      <ul>
         {uniqueIds.map((processingId) => {
           const definition = travelCatalog.getProcessing(processingId)
           return (
-            <li key={processingId} className="p-4">
+            <li key={processingId} className="border-t border-foreground/10 py-4">
               <p className="font-medium">{definition.label}</p>
               <p className="mt-1 text-sm text-muted-foreground">{definition.purpose}</p>
             </li>
@@ -702,28 +707,27 @@ function RequiredSettingsSummary({ processingIds }: { processingIds: readonly Pr
 function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHome(): void }) {
   if (!receipt) {
     return (
-      <div className="rounded-xl border border-dashed p-8 text-center">
-        <Clock3 className="mx-auto mb-3 size-6 text-muted-foreground" />
+      <div className="border-t border-foreground/10 py-8">
         <p className="font-medium">No verified receipt yet</p>
         <p className="mt-1 text-sm text-muted-foreground">Apply a human-reviewed change to create one.</p>
       </div>
     )
   }
   return (
-    <div className="space-y-5">
-      <Card className="ring-2 ring-emerald-600/15">
-        <CardHeader>
-          <Badge variant="secondary" className="mb-2 w-fit"><Check data-icon="inline-start" /> Verified</Badge>
-          <CardTitle className="text-xl">Privacy settings applied</CardTitle>
-          <CardDescription>The stored state was reread and matched the exact human-reviewed target.</CardDescription>
-        </CardHeader>
-        <CardContent><ReceiptDetails receipt={receipt} /></CardContent>
-      </Card>
-      <div className="rounded-lg border p-4 text-sm">
+    <div>
+      <p className="text-sm font-medium">Verified</p>
+      <p className="mt-2 text-[1.35rem] font-medium tracking-tight">Privacy settings applied</p>
+      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+        The stored state was reread and matched the exact human-reviewed target.
+      </p>
+      <div className="mt-8">
+        <ReceiptDetails receipt={receipt} />
+      </div>
+      <div className="mt-8 border-t border-foreground/10 pt-5 text-sm">
         <p className="font-medium">What verified means</p>
         <p className="mt-1 text-muted-foreground">Application readback matched the reviewed target. This is not a signature or legal proof.</p>
       </div>
-      <Button onClick={onHome}>Return to privacy settings</Button>
+      <Button className="mt-6 h-9 rounded-full px-5" onClick={onHome}>Return to privacy settings</Button>
     </div>
   )
 }
@@ -739,29 +743,29 @@ function ReceiptDetails({ receipt }: { receipt: PrivacyReceipt }) {
         <Detail label="Human review recorded" value={formatDate(receipt.reviewedAt)} />
         <Detail label="Verification" value={`Readback revision ${receipt.verification.observedRevision}`} />
       </div>
-      <Separator />
-      <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Applied changes</p>
+      <div className="border-t border-foreground/10 pt-4">
+        <p className="mb-2 text-xs font-medium text-muted-foreground">Applied changes</p>
         {receipt.changes.length ? (
           <ul className="space-y-2">
             {receipt.changes.map((change) => (
-              <li key={change.processingId} className="flex items-center justify-between gap-3 rounded-lg bg-muted/60 p-3">
+              <li key={change.processingId} className="flex items-center justify-between gap-3 border-t border-foreground/10 py-3">
                 <span>{change.label}</span>
-                <Badge variant={change.after ? 'secondary' : 'outline'}>{change.before ? 'On' : 'Off'} → {change.after ? 'On' : 'Off'}</Badge>
+                <span className="text-sm font-medium">{change.before ? 'On' : 'Off'} → {change.after ? 'On' : 'Off'}</span>
               </li>
             ))}
           </ul>
         ) : <p className="text-muted-foreground">No state changes were recorded.</p>}
       </div>
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Final settings</p>
-        <div className="flex flex-wrap gap-2">
+        <p className="mb-2 text-xs font-medium text-muted-foreground">Final settings</p>
+        <ul>
           {travelCatalog.processing.map((definition) => (
-            <Badge key={definition.id} variant={receipt.finalState[definition.id] ? 'secondary' : 'outline'}>
-              {definition.label}: {receipt.finalState[definition.id] ? 'On' : 'Off'}
-            </Badge>
+            <li key={definition.id} className="flex justify-between gap-3 border-t border-foreground/10 py-2 text-sm">
+              <span>{definition.label}</span>
+              <span className="font-medium text-muted-foreground">{receipt.finalState[definition.id] ? 'On' : 'Off'}</span>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </div>
   )
@@ -770,7 +774,7 @@ function ReceiptDetails({ receipt }: { receipt: PrivacyReceipt }) {
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-1">
-      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <span>{value}</span>
     </div>
   )

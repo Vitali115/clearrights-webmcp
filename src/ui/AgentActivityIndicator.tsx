@@ -18,9 +18,9 @@ export function AgentActivityIndicator({ activity }: AgentActivityIndicatorProps
     <div className="absolute right-14 top-3 z-10">
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="sm"
-        className="relative bg-background"
+        className="relative h-8 rounded-full bg-foreground/5 px-3"
         aria-expanded={open}
         aria-controls={popoverId}
         aria-label={pending ? 'Agent activity, view awaiting review' : 'Agent activity, view review started'}
@@ -39,7 +39,7 @@ export function AgentActivityIndicator({ activity }: AgentActivityIndicatorProps
         <div
           id={popoverId}
           role="status"
-          className="absolute right-0 top-11 w-[min(22rem,calc(100vw-2rem))] rounded-xl border bg-popover p-4 text-popover-foreground shadow-lg"
+          className="absolute right-0 top-11 w-[min(22rem,calc(100vw-2rem))] border border-foreground/10 bg-background p-4 text-foreground"
         >
           <div className="flex gap-3">
             {pending

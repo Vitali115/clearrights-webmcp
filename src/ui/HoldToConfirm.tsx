@@ -34,14 +34,14 @@ export function HoldToConfirm({ confirmed, onConfirm, onRevoke }: HoldToConfirmP
   useEffect(() => cancel, [])
 
   return (
-    <div className={confirmed ? 'rounded-lg bg-emerald-50 p-3 dark:bg-emerald-950/20' : 'rounded-lg border p-3'}>
+    <div className="mt-2">
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           aria-label={confirmed ? 'Human confirmation recorded' : 'Hold to confirm review'}
           aria-describedby={descriptionId}
           aria-pressed={confirmed}
-          className="relative min-h-11 flex-1 overflow-hidden rounded-lg border bg-background px-4 py-2 text-sm font-medium outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none"
+          className={`relative h-11 min-h-11 flex-1 overflow-hidden rounded-full px-4 text-sm font-medium outline-none select-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none ${confirmed ? 'bg-foreground text-background' : 'border border-foreground/10 bg-background'}`}
           disabled={confirmed}
           onPointerDown={(event) => {
             if (event.button !== 0) return
@@ -66,7 +66,7 @@ export function HoldToConfirm({ confirmed, onConfirm, onRevoke }: HoldToConfirmP
         >
           {!confirmed && (
             <span
-              className="absolute inset-y-0 left-0 bg-primary/15 transition-[width] ease-linear"
+              className="absolute inset-y-0 left-0 bg-foreground/8 transition-[width] ease-linear"
               style={{
                 width: holding ? '100%' : '0%',
                 transitionDuration: holding ? `${HOLD_TO_CONFIRM_MS}ms` : '120ms',
@@ -75,12 +75,12 @@ export function HoldToConfirm({ confirmed, onConfirm, onRevoke }: HoldToConfirmP
             />
           )}
           <span className="relative flex items-center justify-center gap-2">
-            {confirmed && <Check className="size-4 text-emerald-700" aria-hidden="true" />}
+            {confirmed && <Check className="size-4" aria-hidden="true" />}
             {confirmed ? 'Human confirmation recorded' : holding ? 'Keep holding…' : 'Hold to confirm'}
           </span>
         </button>
         {confirmed && (
-          <Button type="button" variant="ghost" size="sm" onClick={onRevoke}>Remove confirmation</Button>
+          <Button type="button" variant="ghost" size="sm" className="rounded-full" onClick={onRevoke}>Remove confirmation</Button>
         )}
       </div>
       <p id={descriptionId} className="mt-2 text-xs leading-relaxed text-muted-foreground">
