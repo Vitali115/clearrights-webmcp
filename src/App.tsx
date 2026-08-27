@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import type { PrivacyController, PrivacyViewCoordinator } from '@/application'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
-import { ShieldCheck } from 'lucide-react'
 import { PrivacyCenter } from '@/ui/PrivacyCenter'
 import { TravelProductPage } from '@/ui/TravelProductPage'
 
@@ -40,7 +39,7 @@ export default function App({ controller, privacyUi, webMcpAvailable }: AppProps
         privacyAction={(
           <SheetTrigger asChild>
             <Button variant="outline">
-              <ShieldCheck data-icon="inline-start" /> Privacy Center
+              Privacy settings
             </Button>
           </SheetTrigger>
         )}

@@ -47,25 +47,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import {
-  AlertTriangle,
-  ArrowLeft,
-  ArrowRight,
-  Bot,
-  CheckCircle2,
-  ChevronDown,
-  CircleMinus,
-  Clock3,
-  FileCheck2,
-  History,
-  Info,
-  LockKeyhole,
-  MapPin,
-  RotateCcw,
-  ShieldCheck,
-  SlidersHorizontal,
-  Sparkles,
-} from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, Clock3 } from 'lucide-react'
 import { AgentActivityIndicator } from './AgentActivityIndicator'
 
 interface PrivacyCenterProps {
@@ -76,66 +58,61 @@ interface PrivacyCenterProps {
   webMcpAvailable: boolean
 }
 
-const SETUP_GROUPS: ReadonlyArray<{
+const SETTING_GROUPS: ReadonlyArray<{
   title: string
   description: string
-  icon: typeof ShieldCheck
   ids: readonly ProcessingId[]
 }> = [
   {
-    title: 'Essential trip services',
-    description: 'Booking, account protection, and essential trip messages.',
-    icon: ShieldCheck,
+    title: 'Essential services',
+    description: 'Needed to provide booked trips and protect your account.',
     ids: ['trip_fulfilment', 'account_security', 'transactional_updates'],
   },
   {
     title: 'Personalisation',
-    description: 'Destination and itinerary recommendations.',
-    icon: Sparkles,
+    description: 'Controls experiences adapted to your interests.',
     ids: ['recommendations'],
   },
   {
     title: 'Location',
-    description: 'Nearby suggestions during a trip.',
-    icon: MapPin,
+    description: 'Controls features that use your precise location.',
     ids: ['location_suggestions'],
   },
   {
     title: 'Partner offers',
-    description: 'Offers tailored by selected travel partners.',
-    icon: SlidersHorizontal,
+    description: 'Controls tailored offers from selected partners.',
     ids: ['partner_advertising'],
   },
 ]
 
 const VIEW_COPY: Record<PrivacyView, { title: string; description: string }> = {
   home: {
-    title: 'Privacy Center',
-    description: 'Understand and adjust how Waypoint uses data in this travel demo.',
+    title: 'Privacy settings',
+    description: 'All data-use settings available for this site.',
   },
   current_setup: {
-    title: 'Current privacy setup',
-    description: 'Review every active and inactive processing activity.',
+    title: 'Privacy settings',
+    description: 'All data-use settings available for this site.',
   },
   activity: {
-    title: 'Activity details',
-    description: 'See the service-declared purpose, data, dependencies, and effect.',
+    title: 'Setting details',
+    description: 'Purpose, data, dependencies, and effect of this setting.',
   },
   cleanup: {
-    title: 'Privacy cleanup',
-    description: 'Choose the optional experiences you want to keep.',
+    title: 'Privacy settings',
+    description: 'All data-use settings available for this site.',
   },
   review: {
-    title: 'Review your changes',
-    description: 'Understand every consequence before providing human approval.',
+    title: 'Review changes',
+    description: 'Check each effect before you approve and apply.',
   },
   history: {
     title: 'Previous changes',
-    description: 'Inspect up to ten verified privacy receipts, newest first.',
+    description: 'Verified changes stored in this browser, newest first.',
   },
   receipt: {
     title: 'Verified receipt',
-    description: 'Confirm what was applied after persisted-state readback.',
+    description: 'The applied settings matched the reviewed changes.',
   },
 }
 
@@ -150,11 +127,9 @@ export function PrivacyCenter({
     snapshot.plan ? [...snapshot.plan.input.keepCapabilities] : activeCapabilities(snapshot))
   const [avoidUses, setAvoidUses] = useState<UseId[]>(() =>
     snapshot.plan ? [...snapshot.plan.input.avoidUses] : inactiveUses(snapshot))
-  const [showHowItWorks, setShowHowItWorks] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
   const viewHeadingRef = useRef<HTMLHeadingElement>(null)
-  const activityReturnView = useRef<'current_setup' | 'cleanup'>('current_setup')
   const view = privacyView.navigation.view
   const copy = VIEW_COPY[view]
   const planMatchesIntent = snapshot.plan
@@ -163,11 +138,8 @@ export function PrivacyCenter({
     : false
 
   useEffect(() => {
-    if (view === 'activity' && privacyView.navigation.origin === 'agent') {
-      activityReturnView.current = 'current_setup'
-    }
     viewHeadingRef.current?.focus()
-  }, [privacyView.navigation.origin, view])
+  }, [view])
 
   const navigate = (next: PrivacyView, processingId?: ProcessingId) => {
     privacyUi.navigate({ view: next, processingId, origin: 'human' })
@@ -175,15 +147,8 @@ export function PrivacyCenter({
 
   const goBack = () => {
     privacyUi.acknowledge()
-    if (view === 'activity') navigate(activityReturnView.current)
-    else if (view === 'review') navigate('cleanup')
-    else if (view === 'receipt') navigate('history')
+    if (view === 'receipt') navigate('history')
     else navigate('home')
-  }
-
-  const inspectActivity = (processingId: ProcessingId, returnView: 'current_setup' | 'cleanup') => {
-    activityReturnView.current = returnView
-    navigate('activity', processingId)
   }
 
   const updateProcessing = (definition: ProcessingDefinition, enabled: boolean) => {
@@ -205,7 +170,7 @@ export function PrivacyCenter({
       controller.stage({ keepCapabilities, avoidUses })
       navigate('review')
     } catch (error) {
-      setActionError(errorMessage(error, 'The plan could not be prepared.'))
+      setActionError(errorMessage(error, 'The changes could not be prepared.'))
     }
   }
 
@@ -217,7 +182,7 @@ export function PrivacyCenter({
       await controller.apply(snapshot.plan.id)
       navigate('receipt')
     } catch (error) {
-      setActionError(errorMessage(error, 'The reviewed plan could not be applied.'))
+      setActionError(errorMessage(error, 'The reviewed changes could not be applied.'))
     } finally {
       setApplying(false)
     }
@@ -235,24 +200,21 @@ export function PrivacyCenter({
     }
   }
 
+  const settingsView = view === 'home' || view === 'current_setup' || view === 'cleanup'
+  const preparedByAgent = view === 'review' && privacyView.navigation.origin === 'agent'
+
   return (
     <SheetContent className="gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:w-[min(80vw,920px)] data-[side=right]:sm:max-w-none">
       <AgentActivityIndicator activity={privacyView.agentActivity} />
-      <SheetHeader className="min-h-[132px] border-b px-5 py-5 pr-14 sm:px-8 sm:pr-52">
-        <div className="flex flex-wrap items-center gap-2 pr-8">
-          <Badge variant="secondary"><ShieldCheck data-icon="inline-start" /> ClearRights</Badge>
-          <Badge variant="outline">
-            <Bot data-icon="inline-start" /> {webMcpAvailable ? 'Agent tools ready' : 'Manual mode'}
-          </Badge>
-        </div>
-        <div className="mt-2 flex items-start gap-3">
-          {view !== 'home' && (
+      <SheetHeader className="min-h-[104px] border-b px-5 py-4 pr-14 sm:px-8 sm:pr-40">
+        <div className="flex items-start gap-3">
+          {!settingsView && (
             <Button variant="ghost" size="icon-sm" aria-label="Back" onClick={goBack}>
               <ArrowLeft />
             </Button>
           )}
           <div className="min-w-0">
-            <SheetTitle className="sr-only">Privacy Center</SheetTitle>
+            <SheetTitle className="sr-only">Privacy settings panel</SheetTitle>
             <h1 ref={viewHeadingRef} tabIndex={-1} className="font-heading text-xl font-medium text-foreground outline-none">{copy.title}</h1>
             <SheetDescription>{copy.description}</SheetDescription>
           </div>
@@ -261,53 +223,44 @@ export function PrivacyCenter({
 
       <ScrollArea
         data-testid="privacy-view-content"
-        className="h-[calc(100svh-190px)]"
+        className="h-[calc(100svh-158px)]"
         onClickCapture={() => privacyUi.acknowledge()}
         onKeyDownCapture={() => privacyUi.acknowledge()}
         onScrollCapture={() => privacyUi.acknowledge()}
       >
         <main className="mx-auto w-full max-w-3xl space-y-6 p-5 sm:p-8">
-          {view === 'home' && (
-            <HomeView
-              receiptCount={snapshot.record.receipts.length}
-              showHowItWorks={showHowItWorks}
-              onToggleHowItWorks={() => setShowHowItWorks((current) => !current)}
-              onNavigate={navigate}
-            />
-          )}
-          {view === 'current_setup' && (
-            <CurrentSetupView snapshot={snapshot} onInspect={(id) => inspectActivity(id, 'current_setup')} />
-          )}
-          {view === 'activity' && (
-            <ActivityDetailView
-              controller={controller}
-              processingId={privacyView.navigation.processingId ?? 'trip_fulfilment'}
-            />
-          )}
-          {view === 'history' && (
-            <HistoryView
-              snapshot={snapshot}
-              onCurrentSetup={() => navigate('current_setup')}
-              onLatestReceipt={() => navigate('receipt')}
-            />
-          )}
-          {view === 'cleanup' && (
-            <CleanupView
+          {settingsView && (
+            <SettingsView
               snapshot={snapshot}
               keepCapabilities={keepCapabilities}
               avoidUses={avoidUses}
               onChange={updateProcessing}
-              onInspect={(id) => inspectActivity(id, 'cleanup')}
+              onInspect={(processingId) => navigate('activity', processingId)}
+              onHistory={() => navigate('history')}
               onReview={stagePlan}
             />
+          )}
+          {view === 'activity' && (
+            <ActivityDetailView
+              controller={controller}
+              snapshot={snapshot}
+              processingId={privacyView.navigation.processingId ?? 'trip_fulfilment'}
+              keepCapabilities={keepCapabilities}
+              avoidUses={avoidUses}
+              onChange={updateProcessing}
+            />
+          )}
+          {view === 'history' && (
+            <HistoryView snapshot={snapshot} onLatestReceipt={() => navigate('receipt')} />
           )}
           {view === 'review' && (
             <ReviewView
               controller={controller}
               snapshot={snapshot}
               planMatchesIntent={planMatchesIntent}
+              preparedByAgent={preparedByAgent}
               applying={applying}
-              onEdit={() => navigate('cleanup')}
+              onEdit={() => navigate('home')}
               onApply={() => void applyPlan()}
             />
           )}
@@ -324,19 +277,19 @@ export function PrivacyCenter({
         </main>
       </ScrollArea>
 
-      <SheetFooter className="flex-row items-center justify-between gap-3 border-t bg-background px-5 py-3 sm:px-8">
-        <p className="max-w-xl text-xs text-muted-foreground">
-          Service-declared demo information. ClearRights does not provide legal advice or determine compliance.
+      <SheetFooter className="flex-row items-center justify-between gap-3 border-t bg-background px-5 py-2.5 sm:px-8">
+        <p className="text-xs text-muted-foreground">
+          {webMcpAvailable ? 'Agent access available' : 'Manual settings'} · Stored in this browser
         </p>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm" aria-label="Reset demo data"><RotateCcw data-icon="inline-start" /> <span className="hidden sm:inline">Reset demo data</span></Button>
+            <Button variant="ghost" size="sm">Reset</Button>
           </AlertDialogTrigger>
           <AlertDialogContent size="sm">
             <AlertDialogHeader>
               <AlertDialogTitle>Reset demo data?</AlertDialogTitle>
               <AlertDialogDescription>
-                This restores all optional processing, clears the workflow, and permanently deletes the full receipt history.
+                This restores all optional settings and permanently deletes the full change history.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -350,181 +303,129 @@ export function PrivacyCenter({
   )
 }
 
-function HomeView({
-  receiptCount,
-  showHowItWorks,
-  onToggleHowItWorks,
-  onNavigate,
-}: {
-  receiptCount: number
-  showHowItWorks: boolean
-  onToggleHowItWorks(): void
-  onNavigate(view: PrivacyView): void
-}) {
-  return (
-    <>
-      <Card className="border-0 bg-slate-950 text-white ring-0">
-        <CardHeader className="gap-3 sm:p-6">
-          <Badge className="w-fit border-white/15 bg-white/10 text-white">Guided privacy</Badge>
-          <CardTitle className="max-w-xl text-2xl">A calmer way to check your travel privacy setup.</CardTitle>
-          <CardDescription className="max-w-xl text-slate-300">
-            Walk through optional uses, see what each change affects, and approve only after a clear final review.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="sm:px-6">
-          <Button variant="secondary" size="lg" onClick={() => onNavigate('cleanup')}>
-            Start privacy cleanup <ArrowRight data-icon="inline-end" />
-          </Button>
-        </CardContent>
-      </Card>
-
-      <nav aria-label="Privacy Center sections" className="grid gap-3">
-        <NavigationCard
-          icon={SlidersHorizontal}
-          title="Current privacy setup"
-          description="See what is on, what is off, and what Waypoint says each activity does."
-          onClick={() => onNavigate('current_setup')}
-        />
-        <NavigationCard
-          icon={History}
-          title="Previous changes"
-          description={receiptCount ? `${receiptCount} verified ${receiptCount === 1 ? 'receipt' : 'receipts'} available.` : 'No verified changes yet.'}
-          onClick={() => onNavigate('history')}
-        />
-        <NavigationCard
-          icon={Info}
-          title="How ClearRights works"
-          description="Understand planning, human approval, and verification."
-          expanded={showHowItWorks}
-          onClick={onToggleHowItWorks}
-        />
-      </nav>
-
-      {showHowItWorks && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Agent-guided, human-approved</CardTitle>
-            <CardDescription>ClearRights separates preparation from approval.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-3">
-            <NumberedStep number="1" title="Inspect" description="Read service-declared processing and current states." />
-            <NumberedStep number="2" title="Review" description="See changes, conflicts, blocked items, and consequences." />
-            <NumberedStep number="3" title="Approve" description="A person confirms before apply; readback creates the receipt." />
-          </CardContent>
-        </Card>
-      )}
-    </>
-  )
-}
-
-function NavigationCard({
-  icon: Icon,
-  title,
-  description,
-  expanded,
-  onClick,
-}: {
-  icon: typeof ShieldCheck
-  title: string
-  description: string
-  expanded?: boolean
-  onClick(): void
-}) {
-  return (
-    <Button
-      variant="outline"
-      className="h-auto w-full justify-start gap-4 whitespace-normal rounded-xl p-4 text-left"
-      aria-expanded={expanded}
-      onClick={onClick}
-    >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted"><Icon className="size-5" /></span>
-      <span className="min-w-0 flex-1">
-        <span className="block font-medium">{title}</span>
-        <span className="mt-1 block text-sm font-normal text-muted-foreground">{description}</span>
-      </span>
-      {expanded === undefined ? <ArrowRight className="text-muted-foreground" /> : <ChevronDown className={expanded ? 'rotate-180 text-muted-foreground' : 'text-muted-foreground'} />}
-    </Button>
-  )
-}
-
-function CurrentSetupView({
+function SettingsView({
   snapshot,
+  keepCapabilities,
+  avoidUses,
+  onChange,
   onInspect,
+  onHistory,
+  onReview,
 }: {
   snapshot: PrivacyControllerSnapshot
+  keepCapabilities: readonly CapabilityId[]
+  avoidUses: readonly UseId[]
+  onChange(definition: ProcessingDefinition, enabled: boolean): void
   onInspect(id: ProcessingId): void
+  onHistory(): void
+  onReview(): void
 }) {
+  const optional = travelCatalog.processing.filter(({ locked }) => !locked)
+  const optionalEnabled = optional.filter((definition) =>
+    draftEnabled(definition, keepCapabilities, avoidUses)).length
+  const changedCount = travelCatalog.processing.filter((definition) =>
+    snapshot.record.state.processing[definition.id]
+      !== draftEnabled(definition, keepCapabilities, avoidUses)).length
+
   return (
     <div className="space-y-6">
-      <CurrentSetupSummary snapshot={snapshot} />
-      {SETUP_GROUPS.map(({ title, description, icon: Icon, ids }) => (
-        <section key={title} className="space-y-3" aria-labelledby={`setup-${ids[0]}`}>
-          <div className="flex items-start gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted"><Icon className="size-4" /></span>
-            <div>
-              <h2 id={`setup-${ids[0]}`} className="font-heading text-base font-semibold">{title}</h2>
-              <p className="text-sm text-muted-foreground">{description}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4 text-sm">
+        <p className="text-muted-foreground">
+          {optionalEnabled} of {optional.length} optional settings on · Revision {snapshot.record.state.revision}
+        </p>
+        <Button variant="link" className="h-auto px-0" onClick={onHistory}>
+          Previous changes ({snapshot.record.receipts.length})
+        </Button>
+      </div>
+
+      <div className="space-y-5" aria-label="Privacy settings list">
+        {SETTING_GROUPS.map(({ title, description, ids }) => (
+          <section key={title} className="overflow-hidden rounded-xl border bg-card" aria-labelledby={`settings-${ids[0]}`}>
+            <div className="border-b bg-muted/25 px-4 py-3">
+              <h2 id={`settings-${ids[0]}`} className="font-heading text-sm font-semibold">{title}</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
             </div>
-          </div>
-          <div className="grid gap-2 pl-0 sm:pl-12">
-            {ids.map((id) => {
-              const definition = travelCatalog.getProcessing(id)
-              const enabled = snapshot.record.state.processing[id]
-              return (
-                <Button
-                  key={id}
-                  variant="outline"
-                  className="h-auto w-full justify-start whitespace-normal p-3 text-left"
-                  onClick={() => onInspect(id)}
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium">{definition.label}</span>
-                    <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
-                      Declared basis: {basisLabel(definition.declaredLegalBasis)}
-                    </span>
-                  </span>
-                  <Badge variant={enabled ? 'secondary' : 'outline'}>
-                    {definition.locked && <LockKeyhole data-icon="inline-start" />}
-                    {enabled ? 'On' : 'Off'}
-                  </Badge>
-                  <ArrowRight className="text-muted-foreground" />
-                </Button>
-              )
-            })}
-          </div>
-        </section>
-      ))}
+            <div className="divide-y">
+              {ids.map((id) => {
+                const definition = travelCatalog.getProcessing(id)
+                const enabled = draftEnabled(definition, keepCapabilities, avoidUses)
+                const changed = snapshot.record.state.processing[id] !== enabled
+                return (
+                  <div
+                    key={id}
+                    data-testid={`setting-row-${id}`}
+                    className={changed ? 'flex items-center gap-3 bg-blue-50/60 px-4 py-3 dark:bg-blue-950/20' : 'flex items-center gap-3 px-4 py-3'}
+                  >
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                      aria-label={`Open ${definition.label} details`}
+                      onClick={() => onInspect(id)}
+                    >
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{definition.label}</span>
+                        {changed && <Badge variant="secondary">Will turn {enabled ? 'on' : 'off'}</Badge>}
+                      </span>
+                      <span className="mt-0.5 block text-sm text-muted-foreground">{definition.purpose}</span>
+                    </button>
+                    {definition.locked ? (
+                      <span className="shrink-0 text-xs font-medium text-muted-foreground">Required</span>
+                    ) : (
+                      <SettingSwitch label={definition.label} checked={enabled} onChange={(checked) => onChange(definition, checked)} />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <div className="sticky bottom-0 flex items-center justify-between gap-3 rounded-xl border bg-background/95 p-4 shadow-sm backdrop-blur">
+        <p className="text-sm font-medium">
+          {changedCount ? `${changedCount} pending ${changedCount === 1 ? 'change' : 'changes'}` : 'No pending changes'}
+        </p>
+        <Button disabled={changedCount === 0} onClick={onReview}>Review changes</Button>
+      </div>
     </div>
   )
 }
 
-function CurrentSetupSummary({ snapshot }: { snapshot: PrivacyControllerSnapshot }) {
-  const optional = travelCatalog.processing.filter(({ locked }) => !locked)
-  const enabled = optional.filter(({ id }) => snapshot.record.state.processing[id]).length
+function SettingSwitch({ label, checked, onChange }: { label: string; checked: boolean; onChange(checked: boolean): void }) {
   return (
-    <Card className="bg-muted/40">
-      <CardHeader>
-        <CardTitle>Current setup</CardTitle>
-        <CardDescription>This is your active preference state, separate from previous change receipts.</CardDescription>
-        <CardAction><Badge variant="outline">Revision {snapshot.record.state.revision}</Badge></CardAction>
-      </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
-        <Badge variant="secondary">3 essential services on</Badge>
-        <Badge variant="outline">{enabled} of {optional.length} optional experiences on</Badge>
-      </CardContent>
-    </Card>
+    <button
+      type="button"
+      role="switch"
+      aria-label={label}
+      aria-checked={checked}
+      className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${checked ? 'border-primary bg-primary' : 'border-input bg-muted'}`}
+      onClick={() => onChange(!checked)}
+    >
+      <span className={`absolute top-0.5 size-4 rounded-full bg-background shadow-sm transition-transform ${checked ? 'left-5' : 'left-1'}`} />
+    </button>
   )
 }
 
 function ActivityDetailView({
   controller,
+  snapshot,
   processingId,
+  keepCapabilities,
+  avoidUses,
+  onChange,
 }: {
   controller: PrivacyController
+  snapshot: PrivacyControllerSnapshot
   processingId: ProcessingId
+  keepCapabilities: readonly CapabilityId[]
+  avoidUses: readonly UseId[]
+  onChange(definition: ProcessingDefinition, enabled: boolean): void
 }) {
   const inspection = controller.inspect(processingId)
   const { definition } = inspection
+  const enabled = draftEnabled(definition, keepCapabilities, avoidUses)
+  const changed = snapshot.record.state.processing[processingId] !== enabled
+
   return (
     <div className="space-y-5">
       <Card>
@@ -532,15 +433,20 @@ function ActivityDetailView({
           <CardTitle className="text-xl">{definition.label}</CardTitle>
           <CardDescription>{definition.purpose}</CardDescription>
           <CardAction>
-            <Badge variant={inspection.enabled ? 'secondary' : 'outline'}>
-              {definition.locked && <LockKeyhole data-icon="inline-start" />}
-              {inspection.enabled ? 'On' : 'Off'}
-            </Badge>
+            {definition.locked
+              ? <Badge variant="outline">Required</Badge>
+              : <SettingSwitch label={definition.label} checked={enabled} onChange={(checked) => onChange(definition, checked)} />}
           </CardAction>
         </CardHeader>
         <CardContent className="space-y-5">
-          <Detail label="Data used" value={definition.data.join(', ')} />
+          {changed && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
+              Pending change: this setting will turn {enabled ? 'on' : 'off'} after review and approval.
+            </div>
+          )}
+          <Detail label="Current state" value={inspection.enabled ? 'On' : 'Off'} />
           <Separator />
+          <Detail label="Data used" value={definition.data.join(', ')} />
           <Detail label="Declared legal basis" value={basisLabel(definition.declaredLegalBasis)} />
           <Detail label="Control" value={definition.control} />
           <Detail
@@ -553,59 +459,32 @@ function ActivityDetailView({
           <Detail label="Privacy notice reference" value={definition.policyReference} />
         </CardContent>
       </Card>
-      <Alert>
-        <Info />
-        <AlertTitle>Service-declared information</AlertTitle>
-        <AlertDescription>
-          ClearRights displays the purpose and legal basis declared by Waypoint; it does not independently determine legal compliance.
-        </AlertDescription>
-      </Alert>
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        Waypoint declares this purpose and legal basis. This interface does not determine legal compliance.
+      </p>
     </div>
   )
 }
 
-function HistoryView({
-  snapshot,
-  onCurrentSetup,
-  onLatestReceipt,
-}: {
-  snapshot: PrivacyControllerSnapshot
-  onCurrentSetup(): void
-  onLatestReceipt(): void
-}) {
+function HistoryView({ snapshot, onLatestReceipt }: { snapshot: PrivacyControllerSnapshot; onLatestReceipt(): void }) {
   return (
-    <div className="space-y-6">
-      <Button variant="outline" className="h-auto w-full justify-start gap-3 p-4 text-left" onClick={onCurrentSetup}>
-        <SlidersHorizontal className="size-5" />
-        <span className="flex-1">
-          <span className="block font-medium">Current privacy setup</span>
-          <span className="block text-sm font-normal text-muted-foreground">View the configuration active now at revision {snapshot.record.state.revision}.</span>
-        </span>
-        <ArrowRight />
-      </Button>
-      <section className="space-y-3" aria-labelledby="receipt-history-heading">
+    <section className="space-y-3" aria-labelledby="receipt-history-heading">
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 id="receipt-history-heading" className="font-heading text-lg font-semibold">Previous changes</h2>
-          <p className="text-sm text-muted-foreground">Verified receipts are retained newest-first, up to ten.</p>
+          <h2 id="receipt-history-heading" className="font-heading text-lg font-semibold">Change history</h2>
+          <p className="text-sm text-muted-foreground">Up to ten receipts are kept in this browser.</p>
         </div>
-        {snapshot.record.receipts.length === 0 ? (
-          <Card className="border-dashed bg-muted/20 py-10 text-center">
-            <CardContent>
-              <Clock3 className="mx-auto mb-3 size-6 text-muted-foreground" />
-              <p className="font-medium">No previous changes</p>
-              <p className="mt-1 text-sm text-muted-foreground">Your first applied cleanup will appear here.</p>
-            </CardContent>
-          </Card>
-        ) : snapshot.record.receipts.map((receipt, index) => (
-          <ReceiptHistoryItem
-            key={receipt.id}
-            receipt={receipt}
-            latest={index === 0}
-            onOpenLatest={onLatestReceipt}
-          />
-        ))}
-      </section>
-    </div>
+        <Badge variant="outline">Current revision {snapshot.record.state.revision}</Badge>
+      </div>
+      {snapshot.record.receipts.length === 0 ? (
+        <div className="rounded-xl border border-dashed p-8 text-center">
+          <p className="font-medium">No previous changes</p>
+          <p className="mt-1 text-sm text-muted-foreground">Applied changes will appear here.</p>
+        </div>
+      ) : snapshot.record.receipts.map((receipt, index) => (
+        <ReceiptHistoryItem key={receipt.id} receipt={receipt} latest={index === 0} onOpenLatest={onLatestReceipt} />
+      ))}
+    </section>
   )
 }
 
@@ -621,7 +500,6 @@ function ReceiptHistoryItem({
   return (
     <details className="group rounded-xl border bg-card open:ring-1 open:ring-primary/10">
       <summary className="flex cursor-pointer list-none items-center gap-3 p-4 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
-        <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
         <span className="min-w-0 flex-1">
           <span className="block font-medium">{formatDate(receipt.issuedAt)}</span>
           <span className="block truncate text-sm text-muted-foreground">{receipt.changes.length} changes · {receipt.id}</span>
@@ -631,73 +509,9 @@ function ReceiptHistoryItem({
       </summary>
       <div className="space-y-4 border-t p-4">
         <ReceiptDetails receipt={receipt} />
-        {latest && <Button variant="outline" onClick={onOpenLatest}>Open receipt <ArrowRight data-icon="inline-end" /></Button>}
+        {latest && <Button variant="outline" onClick={onOpenLatest}>Open receipt</Button>}
       </div>
     </details>
-  )
-}
-
-function CleanupView({
-  snapshot,
-  keepCapabilities,
-  avoidUses,
-  onChange,
-  onInspect,
-  onReview,
-}: {
-  snapshot: PrivacyControllerSnapshot
-  keepCapabilities: readonly CapabilityId[]
-  avoidUses: readonly UseId[]
-  onChange(definition: ProcessingDefinition, enabled: boolean): void
-  onInspect(id: ProcessingId): void
-  onReview(): void
-}) {
-  const changedCount = travelCatalog.processing.filter((definition) =>
-    snapshot.record.state.processing[definition.id] !== draftEnabled(definition, keepCapabilities, avoidUses)).length
-  return (
-    <div className="space-y-6">
-      <Alert>
-        <Sparkles />
-        <AlertTitle>Your choices stay in this session until review</AlertTitle>
-        <AlertDescription>Essential activities remain visible and locked. Optional choices can be changed before the final review.</AlertDescription>
-      </Alert>
-      {SETUP_GROUPS.map(({ title, description, ids }) => (
-        <Card key={title}>
-          <CardHeader>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {ids.map((id) => {
-              const definition = travelCatalog.getProcessing(id)
-              const enabled = draftEnabled(definition, keepCapabilities, avoidUses)
-              return (
-                <Field key={id} orientation="horizontal" className="items-start">
-                  <Checkbox
-                    id={`cleanup-${id}`}
-                    checked={enabled}
-                    disabled={definition.locked}
-                    onCheckedChange={(checked) => onChange(definition, checked === true)}
-                  />
-                  <FieldContent>
-                    <FieldLabel htmlFor={`cleanup-${id}`}>{definition.label}</FieldLabel>
-                    <FieldDescription>{definition.purpose}</FieldDescription>
-                    <Button variant="link" size="xs" className="mt-1 h-auto px-0" onClick={() => onInspect(id)}>View details</Button>
-                  </FieldContent>
-                  <Badge variant={definition.locked ? 'outline' : enabled ? 'secondary' : 'outline'}>
-                    {definition.locked ? 'Required' : enabled ? 'On' : 'Off'}
-                  </Badge>
-                </Field>
-              )
-            })}
-          </CardContent>
-        </Card>
-      ))}
-      <div className="sticky bottom-0 flex items-center justify-between gap-3 rounded-xl border bg-background/95 p-4 shadow-lg backdrop-blur">
-        <p className="text-sm text-muted-foreground">{changedCount ? `${changedCount} draft ${changedCount === 1 ? 'change' : 'changes'}` : 'No draft changes'}</p>
-        <Button size="lg" onClick={onReview}>Review changes <ArrowRight data-icon="inline-end" /></Button>
-      </div>
-    </div>
   )
 }
 
@@ -705,6 +519,7 @@ function ReviewView({
   controller,
   snapshot,
   planMatchesIntent,
+  preparedByAgent,
   applying,
   onEdit,
   onApply,
@@ -712,6 +527,7 @@ function ReviewView({
   controller: PrivacyController
   snapshot: PrivacyControllerSnapshot
   planMatchesIntent: boolean
+  preparedByAgent: boolean
   applying: boolean
   onEdit(): void
   onApply(): void
@@ -719,70 +535,68 @@ function ReviewView({
   const plan = snapshot.plan
   if (!plan || !planMatchesIntent) {
     return (
-      <Card className="border-dashed py-10 text-center">
-        <CardContent>
-          <p className="font-medium">This draft needs to be prepared again.</p>
-          <p className="mt-1 text-sm text-muted-foreground">Return to cleanup and review the latest choices.</p>
-          <Button className="mt-4" onClick={onEdit}>Return to cleanup</Button>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-dashed p-8 text-center">
+        <p className="font-medium">These settings changed after preparation.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Return to settings and prepare the current draft again.</p>
+        <Button className="mt-4" onClick={onEdit}>Return to settings</Button>
+      </div>
     )
   }
 
   if (plan.isNoOp) {
     return (
       <div className="space-y-4">
-        <Card className="py-10 text-center">
-          <CardContent>
-            <CheckCircle2 className="mx-auto mb-3 size-8 text-emerald-600" />
-            <h2 className="font-heading text-xl font-semibold">You’re already set</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+        <Card>
+          <CardHeader>
+            <CardTitle>You’re already set</CardTitle>
+            <CardDescription>
               {plan.blockedItems.length
-                ? 'Every optional activity is already off. Essential trip services remain on because Waypoint marks them as required.'
-                : 'Your draft already matches the current privacy setup, so there is nothing to approve or apply.'}
-            </p>
-            <Button variant="outline" className="mt-5" onClick={onEdit}>Back to choices</Button>
+                ? 'All optional settings are already off. No changes need approval.'
+                : 'The requested settings already match the current setup. There is nothing to approve or apply.'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={false} approvalNeeded={false} />
+            <Button variant="outline" onClick={onEdit}>Back to settings</Button>
           </CardContent>
         </Card>
-        {plan.blockedItems.map((blocked) => (
-          <Alert key={`${blocked.processingId}-${blocked.useId}`} variant="destructive">
-            <LockKeyhole />
-            <AlertTitle>This required activity cannot be changed</AlertTitle>
-            <AlertDescription>{blocked.message}</AlertDescription>
-          </Alert>
-        ))}
+        {plan.blockedItems.length > 0 && (
+          <RequiredSettingsSummary processingIds={plan.blockedItems.map(({ processingId }) => processingId)} />
+        )}
       </div>
     )
   }
 
-  const turningOff = plan.changes.filter(({ after }) => !after)
-  const turningOn = plan.changes.filter(({ after }) => after)
   return (
     <div className="space-y-5">
       <Card>
         <CardHeader>
           <CardTitle>{plan.changes.length} {plan.changes.length === 1 ? 'change' : 'changes'} ready</CardTitle>
-          <CardDescription>Plan {plan.id} · based on revision {plan.baseRevision}</CardDescription>
-          <CardAction><Button variant="outline" size="sm" onClick={onEdit}>Edit choices</Button></CardAction>
+          <CardDescription>Only the settings listed below will change.</CardDescription>
+          <CardAction><Button variant="outline" size="sm" onClick={onEdit}>Edit settings</Button></CardAction>
         </CardHeader>
-        <CardContent className="grid gap-5 sm:grid-cols-2">
-          <ChangeGroup title="Turning off" changes={turningOff} empty="Nothing will be turned off." />
-          <ChangeGroup title="Turning on" changes={turningOn} empty="Nothing will be turned on." />
+        <CardContent>
+          <ul className="divide-y rounded-lg border">
+            {plan.changes.map((change) => {
+              const consequence = plan.consequences.find(({ processingId }) => processingId === change.processingId)
+              return (
+                <li key={change.processingId} className="border-l-4 border-l-blue-600 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium">{change.label}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{consequence?.message ?? change.reason}</p>
+                    </div>
+                    <Badge variant={change.after ? 'secondary' : 'outline'}>
+                      {change.before ? 'On' : 'Off'} → {change.after ? 'On' : 'Off'}
+                    </Badge>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
         </CardContent>
       </Card>
 
-      {plan.consequences.length > 0 && (
-        <section className="space-y-2" aria-labelledby="consequences-heading">
-          <h2 id="consequences-heading" className="font-heading font-semibold">What this changes for you</h2>
-          {plan.consequences.map((consequence) => (
-            <Alert key={`${consequence.processingId}-${consequence.kind}`}>
-              <CircleMinus />
-              <AlertTitle>{travelCatalog.getProcessing(consequence.processingId).label}</AlertTitle>
-              <AlertDescription>{consequence.message}</AlertDescription>
-            </Alert>
-          ))}
-        </section>
-      )}
       {plan.conflicts.map((conflict) => (
         <Alert key={`${conflict.capabilityId}-${conflict.useId}`} variant="destructive">
           <AlertTriangle />
@@ -790,34 +604,30 @@ function ReviewView({
           <AlertDescription>{conflict.message}</AlertDescription>
         </Alert>
       ))}
-      {plan.blockedItems.map((blocked) => (
-        <Alert key={`${blocked.processingId}-${blocked.useId}`} variant="destructive">
-          <LockKeyhole />
-          <AlertTitle>This required activity cannot be changed</AlertTitle>
-          <AlertDescription>{blocked.message}</AlertDescription>
-        </Alert>
-      ))}
+      {plan.blockedItems.length > 0 && (
+        <RequiredSettingsSummary processingIds={plan.blockedItems.map(({ processingId }) => processingId)} />
+      )}
 
       <Card className="ring-2 ring-primary/10">
         <CardHeader>
-          <CardTitle>Human confirmation</CardTitle>
-          <CardDescription>Agent activity never selects this checkbox and never counts as approval.</CardDescription>
+          <CardTitle>Approval</CardTitle>
+          <CardDescription>Agent preparation and human approval are separate and both remain visible.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Field orientation="horizontal">
+          <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={snapshot.workflow === 'reviewed'} approvalNeeded />
+          <Field orientation="horizontal" className={snapshot.workflow === 'reviewed' ? 'rounded-lg bg-emerald-50 p-3 dark:bg-emerald-950/20' : 'rounded-lg border p-3'}>
             <Checkbox
               id="human-review"
               checked={snapshot.workflow === 'reviewed'}
               onCheckedChange={(checked) => controller.setReviewed(checked === true)}
             />
             <FieldContent>
-              <FieldLabel htmlFor="human-review">I reviewed this plan and understand its effects.</FieldLabel>
-              <FieldDescription>Changing the draft after this confirmation revokes review and disables apply.</FieldDescription>
+              <FieldLabel htmlFor="human-review">I reviewed these changes and understand their effects.</FieldLabel>
+              <FieldDescription>Only this human confirmation enables apply. Editing a setting revokes it.</FieldDescription>
             </FieldContent>
           </Field>
           <Button className="w-full" size="lg" disabled={snapshot.workflow !== 'reviewed' || applying} onClick={onApply}>
-            <FileCheck2 data-icon="inline-start" />
-            {applying ? 'Applying and verifying…' : snapshot.workflow === 'reviewed' ? 'Apply changes' : 'Confirm review to apply'}
+            {applying ? 'Applying and verifying…' : snapshot.workflow === 'reviewed' ? 'Apply changes' : 'Human approval required'}
           </Button>
         </CardContent>
       </Card>
@@ -825,55 +635,94 @@ function ReviewView({
   )
 }
 
-function ChangeGroup({
-  title,
-  changes,
-  empty,
+function ApprovalStatus({
+  preparedByAgent,
+  humanReviewed,
+  approvalNeeded,
 }: {
-  title: string
-  changes: readonly { processingId: ProcessingId; label: string; reason: string }[]
-  empty: string
+  preparedByAgent: boolean
+  humanReviewed: boolean
+  approvalNeeded: boolean
 }) {
   return (
-    <div>
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
-      {changes.length ? (
-        <ul className="space-y-2">
-          {changes.map((change) => <li key={change.processingId} className="rounded-lg bg-muted/60 p-3"><span className="font-medium">{change.label}</span><span className="mt-1 block text-xs text-muted-foreground">{change.reason}</span></li>)}
-        </ul>
-      ) : <p className="text-sm text-muted-foreground">{empty}</p>}
+    <div className="grid gap-2 sm:grid-cols-2" aria-label="Approval status">
+      <div className={preparedByAgent ? 'flex items-center gap-3 rounded-lg bg-emerald-50 p-3 dark:bg-emerald-950/20' : 'flex items-center gap-3 rounded-lg bg-muted/50 p-3'}>
+        <StatusMark complete={preparedByAgent} />
+        <div>
+          <p className="text-sm font-medium">Agent check</p>
+          <p className="text-xs text-muted-foreground">{preparedByAgent ? 'Change set prepared' : 'Manual change set'}</p>
+        </div>
+      </div>
+      <div className={humanReviewed ? 'flex items-center gap-3 rounded-lg bg-emerald-50 p-3 dark:bg-emerald-950/20' : 'flex items-center gap-3 rounded-lg bg-muted/50 p-3'}>
+        <StatusMark complete={humanReviewed || !approvalNeeded} />
+        <div>
+          <p className="text-sm font-medium">Human check</p>
+          <p className="text-xs text-muted-foreground">{humanReviewed ? 'Approved' : approvalNeeded ? 'Waiting for you' : 'Not needed'}</p>
+        </div>
+      </div>
     </div>
+  )
+}
+
+function StatusMark({ complete }: { complete: boolean }) {
+  return complete ? (
+    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white" aria-hidden="true">
+      <Check className="size-4" />
+    </span>
+  ) : <span className="size-6 shrink-0 rounded-full border-2 border-muted-foreground/35" aria-hidden="true" />
+}
+
+function RequiredSettingsSummary({ processingIds }: { processingIds: readonly ProcessingId[] }) {
+  const uniqueIds = [...new Set(processingIds)]
+  return (
+    <details className="group rounded-xl border bg-card">
+      <summary className="flex cursor-pointer list-none items-center gap-3 p-4 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <span className="min-w-0 flex-1">
+          <span className="block font-medium">{uniqueIds.length} essential {uniqueIds.length === 1 ? 'setting stays' : 'settings stay'} on</span>
+          <span className="block text-sm text-muted-foreground">Required to deliver trips, account security, or service messages.</span>
+        </span>
+        <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <ul className="divide-y border-t">
+        {uniqueIds.map((processingId) => {
+          const definition = travelCatalog.getProcessing(processingId)
+          return (
+            <li key={processingId} className="p-4">
+              <p className="font-medium">{definition.label}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{definition.purpose}</p>
+            </li>
+          )
+        })}
+      </ul>
+    </details>
   )
 }
 
 function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHome(): void }) {
   if (!receipt) {
     return (
-      <Card className="border-dashed py-10 text-center">
-        <CardContent>
-          <Clock3 className="mx-auto mb-3 size-7 text-muted-foreground" />
-          <p className="font-medium">No verified receipt yet</p>
-          <p className="mt-1 text-sm text-muted-foreground">Apply a human-reviewed cleanup to create one.</p>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-dashed p-8 text-center">
+        <Clock3 className="mx-auto mb-3 size-6 text-muted-foreground" />
+        <p className="font-medium">No verified receipt yet</p>
+        <p className="mt-1 text-sm text-muted-foreground">Apply a human-reviewed change to create one.</p>
+      </div>
     )
   }
   return (
     <div className="space-y-5">
       <Card className="ring-2 ring-emerald-600/15">
         <CardHeader>
-          <Badge variant="secondary" className="mb-2 w-fit"><CheckCircle2 data-icon="inline-start" /> Verified receipt</Badge>
-          <CardTitle className="text-xl">Privacy preferences applied</CardTitle>
-          <CardDescription>Persisted state was reread and matched the exact human-reviewed target.</CardDescription>
+          <Badge variant="secondary" className="mb-2 w-fit"><Check data-icon="inline-start" /> Verified</Badge>
+          <CardTitle className="text-xl">Privacy settings applied</CardTitle>
+          <CardDescription>The stored state was reread and matched the exact human-reviewed target.</CardDescription>
         </CardHeader>
         <CardContent><ReceiptDetails receipt={receipt} /></CardContent>
       </Card>
-      <Alert>
-        <Info />
-        <AlertTitle>What “verified” means</AlertTitle>
-        <AlertDescription>Application readback matched the reviewed target. This receipt is not a signature or legal proof.</AlertDescription>
-      </Alert>
-      <Button onClick={onHome}>Return to Privacy Center home</Button>
+      <div className="rounded-lg border p-4 text-sm">
+        <p className="font-medium">What verified means</p>
+        <p className="mt-1 text-muted-foreground">Application readback matched the reviewed target. This is not a signature or legal proof.</p>
+      </div>
+      <Button onClick={onHome}>Return to privacy settings</Button>
     </div>
   )
 }
@@ -904,7 +753,7 @@ function ReceiptDetails({ receipt }: { receipt: PrivacyReceipt }) {
         ) : <p className="text-muted-foreground">No state changes were recorded.</p>}
       </div>
       <div>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Final setup</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Final settings</p>
         <div className="flex flex-wrap gap-2">
           {travelCatalog.processing.map((definition) => (
             <Badge key={definition.id} variant={receipt.finalState[definition.id] ? 'secondary' : 'outline'}>
@@ -913,16 +762,6 @@ function ReceiptDetails({ receipt }: { receipt: PrivacyReceipt }) {
           ))}
         </div>
       </div>
-    </div>
-  )
-}
-
-function NumberedStep({ number, title, description }: { number: string; title: string; description: string }) {
-  return (
-    <div>
-      <span className="mb-2 flex size-7 items-center justify-center rounded-full bg-slate-950 text-xs font-semibold text-white">{number}</span>
-      <p className="font-medium">{title}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { useId, useState } from 'react'
 import type { AgentActivity } from '@/application'
 import { Button } from '@/components/ui/button'
-import { Bot, Check, Sparkles } from 'lucide-react'
+import { Check } from 'lucide-react'
 
 interface AgentActivityIndicatorProps {
   activity: AgentActivity | null
@@ -20,14 +20,13 @@ export function AgentActivityIndicator({ activity }: AgentActivityIndicatorProps
         type="button"
         variant="outline"
         size="sm"
-        className="relative bg-background shadow-sm"
+        className="relative bg-background"
         aria-expanded={open}
         aria-controls={popoverId}
         aria-label={pending ? 'Agent activity, view awaiting review' : 'Agent activity, view review started'}
         onClick={() => setOpen((current) => !current)}
       >
-        <Bot data-icon="inline-start" />
-        <span className="hidden sm:inline">Agent activity</span>
+        <span>Agent</span>
         {pending && (
           <span
             data-testid="agent-activity-dot"
@@ -43,11 +42,11 @@ export function AgentActivityIndicator({ activity }: AgentActivityIndicatorProps
           className="absolute right-0 top-11 w-[min(22rem,calc(100vw-2rem))] rounded-xl border bg-popover p-4 text-popover-foreground shadow-lg"
         >
           <div className="flex gap-3">
-            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-700">
-              {pending ? <Sparkles className="size-4" aria-hidden="true" /> : <Check className="size-4" aria-hidden="true" />}
-            </span>
+            {pending
+              ? <span className="mt-2 size-2.5 shrink-0 rounded-full bg-blue-600" aria-hidden="true" />
+              : <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white"><Check className="size-4" aria-hidden="true" /></span>}
             <div className="space-y-1">
-              <p className="font-medium">{pending ? 'Agent-opened view' : 'You started reviewing this view'}</p>
+              <p className="font-medium">{pending ? 'Opened by agent' : 'You started reviewing this view'}</p>
               <p className="text-sm leading-relaxed text-muted-foreground">{activity.message}</p>
             </div>
           </div>

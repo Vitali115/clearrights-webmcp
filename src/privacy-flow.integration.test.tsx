@@ -59,12 +59,18 @@ describe('agent-guided privacy flow', () => {
       })
     })
 
-    expect(await screen.findByRole('heading', { name: 'Review your changes' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'Review changes' })).toBeVisible()
     expect(screen.getByText('3 changes ready')).toBeVisible()
     expect(screen.getByTestId('agent-activity-dot')).toBeVisible()
     expect(modelContext.tools.has('apply_privacy_plan')).toBe(false)
 
-    await user.click(screen.getByLabelText('I reviewed this plan and understand its effects.'))
+    expect(screen.getByText('Agent check')).toBeVisible()
+    expect(screen.getByText('Change set prepared')).toBeVisible()
+    expect(screen.getByText('Human check')).toBeVisible()
+    expect(screen.getByText('Waiting for you')).toBeVisible()
+
+    await user.click(screen.getByLabelText('I reviewed these changes and understand their effects.'))
+    expect(screen.getByText('Approved')).toBeVisible()
     await adapter.whenSettled()
     expect(controller.getSnapshot().workflow).toBe('reviewed')
     expect(modelContext.tools.has('apply_privacy_plan')).toBe(true)

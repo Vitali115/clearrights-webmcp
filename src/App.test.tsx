@@ -43,8 +43,8 @@ describe('ClearRights UI', () => {
     renderApp(controller)
 
     expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
-    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
-    const privacyCenter = screen.getByRole('dialog', { name: 'Privacy Center' })
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
+    const privacyCenter = screen.getByRole('dialog', { name: 'Privacy settings panel' })
     expect(privacyCenter).toBeVisible()
     expect(privacyCenter).toHaveClass(
       'data-[side=right]:w-full',
@@ -52,7 +52,7 @@ describe('ClearRights UI', () => {
       'data-[side=right]:sm:max-w-none',
     )
     await user.keyboard('{Escape}')
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Privacy Center' })).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Privacy settings panel' })).not.toBeInTheDocument())
   })
 
   it('uses a compact header that does not expose secondary navigation on mobile', async () => {
@@ -62,29 +62,28 @@ describe('ClearRights UI', () => {
     expect(screen.getByText('Travel demo')).toHaveClass('hidden', 'sm:inline-flex')
     expect(screen.getByRole('button', { name: 'Trips' })).toHaveClass('hidden', 'sm:inline-flex')
     expect(screen.getByRole('navigation', { name: 'Account navigation' })).toHaveClass('shrink-0')
-    expect(screen.getByRole('button', { name: 'Privacy Center' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Privacy settings' })).toBeVisible()
   })
 
   it('completes the manual fallback, verifies a receipt, and resets demo data', async () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
 
-    await user.click(screen.getByRole('button', { name: /Start privacy cleanup/ }))
     await user.click(screen.getByLabelText('Recommendations'))
     await user.click(screen.getByLabelText('Location suggestions'))
     await user.click(screen.getByLabelText('Partner advertising'))
     await user.click(screen.getByRole('button', { name: /Review changes/ }))
 
     expect(screen.getByText('3 changes ready')).toBeVisible()
-    await user.click(screen.getByLabelText('I reviewed this plan and understand its effects.'))
+    await user.click(screen.getByLabelText('I reviewed these changes and understand their effects.'))
     await user.click(screen.getByRole('button', { name: /Apply changes/ }))
 
     expect(await screen.findByRole('heading', { name: 'Verified receipt' })).toBeVisible()
     expect(controller.getSnapshot().record.state.processing.recommendations).toBe(false)
 
-    await user.click(screen.getByRole('button', { name: /Reset demo data/ }))
+    await user.click(screen.getByRole('button', { name: 'Reset' }))
     expect(screen.getByRole('alertdialog', { name: 'Reset demo data?' })).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Reset data' }))
 
@@ -109,9 +108,11 @@ describe('ClearRights UI', () => {
       })
     })
 
-    expect(await screen.findByRole('dialog', { name: 'Privacy Center' })).toBeVisible()
+    expect(await screen.findByRole('dialog', { name: 'Privacy settings panel' })).toBeVisible()
     expect(screen.getByText('3 changes ready')).toBeVisible()
-    expect(screen.getByText('Agent tools ready')).toBeVisible()
+    expect(screen.getByText(/Agent access available/)).toBeVisible()
+    expect(screen.getByText('Agent check')).toBeVisible()
+    expect(screen.getByText('Change set prepared')).toBeVisible()
   })
 
   it('keeps the agent dot until meaningful content engagement, not popover or close', async () => {
@@ -144,13 +145,13 @@ describe('ClearRights UI', () => {
       origin: 'agent',
       message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
     }))
-    await screen.findByRole('dialog', { name: 'Privacy Center' })
+    await screen.findByRole('dialog', { name: 'Privacy settings panel' })
     await user.click(screen.getByText('3 changes ready'))
 
     expect(privacyUi.getSnapshot().agentActivity?.status).toBe('engaged')
     expect(screen.queryByTestId('agent-activity-dot')).not.toBeInTheDocument()
     expect(controller.getSnapshot().plan?.id).toBe(plan.id)
-    expect(screen.getByLabelText('I reviewed this plan and understand its effects.')).not.toBeChecked()
+    expect(screen.getByLabelText('I reviewed these changes and understand their effects.')).not.toBeChecked()
 
     await user.click(screen.getByRole('button', { name: 'Agent activity, view review started' }))
     expect(screen.getByText('You started reviewing this view')).toBeVisible()
@@ -165,7 +166,7 @@ describe('ClearRights UI', () => {
       origin: 'agent',
       message: 'The agent opened the Privacy Center overview.',
     }))
-    await screen.findByRole('dialog', { name: 'Privacy Center' })
+    await screen.findByRole('dialog', { name: 'Privacy settings panel' })
 
     act(() => {
       controller.stage({
@@ -183,7 +184,7 @@ describe('ClearRights UI', () => {
     expect(privacyUi.getSnapshot().agentActivity?.status).toBe('opened')
     expect(screen.getByTestId('agent-activity-dot')).toBeVisible()
 
-    screen.getByRole('button', { name: /Start privacy cleanup/ }).focus()
+    screen.getByRole('switch', { name: 'Recommendations' }).focus()
     await user.keyboard('x')
     expect(privacyUi.getSnapshot().agentActivity?.status).toBe('engaged')
 
@@ -200,7 +201,7 @@ describe('ClearRights UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     const privacyUi = renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     act(() => {
       controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: ['precise_location'] })
       privacyUi.navigate({ view: 'review', origin: 'human' })
@@ -213,14 +214,26 @@ describe('ClearRights UI', () => {
   it('does not allow reviewing or applying a plan with no changes', async () => {
     const user = userEvent.setup()
     const controller = await createController()
-    renderApp(controller, true)
-    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
-    await user.click(screen.getByRole('button', { name: /Start privacy cleanup/ }))
-    await user.click(screen.getByRole('button', { name: /Review changes/ }))
+    const privacyUi = renderApp(controller, true)
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
+    act(() => {
+      controller.stage({
+        keepCapabilities: [
+          'book_and_manage_trips',
+          'protect_account',
+          'receive_trip_updates',
+          'personalised_recommendations',
+          'nearby_suggestions',
+          'partner_offers',
+        ],
+        avoidUses: [],
+      })
+      privacyUi.navigate({ view: 'review', origin: 'human' })
+    })
 
     expect(screen.getByText('You’re already set')).toBeVisible()
-    expect(screen.getByText(/nothing to approve or apply/)).toBeVisible()
-    expect(screen.queryByLabelText('I reviewed this plan and understand its effects.')).not.toBeInTheDocument()
+    expect(screen.getByText(/nothing to approve or apply/i)).toBeVisible()
+    expect(screen.queryByLabelText('I reviewed these changes and understand their effects.')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Apply changes/ })).not.toBeInTheDocument()
   })
 
@@ -254,10 +267,10 @@ describe('ClearRights UI', () => {
     })
 
     expect(screen.getByText('You’re already set')).toBeVisible()
-    expect(screen.getByText(/Every optional activity is already off/)).toBeVisible()
-    expect(screen.getAllByText('This required activity cannot be changed')).toHaveLength(3)
-    expect(screen.getByText(/Trip fulfilment is required and locked/)).toBeVisible()
-    expect(screen.queryByLabelText('I reviewed this plan and understand its effects.')).not.toBeInTheDocument()
+    expect(screen.getByText(/All optional settings are already off/)).toBeVisible()
+    expect(screen.getByText('3 essential settings stay on')).toBeVisible()
+    expect(screen.queryByText('This required activity cannot be changed')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('I reviewed these changes and understand their effects.')).not.toBeInTheDocument()
   })
 
   it('shows the latest verified receipt after the controller reloads', async () => {
@@ -273,7 +286,7 @@ describe('ClearRights UI', () => {
     const reloaded = await createController(storage)
 
     renderApp(reloaded, true)
-    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     await user.click(screen.getByRole('button', { name: /Previous changes/ }))
     await user.click(screen.getByText(new RegExp(`^3 changes · ${receipt.id}$`)))
     await user.click(screen.getByRole('button', { name: /Open receipt/ }))
@@ -288,62 +301,59 @@ describe('ClearRights UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller, true)
-    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
-    await user.click(screen.getByRole('button', { name: /Start privacy cleanup/ }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     await user.click(screen.getByLabelText('Recommendations'))
     await user.click(screen.getByLabelText('Location suggestions'))
     await user.click(screen.getByLabelText('Partner advertising'))
     await user.click(screen.getByRole('button', { name: /Review changes/ }))
-    await user.click(screen.getByLabelText('I reviewed this plan and understand its effects.'))
+    await user.click(screen.getByLabelText('I reviewed these changes and understand their effects.'))
 
     expect(controller.getSnapshot().workflow).toBe('reviewed')
     expect(screen.getByText('3 changes ready')).toBeVisible()
 
-    await user.click(screen.getByRole('button', { name: 'Edit choices' }))
+    await user.click(screen.getByRole('button', { name: 'Edit settings' }))
     await user.click(screen.getByLabelText('Partner advertising'))
 
     expect(controller.getSnapshot().workflow).toBe('staged')
-    expect(screen.getByText('2 draft changes')).toBeVisible()
-    expect(screen.queryByLabelText('I reviewed this plan and understand its effects.')).not.toBeInTheDocument()
+    expect(screen.getByText('2 pending changes')).toBeVisible()
+    expect(screen.queryByLabelText('I reviewed these changes and understand their effects.')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Review changes/ }))
     expect(screen.getByText('2 changes ready')).toBeVisible()
-    expect(screen.getByLabelText('I reviewed this plan and understand its effects.')).not.toBeChecked()
+    expect(screen.getByLabelText('I reviewed these changes and understand their effects.')).not.toBeChecked()
   })
 
   it('navigates from current setup to an activity detail and back', async () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
 
-    await user.click(screen.getByRole('button', { name: /Current privacy setup/ }))
-    expect(screen.getByRole('heading', { name: 'Current privacy setup' })).toBeVisible()
-    expect(screen.getByText('Essential trip services')).toBeVisible()
-    await user.click(screen.getByRole('button', { name: /Recommendations/ }))
+    expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
+    expect(screen.getByText('Essential services')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Open Recommendations details' }))
 
-    expect(screen.getByRole('heading', { name: 'Activity details' })).toBeVisible()
-    expect(screen.getByRole('heading', { name: 'Activity details' })).toHaveFocus()
+    expect(screen.getByRole('heading', { name: 'Setting details' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Setting details' })).toHaveFocus()
     expect(screen.getByText('Travel preferences, Viewed destinations, Past trips')).toBeVisible()
     expect(screen.getByText('Waypoint Demo Privacy Notice §3.1')).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Back' }))
-    expect(screen.getByRole('heading', { name: 'Current privacy setup' })).toBeVisible()
-    expect(screen.getByRole('heading', { name: 'Current privacy setup' })).toHaveFocus()
+    expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Privacy settings' })).toHaveFocus()
   })
 
   it('returns activity details to cleanup without losing accumulated choices', async () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
-    await user.click(screen.getByRole('button', { name: /Start privacy cleanup/ }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     await user.click(screen.getByLabelText('Recommendations'))
 
-    await user.click(screen.getAllByRole('button', { name: 'View details' })[3]!)
-    expect(screen.getByRole('heading', { name: 'Activity details' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Open Recommendations details' }))
+    expect(screen.getByRole('heading', { name: 'Setting details' })).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Back' }))
 
-    expect(screen.getByRole('heading', { name: 'Privacy cleanup' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
     expect(screen.getByLabelText('Recommendations')).not.toBeChecked()
-    expect(screen.getByText('1 draft change')).toBeVisible()
+    expect(screen.getByText('1 pending change')).toBeVisible()
   })
 })
