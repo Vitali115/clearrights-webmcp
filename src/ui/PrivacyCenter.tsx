@@ -154,6 +154,7 @@ export function PrivacyCenter({
   const [actionError, setActionError] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
   const viewHeadingRef = useRef<HTMLHeadingElement>(null)
+  const activityReturnView = useRef<'current_setup' | 'cleanup'>('current_setup')
   const view = privacyView.navigation.view
   const copy = VIEW_COPY[view]
   const planMatchesIntent = snapshot.plan
@@ -162,8 +163,11 @@ export function PrivacyCenter({
     : false
 
   useEffect(() => {
+    if (view === 'activity' && privacyView.navigation.origin === 'agent') {
+      activityReturnView.current = 'current_setup'
+    }
     viewHeadingRef.current?.focus()
-  }, [view])
+  }, [privacyView.navigation.origin, view])
 
   const navigate = (next: PrivacyView, processingId?: ProcessingId) => {
     privacyUi.navigate({ view: next, processingId, origin: 'human' })
@@ -171,10 +175,15 @@ export function PrivacyCenter({
 
   const goBack = () => {
     privacyUi.acknowledge()
-    if (view === 'activity') navigate('current_setup')
+    if (view === 'activity') navigate(activityReturnView.current)
     else if (view === 'review') navigate('cleanup')
     else if (view === 'receipt') navigate('history')
     else navigate('home')
+  }
+
+  const inspectActivity = (processingId: ProcessingId, returnView: 'current_setup' | 'cleanup') => {
+    activityReturnView.current = returnView
+    navigate('activity', processingId)
   }
 
   const updateProcessing = (definition: ProcessingDefinition, enabled: boolean) => {
@@ -251,6 +260,7 @@ export function PrivacyCenter({
       </SheetHeader>
 
       <ScrollArea
+        data-testid="privacy-view-content"
         className="h-[calc(100svh-190px)]"
         onClickCapture={() => privacyUi.acknowledge()}
         onKeyDownCapture={() => privacyUi.acknowledge()}
@@ -266,7 +276,7 @@ export function PrivacyCenter({
             />
           )}
           {view === 'current_setup' && (
-            <CurrentSetupView snapshot={snapshot} onInspect={(id) => navigate('activity', id)} />
+            <CurrentSetupView snapshot={snapshot} onInspect={(id) => inspectActivity(id, 'current_setup')} />
           )}
           {view === 'activity' && (
             <ActivityDetailView
@@ -287,7 +297,7 @@ export function PrivacyCenter({
               keepCapabilities={keepCapabilities}
               avoidUses={avoidUses}
               onChange={updateProcessing}
-              onInspect={(id) => navigate('activity', id)}
+              onInspect={(id) => inspectActivity(id, 'cleanup')}
               onReview={stagePlan}
             />
           )}

@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
@@ -156,6 +156,46 @@ describe('ClearRights UI', () => {
     expect(screen.getByText('You started reviewing this view')).toBeVisible()
   })
 
+  it('acknowledges keyboard and scroll engagement while surviving unrelated rerenders', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    const privacyUi = renderApp(controller, true)
+    act(() => privacyUi.navigate({
+      view: 'home',
+      origin: 'agent',
+      message: 'The agent opened the Privacy Center overview.',
+    }))
+    await screen.findByRole('dialog', { name: 'Privacy Center' })
+
+    act(() => {
+      controller.stage({
+        keepCapabilities: [
+          'book_and_manage_trips',
+          'protect_account',
+          'receive_trip_updates',
+          'personalised_recommendations',
+          'nearby_suggestions',
+          'partner_offers',
+        ],
+        avoidUses: [],
+      })
+    })
+    expect(privacyUi.getSnapshot().agentActivity?.status).toBe('opened')
+    expect(screen.getByTestId('agent-activity-dot')).toBeVisible()
+
+    screen.getByRole('button', { name: /Start privacy cleanup/ }).focus()
+    await user.keyboard('x')
+    expect(privacyUi.getSnapshot().agentActivity?.status).toBe('engaged')
+
+    act(() => privacyUi.navigate({
+      view: 'home',
+      origin: 'agent',
+      message: 'The agent opened the Privacy Center overview again.',
+    }))
+    fireEvent.scroll(screen.getByTestId('privacy-view-content'))
+    expect(privacyUi.getSnapshot().agentActivity?.status).toBe('engaged')
+  })
+
   it('shows a conflict when a kept capability needs an avoided use', async () => {
     const user = userEvent.setup()
     const controller = await createController()
@@ -252,5 +292,22 @@ describe('ClearRights UI', () => {
     await user.click(screen.getByRole('button', { name: 'Back' }))
     expect(screen.getByRole('heading', { name: 'Current privacy setup' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Current privacy setup' })).toHaveFocus()
+  })
+
+  it('returns activity details to cleanup without losing accumulated choices', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    renderApp(controller)
+    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+    await user.click(screen.getByRole('button', { name: /Start privacy cleanup/ }))
+    await user.click(screen.getByLabelText('Recommendations'))
+
+    await user.click(screen.getAllByRole('button', { name: 'View details' })[3]!)
+    expect(screen.getByRole('heading', { name: 'Activity details' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(screen.getByRole('heading', { name: 'Privacy cleanup' })).toBeVisible()
+    expect(screen.getByLabelText('Recommendations')).not.toBeChecked()
+    expect(screen.getByText('1 draft change')).toBeVisible()
   })
 })
