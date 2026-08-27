@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import type { AccessibilitySnapshot, SiteGuideSnapshot } from '@/domain'
-import type { PersonalControlsSection, PrivacyControllerSnapshot } from '@/application'
+import type { ObservedPrivacySignals, PersonalControlsSection, PrivacyControllerSnapshot } from '@/application'
 import { Button } from '@/components/ui/button'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
@@ -12,6 +12,7 @@ export function ClearRightsExplainerPage({
   snapshot,
   accessibilitySnapshot,
   siteGuideSnapshot,
+  observedPrivacySignals,
   experience,
   webMcpAvailable,
   controlsAction,
@@ -23,6 +24,7 @@ export function ClearRightsExplainerPage({
   snapshot: PrivacyControllerSnapshot
   accessibilitySnapshot: AccessibilitySnapshot
   siteGuideSnapshot: SiteGuideSnapshot
+  observedPrivacySignals: ObservedPrivacySignals
   experience: WaypointExperienceViewModel
   webMcpAvailable: boolean
   controlsAction: ReactNode
@@ -209,9 +211,10 @@ export function ClearRightsExplainerPage({
           <div className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-10 sm:w-[min(64rem,calc(100%-4rem))]">
             <p className="text-sm font-medium text-muted-foreground">Evidence from this running host</p>
             <h2 id="live-integration-status" className="mt-3 text-2xl font-medium tracking-tight">Live integration status</h2>
-            <dl className="mt-5 grid sm:grid-cols-2 lg:grid-cols-4">
+            <dl className="mt-5 grid sm:grid-cols-2 lg:grid-cols-5">
               <Status label="WebMCP" value={webMcpAvailable ? `${toolCount} tools registered` : 'Unavailable · manual fallback active'} />
               <Status label="Privacy" value={`${optionalEnabled} of ${optional.length} optional on · revision ${snapshot.record.state.revision}`} />
+              <Status label="Browser signal" value={gpcLabel(observedPrivacySignals)} />
               <Status label="Accessibility" value={`${waypointAccessibilityCatalog.primitives.length} preferences · revision ${accessibilitySnapshot.revision} · ${accessibilitySnapshot.undoAvailable ? 'Undo available' : 'No Undo'}`} />
               <Status label="Site Guide" value={`${waypointSiteGuideCatalog.destinations.length} declared · ${siteGuideSnapshot.currentDestinationId ?? 'no current destination'}`} />
             </dl>
@@ -321,6 +324,12 @@ function Status({ label, value }: { label: string; value: string }) {
       <dd className="mt-2 font-medium">{value}</dd>
     </div>
   )
+}
+
+function gpcLabel(signals: ObservedPrivacySignals) {
+  if (signals.globalPrivacyControl.interpretation === 'opt_out_observed') return 'GPC opt-out observed · informational only'
+  if (signals.globalPrivacyControl.interpretation === 'no_opt_out_observed') return 'No GPC opt-out observed · informational only'
+  return 'GPC unavailable · informational only'
 }
 
 function Module({ name, contract, body }: { name: string; contract: string; body: string }) {

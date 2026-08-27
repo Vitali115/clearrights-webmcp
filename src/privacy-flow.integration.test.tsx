@@ -91,6 +91,14 @@ describe('agent-guided privacy flow', () => {
       privacyCatalog: travelCatalog,
       privacyUi,
       controlsUi,
+      readObservedPrivacySignals: () => ({
+        globalPrivacyControl: {
+          support: 'unavailable' as const,
+          value: null,
+          interpretation: 'unavailable' as const,
+          effect: 'informational_only' as const,
+        },
+      }),
       accessibilityRuntime: accessibility,
       accessibilityCatalog: waypointAccessibilityCatalog,
       readSystemPreferences: () => readSystemAccessibilityPreferences(window),
@@ -106,6 +114,14 @@ describe('agent-guided privacy flow', () => {
         accessibility={accessibility}
         siteGuide={siteGuide}
         activity={activity}
+        observedPrivacySignals={{
+          globalPrivacyControl: {
+            support: 'unavailable',
+            value: null,
+            interpretation: 'unavailable',
+            effect: 'informational_only',
+          },
+        }}
         webMcpAvailable
       />,
     )

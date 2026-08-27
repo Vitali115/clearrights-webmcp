@@ -77,7 +77,22 @@ async function createTestRuntime(storage = new MemoryStorage()) {
     clock: { now: () => `2026-08-27T12:30:0${tick++}.000Z` },
     idGenerator: { next: () => `activity-ui-${tick}` },
   })
-  return { controller, privacyUi, controlsUi, accessibility, siteGuide, activity }
+  return {
+    controller,
+    privacyUi,
+    controlsUi,
+    accessibility,
+    siteGuide,
+    activity,
+    observedPrivacySignals: {
+      globalPrivacyControl: {
+        support: 'unavailable' as const,
+        value: null,
+        interpretation: 'unavailable' as const,
+        effect: 'informational_only' as const,
+      },
+    },
+  }
 }
 
 async function createController(storage = new MemoryStorage()) {
@@ -120,6 +135,7 @@ describe('privacy settings UI', () => {
     expect(developerHeading).toHaveFocus()
     expect(screen.getByText('8 tools registered')).toBeVisible()
     expect(screen.getByText(/0 of 3 optional on/)).toBeVisible()
+    expect(screen.getByText('GPC unavailable · informational only')).toBeVisible()
     expect(screen.getByText(/definePrivacyCatalog/)).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Accessibility Preferences' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'ClearRights Site Guide' })).toBeVisible()
@@ -259,6 +275,7 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     const privacyCenter = screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })
     expect(privacyCenter).toBeVisible()
+    expect(screen.getByText('GPC is unavailable in this browser')).toBeVisible()
     expect(privacyCenter).toHaveClass(
       'data-[side=right]:w-full',
       'data-[side=right]:sm:w-[min(80vw,920px)]',

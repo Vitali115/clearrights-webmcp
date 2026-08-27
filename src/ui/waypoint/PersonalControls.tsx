@@ -2,6 +2,7 @@ import { useEffect, useState, type KeyboardEvent } from 'react'
 import type {
   ActivityCoordinator,
   ActivitySnapshot,
+  ObservedPrivacySignals,
   PersonalControlsCoordinator,
   PersonalControlsSection,
   PersonalControlsSnapshot,
@@ -60,6 +61,7 @@ export function PersonalControls({
   siteGuideSnapshot,
   activity,
   activitySnapshot,
+  observedPrivacySignals,
   webMcpAvailable,
   onReset,
 }: {
@@ -77,6 +79,7 @@ export function PersonalControls({
   siteGuideSnapshot: SiteGuideSnapshot
   activity: ActivityCoordinator
   activitySnapshot: ActivitySnapshot
+  observedPrivacySignals: ObservedPrivacySignals
   webMcpAvailable: boolean
   onReset(): Promise<void>
 }) {
@@ -177,6 +180,7 @@ export function PersonalControls({
             privacyUi={privacyUi}
             privacyView={privacyView}
             snapshot={privacySnapshot}
+            observedPrivacySignals={observedPrivacySignals}
             activity={activity}
           />
         )}

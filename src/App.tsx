@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type {
   ActivityCoordinator,
+  ObservedPrivacySignals,
   PersonalControlsSection,
   PersonalControlsCoordinator,
   PrivacyController,
@@ -31,6 +32,7 @@ interface AppProps {
   accessibility: AccessibilityRuntime
   siteGuide: SiteGuideRuntime
   activity: ActivityCoordinator
+  observedPrivacySignals: ObservedPrivacySignals
   webMcpAvailable: boolean
 }
 
@@ -57,6 +59,7 @@ export default function App({
   accessibility,
   siteGuide,
   activity,
+  observedPrivacySignals,
   webMcpAvailable,
 }: AppProps) {
   const [snapshot, setSnapshot] = useState(() => controller.getSnapshot())
@@ -212,6 +215,7 @@ export default function App({
             snapshot={snapshot}
             accessibilitySnapshot={accessibilitySnapshot}
             siteGuideSnapshot={siteGuideSnapshot}
+            observedPrivacySignals={observedPrivacySignals}
             experience={experience}
             webMcpAvailable={webMcpAvailable}
             controlsAction={controlsAction}
@@ -251,6 +255,7 @@ export default function App({
         siteGuideSnapshot={siteGuideSnapshot}
         activity={activity}
         activitySnapshot={activitySnapshot}
+        observedPrivacySignals={observedPrivacySignals}
         webMcpAvailable={webMcpAvailable}
         onReset={resetDemo}
       />

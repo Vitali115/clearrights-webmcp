@@ -1,4 +1,5 @@
 import type {
+  ObservedPrivacySignals,
   PersonalControlsCoordinator,
   PrivacyController,
   PrivacyViewCoordinator,
@@ -62,6 +63,7 @@ export interface ClearRightsToolDependencies {
   privacyCatalog: ProcessingCatalog
   privacyUi: PrivacyViewCoordinator
   controlsUi: PersonalControlsCoordinator
+  readObservedPrivacySignals(): ObservedPrivacySignals
   accessibilityRuntime: AccessibilityRuntime
   accessibilityCatalog: AccessibilityCatalog
   readSystemPreferences(): SystemAccessibilityPreferences
@@ -75,6 +77,7 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
     privacyCatalog: catalog,
     privacyUi,
     controlsUi,
+    readObservedPrivacySignals,
     accessibilityRuntime,
     accessibilityCatalog,
     readSystemPreferences,
@@ -88,7 +91,7 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
     {
       name: 'get_privacy_overview',
       title: 'Get privacy overview',
-      description: 'Read the applied privacy state, any separate pending plan, planner options, and workflow status.',
+      description: 'Read the applied privacy state, any separate pending plan, planner options, workflow status, and observed browser privacy signals.',
       inputSchema: z.toJSONSchema(revealInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
       execute: (input) => executeValidated(revealInputSchema, schemas.overviewOutput, input, ({ reveal = false }) => {
@@ -112,6 +115,7 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
           workflow: snapshot.workflow,
           revision: snapshot.record.state.revision,
           applyAvailable: snapshot.workflow === 'reviewed',
+          observedSignals: readObservedPrivacySignals(),
           pendingPlan: snapshot.plan && (snapshot.workflow === 'staged' || snapshot.workflow === 'reviewed')
             ? {
                 id: snapshot.plan.id,
@@ -461,6 +465,22 @@ function createCatalogSchemas(catalog: ProcessingCatalog) {
     workflow: z.enum(['idle', 'staged', 'reviewed', 'applied']),
     revision: z.number().int().positive(),
     applyAvailable: z.boolean(),
+    observedSignals: z.object({
+      globalPrivacyControl: z.discriminatedUnion('support', [
+        z.object({
+          support: z.literal('supported'),
+          value: z.boolean(),
+          interpretation: z.enum(['opt_out_observed', 'no_opt_out_observed']),
+          effect: z.literal('informational_only'),
+        }).strict(),
+        z.object({
+          support: z.literal('unavailable'),
+          value: z.null(),
+          interpretation: z.literal('unavailable'),
+          effect: z.literal('informational_only'),
+        }).strict(),
+      ]),
+    }).strict(),
     pendingPlan: z.object({
       id: z.string(),
       status: z.enum(['staged', 'reviewed']),

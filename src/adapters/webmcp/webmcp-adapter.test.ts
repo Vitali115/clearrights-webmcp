@@ -100,6 +100,14 @@ async function setup() {
     privacyCatalog: travelCatalog,
     privacyUi,
     controlsUi,
+    readObservedPrivacySignals: () => ({
+      globalPrivacyControl: {
+        support: 'supported' as const,
+        value: true,
+        interpretation: 'opt_out_observed' as const,
+        effect: 'informational_only' as const,
+      },
+    }),
     accessibilityRuntime: accessibility,
     accessibilityCatalog: waypointAccessibilityCatalog,
     readSystemPreferences: () => ({
@@ -250,12 +258,21 @@ describe('WebMCP adapter', () => {
   it('keeps the overview compact and exposes full developer-authored context only on inspect', async () => {
     const { modelContext, dependencies } = await setup()
     const adapter = await startWebMcpAdapter(modelContext, dependencies)
+    const beforeOverview = dependencies.privacyController.getSnapshot().record
 
     const overview = await modelContext.execute('get_privacy_overview', {})
     expect(overview).toEqual(expect.objectContaining({
       ok: true,
       data: expect.objectContaining({
         pendingPlan: null,
+        observedSignals: {
+          globalPrivacyControl: {
+            support: 'supported',
+            value: true,
+            interpretation: 'opt_out_observed',
+            effect: 'informational_only',
+          },
+        },
         processing: expect.arrayContaining([
           expect.objectContaining({
             id: 'recommendations',
@@ -268,6 +285,7 @@ describe('WebMCP adapter', () => {
     }))
     expect(JSON.stringify(overview)).not.toContain('factualBackground')
     expect(JSON.stringify(overview)).not.toContain('decisionFactors')
+    expect(dependencies.privacyController.getSnapshot().record).toEqual(beforeOverview)
 
     dependencies.privacyController.stage({
       keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates', 'personalised_recommendations'],

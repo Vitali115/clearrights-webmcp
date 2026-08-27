@@ -18,8 +18,10 @@ import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
 import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
 import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
+import { readObservedPrivacySignals } from './privacy-signal-reader'
 
 export async function bootstrapBrowserApp() {
+  const observedPrivacySignals = readObservedPrivacySignals(window.navigator)
   const privacyUi = createPrivacyViewCoordinator()
   const controlsUi = createPersonalControlsCoordinator()
   const activity = createActivityCoordinator({
@@ -80,6 +82,7 @@ export async function bootstrapBrowserApp() {
     privacyCatalog: travelCatalog,
     privacyUi,
     controlsUi,
+    readObservedPrivacySignals: () => readObservedPrivacySignals(window.navigator),
     accessibilityRuntime: accessibility,
     accessibilityCatalog: waypointAccessibilityCatalog,
     readSystemPreferences: () => readSystemAccessibilityPreferences(window),
@@ -95,6 +98,7 @@ export async function bootstrapBrowserApp() {
     accessibility,
     siteGuide,
     activity,
+    observedPrivacySignals,
     webMcpAvailable: webMcp.available,
     dispose: () => webMcp.dispose(),
   }

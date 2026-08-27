@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type {
   ActivityCoordinator,
+  ObservedGlobalPrivacyControl,
+  ObservedPrivacySignals,
   PrivacyController,
   PrivacyControllerSnapshot,
   PrivacyView,
@@ -26,6 +28,7 @@ interface PrivacyCenterProps {
   privacyUi: PrivacyViewCoordinator
   privacyView: PrivacyViewSnapshot
   snapshot: PrivacyControllerSnapshot
+  observedPrivacySignals: ObservedPrivacySignals
   activity: ActivityCoordinator
 }
 
@@ -65,6 +68,7 @@ export function PrivacyCenter({
   privacyUi,
   privacyView,
   snapshot,
+  observedPrivacySignals,
   activity,
 }: PrivacyCenterProps) {
   const [keepCapabilities, setKeepCapabilities] = useState<CapabilityId[]>(() =>
@@ -199,6 +203,7 @@ export function PrivacyCenter({
           {settingsView && (
             <SettingsView
               snapshot={snapshot}
+              observedGlobalPrivacyControl={observedPrivacySignals.globalPrivacyControl}
               keepCapabilities={keepCapabilities}
               avoidUses={avoidUses}
               onChange={updateProcessing}
@@ -260,6 +265,7 @@ export function PrivacyCenter({
 
 function SettingsView({
   snapshot,
+  observedGlobalPrivacyControl,
   keepCapabilities,
   avoidUses,
   onChange,
@@ -268,6 +274,7 @@ function SettingsView({
   onReview,
 }: {
   snapshot: PrivacyControllerSnapshot
+  observedGlobalPrivacyControl: ObservedGlobalPrivacyControl
   keepCapabilities: readonly CapabilityId[]
   avoidUses: readonly UseId[]
   onChange(definition: ProcessingDefinition, enabled: boolean): void
@@ -300,6 +307,8 @@ function SettingsView({
           Previous changes ({snapshot.record.receipts.length})
         </Button>
       </div>
+
+      <BrowserPrivacySignal signal={observedGlobalPrivacyControl} />
 
       <div aria-label="Privacy settings list">
         {travelCatalog.sections.map((section) => {
@@ -354,6 +363,24 @@ function SettingsView({
         <Button className="h-9 rounded-full px-5" disabled={changedCount === 0} onClick={onReview}>Review changes</Button>
       </div>
     </div>
+  )
+}
+
+function BrowserPrivacySignal({ signal }: { signal: ObservedGlobalPrivacyControl }) {
+  const value = signal.interpretation === 'opt_out_observed'
+    ? 'GPC opt-out signal observed'
+    : signal.interpretation === 'no_opt_out_observed'
+      ? 'No GPC opt-out signal observed'
+      : 'GPC is unavailable in this browser'
+
+  return (
+    <aside className="mb-8 border-y border-foreground/10 py-4" aria-label="Observed browser privacy signal">
+      <p className="text-[13px] font-medium text-muted-foreground">Browser signal · informational only</p>
+      <p className="mt-1 font-medium">{value}</p>
+      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+        Waypoint reports this signal to the agent but does not translate it into a consent choice or apply settings automatically.
+      </p>
+    </aside>
   )
 }
 

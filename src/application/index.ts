@@ -1,5 +1,6 @@
 export * from './activity-coordinator'
 export * from './personal-controls-coordinator'
+export * from './observed-privacy-signals'
 export * from './privacy-controller'
 export * from './privacy-repository'
 export * from './privacy-view-coordinator'

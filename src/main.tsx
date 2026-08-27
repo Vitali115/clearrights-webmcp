@@ -18,6 +18,7 @@ async function start() {
           accessibility={runtime.accessibility}
           siteGuide={runtime.siteGuide}
           activity={runtime.activity}
+          observedPrivacySignals={runtime.observedPrivacySignals}
           webMcpAvailable={runtime.webMcpAvailable}
         />
       </TooltipProvider>
