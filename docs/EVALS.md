@@ -68,10 +68,10 @@ Do not store prompts beyond the published eval cases, chain-of-thought, PII, bro
 | Client | Target | Status |
 | --- | --- | --- |
 | ChatGPT in-app browser | Five prompts × three clean sessions | Blocked on this execution host: only Codex In-app Browser is connected, so no ChatGPT prompt-selection run can be claimed |
-| Chrome 149+ with WebMCP enabled | Tool discovery, 8/9 lifecycle, complete privacy path | Chrome 152.0.7977.65 loaded the public app after WebMCP was enabled and ClearRights detected native structured-agent access. The Codex browser-control bridge did not expose its separate callable `webmcp` capability, so the 8/9 lifecycle could not be invoked from this particular harness. |
+| Chrome 149+ with WebMCP enabled | Tool discovery, 8/9 lifecycle, complete privacy path | Passed native manual tool isolation in Chrome 152.0.7977.65 through DevTools Application → WebMCP: four completed calls, zero failures, human hold, dynamic apply, verified receipt, and final return to eight tools. Natural-language agent selection remains untested in Chrome. |
 | Ordinary browser without WebMCP | Complete manual fallback | Chrome 152 displayed the complete manual privacy banner and correctly reported structured agent access as unavailable. The full manual choice/review path remains pending. |
 
-These rows remain explicitly **Blocked** or **Pending** until the named client run is performed on the final public build. Passing unit tests is not reported as evidence that a probabilistic agent selected the expected tool.
+Any incomplete row remains explicitly **Blocked** or **Pending** until the named client run is performed on the final public build. Passing unit tests or manually invoking a tool is not reported as evidence that a probabilistic agent selected the expected tool.
 
 ## Development smoke run — August 27, 2026
 
@@ -197,16 +197,56 @@ Chrome `152.0.7977.65` loaded the same public deployment after WebMCP was enable
 
 This is a test-client boundary, not a requirement to open ChatGPT inside Chrome. The official rules allow judges to open the live project either in ChatGPT's WebMCP-capable in-app browser or directly in Chrome 149+ with WebMCP enabled. A compatible agent client can then use the tools registered by the ClearRights page through `document.modelContext`.
 
+### Chrome 152 native DevTools run
+
+The same public deployment was then tested directly through Chrome DevTools **Application → WebMCP**, the Chrome-provided isolation surface for registered tools. This run was driven manually by the user in the DevTools panel while the page UI was independently observed through the attached browser controller.
+
+- **Chrome:** `152.0.7977.65`
+- **Date and timezone:** August 27, 2026, Europe/Rome
+- **Method:** native manual WebMCP invocation; not natural-language model selection
+- **Initial catalog:** 8 available tools; `apply_privacy_plan` absent
+- **Precondition:** the human selected `Accept all`, producing six visible product surfaces and an all-optional-on state without attributing that choice to an agent
+
+| Call | Input summary | Chrome/UI evidence | Result |
+| --- | --- | --- | --- |
+| `get_privacy_overview` | Empty input | Completed in the WebMCP invocation log; initial eight-tool catalog visible | Passed |
+| `inspect_processing` | `partner_advertising`, `reveal: true` | Completed; Setting details opened with current state, purpose, data, consequences and `Additional context from Waypoint` | Passed |
+| `stage_privacy_plan` | Keep booking, account security and trip updates; avoid personalisation, precise location and partner marketing | Completed as `plan-2-gaoe4w`; visible review contained three changes on → off, three matching consequences, Agent check prepared, Human check waiting, and disabled Apply | Passed |
+| `apply_privacy_plan` | `planId: plan-2-gaoe4w`, available only after the human 1.2-second hold | Completed; receipt `receipt-cf6d89fd-a4c7-4bd2-88d1-8cd1d2558213`; revision 2 → 3; `preparationOrigin: webmcp_tool`; `approvalMethod: review_hold`; adapter readback verified | Passed |
+
+Post-apply evidence:
+
+```text
+4 total calls · 0 failed · 0 canceled · 0 in progress
+8 available tools · apply_privacy_plan absent
+receipt-cf6d89fd-a4c7-4bd2-88d1-8cd1d2558213
+plan-2-gaoe4w
+waypoint-local-demo · local_demo · adapter_readback
+observed revision 3 · verified true
+```
+
+The receipt view displayed the same receipt ID and verification method. The underlying product returned to four visible surfaces: three required services and generic discovery. Nearby guide and partner offer were absent.
+
 ### Interpretation
 
 - Direct WebMCP execution: all five canonical privacy cases passed in this complete run.
 - Dynamic trust boundary: the 8 → 9 → 8 lifecycle and exact tool invocation were observed.
 - Natural-language agent selection: not evaluated by these direct calls.
 - Required three clean ChatGPT sessions: still pending.
-- Chrome WebMCP: native page exposure observed; direct calls remain untested because the attached Codex browser-control bridge did not forward the WebMCP tool handle.
+- Chrome WebMCP: native registration, manual invocation, dynamic apply, receipt and final catalog were observed; model-driven tool selection remains untested.
 - Ordinary-browser manual fallback: banner and fallback messaging observed; complete manual flow still pending.
 
 No aggregate success percentage is reported because these are different evaluation layers, not interchangeable attempts.
+
+### Current scorecard
+
+| Evaluation layer | Score | Meaning |
+| --- | ---: | --- |
+| Canonical privacy cases, direct tool execution | 5 / 5 | Overview, inspection, staging, premature-apply block and reviewed apply all passed |
+| Chrome native WebMCP calls | 4 / 4 | All calls completed; zero failed, canceled or left in progress |
+| Dynamic trust boundary | 3 / 3 | Eight tools before review, ninth apply tool after the hold, eight tools after apply |
+| Receipt and product readback | 3 / 3 | Receipt matched the plan, adapter readback matched revision 3, and visible product effects matched the applied state |
+| Natural-language prompt selection | Unscored | Three clean ChatGPT sessions have not yet been run; direct calls do not substitute for this evidence |
 
 ## Result template
 
