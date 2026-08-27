@@ -69,7 +69,8 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller)
 
-    expect(screen.getByText('Travel demo')).toHaveClass('hidden', 'sm:inline-flex')
+    expect(screen.getByText('Waypoint')).toBeVisible()
+    expect(screen.queryByText('Travel demo')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Trips' })).toHaveClass('hidden', 'sm:inline-flex')
     expect(screen.getByRole('navigation', { name: 'Account navigation' })).toHaveClass('shrink-0')
     expect(screen.getByRole('button', { name: 'Privacy settings' })).toBeVisible()

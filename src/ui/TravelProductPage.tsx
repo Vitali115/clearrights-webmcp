@@ -1,143 +1,130 @@
 import type { ReactNode } from 'react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  ArrowRight,
-  CalendarDays,
-  Compass,
-  MapPin,
-  Plane,
-  Search,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react'
 
 interface TravelProductPageProps {
   privacyAction: ReactNode
 }
 
 const trips = [
-  { city: 'Lisbon', dates: '12–18 Sep', detail: 'Hotel and airport transfer confirmed', tone: 'bg-amber-100 text-amber-950' },
-  { city: 'Copenhagen', dates: '03–07 Nov', detail: 'Flexible city break for two', tone: 'bg-sky-100 text-sky-950' },
+  { city: 'Lisbon', dates: '12–18 Sep', meta: 'Confirmed', image: '/cards/lisbon.jpg' },
+  { city: 'Copenhagen', dates: '03–07 Nov', meta: 'City break', image: '/cards/copenhagen.jpg' },
 ]
 
 const destinations = [
-  { city: 'Porto', note: 'Riverside stays', price: 'from €128' },
-  { city: 'Ljubljana', note: 'Green city breaks', price: 'from €104' },
-  { city: 'Valencia', note: 'Sun and design', price: 'from €119' },
+  { city: 'Porto', note: 'Riverside stays', price: 'from €128', image: '/cards/porto.jpg' },
+  { city: 'Ljubljana', note: 'Green city breaks', price: 'from €104', image: '/cards/ljubljana.jpg' },
+  { city: 'Valencia', note: 'Sun and design', price: 'from €119', image: '/cards/valencia.jpg' },
 ]
+
+const fieldClassName =
+  'h-11 rounded-none border-x-0 border-t-0 border-b border-foreground/15 bg-transparent px-0.5 text-base font-medium shadow-none focus-visible:border-foreground focus-visible:ring-0'
+
+function ArtCard({
+  image,
+  title,
+  leading,
+  trailing,
+}: {
+  image: string
+  title: string
+  leading: string
+  trailing: string
+}) {
+  return (
+    <article className="transition-opacity duration-200 hover:opacity-80">
+      <img src={image} alt="" className="aspect-square w-full rounded-xl object-cover" />
+      <h3 className="mt-4 text-[1.1rem] font-medium tracking-tight">{title}</h3>
+      <p className="mt-2 flex flex-wrap gap-2.5 text-sm font-medium">
+        <span>{leading}</span>
+        <span className="text-muted-foreground">{trailing}</span>
+      </p>
+    </article>
+  )
+}
 
 export function TravelProductPage({ privacyAction }: TravelProductPageProps) {
   return (
-    <main className="min-h-svh bg-muted/30 text-foreground">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:h-16 sm:px-6 sm:py-0">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <div className="grid size-9 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <Plane className="size-4" aria-hidden="true" />
-            </div>
-            <span className="font-heading text-lg font-semibold tracking-tight">Waypoint</span>
-            <Badge variant="secondary" className="hidden sm:inline-flex">Travel demo</Badge>
-          </div>
-          <nav className="flex shrink-0 items-center gap-2" aria-label="Account navigation">
-            <Button variant="ghost" className="hidden sm:inline-flex">Trips</Button>
+    <main className="min-h-svh bg-background text-foreground">
+      <header className="border-b border-foreground/8">
+        <div className="flex h-16 items-center justify-between gap-3 px-5 sm:px-8">
+          <span className="text-base font-medium tracking-tight">Waypoint</span>
+          <nav className="flex shrink-0 items-center gap-1" aria-label="Account navigation">
+            <Button variant="ghost" className="hidden h-9 rounded-full px-3.5 sm:inline-flex">
+              Trips
+            </Button>
             {privacyAction}
           </nav>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl space-y-10 px-6 py-10">
-        <section className="overflow-hidden rounded-3xl bg-primary px-8 py-12 text-primary-foreground shadow-sm">
-          <div className="max-w-2xl">
-            <Badge variant="secondary" className="mb-5">
-              <Sparkles data-icon="inline-start" /> Thoughtful European escapes
-            </Badge>
-            <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-              Where do you want to go next?
-            </h1>
-            <p className="mt-4 max-w-xl text-base text-primary-foreground/75">
-              Plan a flexible trip while keeping control of how the service uses your data.
-            </p>
+      <section className="mx-auto w-[min(45rem,calc(100%-2.5rem))] pt-16 pb-16 sm:w-[min(45rem,calc(100%-4rem))] sm:pt-20 sm:pb-16">
+        <h1 className="font-heading text-[clamp(2.25rem,5vw,3rem)] font-medium tracking-tight leading-[1.1]">
+          Where do you want to go next?
+        </h1>
+        <p className="mt-4 mb-10 max-w-xl text-lg text-muted-foreground">
+          Plan a flexible trip while keeping control of how the service uses your data.
+        </p>
+        <form
+          className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <div className="space-y-2">
+            <Label htmlFor="destination" className="text-[13px] font-medium text-muted-foreground">
+              Destination
+            </Label>
+            <Input id="destination" className={fieldClassName} placeholder="City or region" defaultValue="Lisbon" />
           </div>
-          <Card className="mt-8 max-w-4xl bg-background text-foreground">
-            <CardContent className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-              <div className="space-y-2">
-                <Label htmlFor="destination">Destination</Label>
-                <div className="relative">
-                  <MapPin className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                  <Input id="destination" className="pl-9" placeholder="City or region" defaultValue="Lisbon" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="travel-dates">Travel dates</Label>
-                <div className="relative">
-                  <CalendarDays className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-                  <Input id="travel-dates" className="pl-9" defaultValue="12 Sep – 18 Sep" />
-                </div>
-              </div>
-              <Button size="lg"><Search data-icon="inline-start" /> Search trips</Button>
-            </CardContent>
-          </Card>
-        </section>
+          <div className="space-y-2">
+            <Label htmlFor="travel-dates" className="text-[13px] font-medium text-muted-foreground">
+              Travel dates
+            </Label>
+            <Input id="travel-dates" className={fieldClassName} defaultValue="12 Sep – 18 Sep" />
+          </div>
+          <Button type="submit" className="h-9 rounded-full px-5">
+            Search
+          </Button>
+        </form>
+      </section>
 
-        <section aria-labelledby="upcoming-trips">
-          <div className="mb-4 flex items-end justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Ready when you are</p>
-              <h2 id="upcoming-trips" className="font-heading text-2xl font-semibold tracking-tight">Upcoming trips</h2>
-            </div>
-            <Button variant="ghost">View all <ArrowRight data-icon="inline-end" /></Button>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {trips.map((trip) => (
-              <Card key={trip.city}>
-                <CardHeader>
-                  <div className={`mb-3 grid size-12 place-items-center rounded-xl ${trip.tone}`}>
-                    <Compass className="size-5" aria-hidden="true" />
-                  </div>
-                  <CardTitle>{trip.city}</CardTitle>
-                  <CardDescription>{trip.dates}</CardDescription>
-                  <CardAction><Badge variant="outline">Confirmed</Badge></CardAction>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground">{trip.detail}</CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
+      <section className="px-5 pb-16 sm:px-8 sm:pb-20" aria-labelledby="upcoming-trips">
+        <h2 id="upcoming-trips" className="mb-7 text-sm font-medium text-muted-foreground">
+          Upcoming trips
+        </h2>
+        <div className="grid gap-x-6 gap-y-12 sm:gap-y-20 md:grid-cols-3">
+          {trips.map((trip) => (
+            <ArtCard
+              key={trip.city}
+              image={trip.image}
+              title={trip.city}
+              leading={trip.meta}
+              trailing={trip.dates}
+            />
+          ))}
+        </div>
+      </section>
 
-        <section aria-labelledby="destination-ideas">
-          <div className="mb-4">
-            <p className="text-sm font-medium text-muted-foreground">A little inspiration</p>
-            <h2 id="destination-ideas" className="font-heading text-2xl font-semibold tracking-tight">Destination ideas</h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {destinations.map((destination) => (
-              <Card key={destination.city} size="sm">
-                <CardHeader>
-                  <CardTitle>{destination.city}</CardTitle>
-                  <CardDescription>{destination.note}</CardDescription>
-                  <CardAction><Badge variant="secondary">{destination.price}</Badge></CardAction>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </section>
+      <section className="px-5 pb-20 sm:px-8 sm:pb-24" aria-labelledby="destination-ideas">
+        <h2 id="destination-ideas" className="mb-7 text-sm font-medium text-muted-foreground">
+          Destination ideas
+        </h2>
+        <div className="grid gap-x-6 gap-y-12 sm:gap-y-20 md:grid-cols-3">
+          {destinations.map((destination) => (
+            <ArtCard
+              key={destination.city}
+              image={destination.image}
+              title={destination.city}
+              leading={destination.note}
+              trailing={destination.price}
+            />
+          ))}
+        </div>
+      </section>
 
-        <footer className="flex items-center gap-2 border-t py-6 text-sm text-muted-foreground">
-          <ShieldCheck className="size-4" aria-hidden="true" />
-          Privacy information and legal bases are declared by the demo service.
-        </footer>
-      </div>
+      <footer className="px-5 pb-16 text-sm font-medium text-muted-foreground sm:px-8">
+        Privacy information and legal bases are declared by the demo service.
+      </footer>
     </main>
   )
 }

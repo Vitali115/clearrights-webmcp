@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Waypoint — editorial variants</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --lab: #111;
+        --font: "Geist", ui-sans-serif, system-ui, sans-serif;
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        font-family: var(--font);
+        background: #111;
+      }
+      button, input { font: inherit; }
+      button { cursor: pointer; }
+      img { max-width: 100%; }
+      a { color: inherit; text-decoration: none; }
+      [hidden] { display: none !important; }
+
+      /* Lab chrome — not part of the page */
+      .labbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+        min-height: 48px;
+        padding: 8px 16px;
+        background: #111;
+        color: #f4f4f5;
+        border-bottom: 1px solid rgba(255,255,255,.08);
+        font-size: 13px;
+        letter-spacing: 0;
+      }
+      .labbar strong {
+        font-weight: 500;
+        margin-right: 4px;
+      }
+      .labbar .hint {
+        color: rgba(255,255,255,.45);
+        margin-right: auto;
+      }
+      .labbar button {
+        height: 30px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 999px;
+        background: transparent;
+        color: rgba(255,255,255,.7);
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .labbar button[aria-current="true"] {
+        background: #fff;
+        color: #111;
+      }
+      .labbar kbd {
+        font: 500 11px/1 var(--font);
+        opacity: .45;
+        margin-left: 4px;
+      }
+
+      .skin { min-height: calc(100svh - 48px); }
+
+      /* Shared editorial controls */
+      .mast {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        height: 64px;
+        padding: 0 32px;
+      }
+      .wordmark {
+        font-size: 16px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+      .mast-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .mast-link {
+        height: 36px;
+        padding: 0 14px;
+        display: inline-flex;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 500;
+        background: transparent;
+        border: 0;
+        color: inherit;
+        border-radius: 40px;
+      }
+      .btn {
+        height: 36px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 40px;
+        font-size: 14px;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        white-space: nowrap;
+      }
+      .btn-solid { background: var(--btn); color: var(--btn-fg); }
+      .btn-ghost { background: var(--ghost); color: var(--fg); }
+      .wrap {
+        width: 100%;
+        padding: 0 32px 96px;
+      }
+      .art-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        column-gap: 24px;
+        row-gap: 80px;
+      }
+      .art img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        display: block;
+        background: var(--ghost);
+        border-radius: 12px;
+      }
+      .art h2 {
+        margin: 16px 0 8px;
+        font-size: 17.7px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        line-height: 1.31;
+      }
+      .art .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+      .art time, .art .mute { color: var(--mute); }
+      .page-title {
+        font-size: clamp(36px, 4.6vw, 46px);
+        font-weight: 500;
+        letter-spacing: -0.029em;
+        line-height: 1.16;
+        margin: 0;
+      }
+      .index-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 20px 24px;
+        margin: 48px 0 28px;
+      }
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 20px;
+        margin: 0 0 48px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .filters [aria-current="true"] { color: var(--fg); }
+      .filters a, .filters button {
+        background: none;
+        border: 0;
+        padding: 0;
+        color: var(--mute);
+        font: inherit;
+      }
+      .search-inline {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+      }
+      .search-inline label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      .search-inline input {
+        height: 36px;
+        width: 148px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 40px;
+        background: var(--ghost);
+        color: var(--fg);
+        font-size: 14px;
+        font-weight: 500;
+        outline: none;
+      }
+      .search-inline input::placeholder { color: var(--mute); }
+      .foot {
+        width: 100%;
+        padding: 0 32px 64px;
+        color: var(--mute);
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      /* NEWS — openai.com/news on black */
+      .skin-news {
+        --bg: #000;
+        --fg: #fff;
+        --mute: rgba(255,255,255,.6);
+        --ghost: rgba(255,255,255,.12);
+        --btn: #fff;
+        --btn-fg: #000;
+        background: var(--bg);
+        color: var(--fg);
+        font-size: 17px;
+        line-height: 1.65;
+        letter-spacing: -0.01em;
+      }
+
+      /* PAPER — same index, white article paper */
+      .skin-paper {
+        --bg: #fff;
+        --fg: #0a0a0a;
+        --mute: #6e6e80;
+        --ghost: rgba(0,0,0,.06);
+        --btn: #0a0a0a;
+        --btn-fg: #fff;
+        background: var(--bg);
+        color: var(--fg);
+        font-size: 17px;
+        line-height: 1.65;
+        letter-spacing: -0.01em;
+      }
+      .skin-paper .mast {
+        border-bottom: 1px solid rgba(0,0,0,.08);
+      }
+
+      /* ARTICLE — openai article rhythm as a product page */
+      .skin-article {
+        --bg: #fff;
+        --fg: #0a0a0a;
+        --mute: #6e6e80;
+        --ghost: rgba(0,0,0,.06);
+        --btn: #0a0a0a;
+        --btn-fg: #fff;
+        background: var(--bg);
+        color: var(--fg);
+        font-size: 17px;
+        line-height: 1.65;
+        letter-spacing: -0.01em;
+      }
+      .skin-article .mast { border-bottom: 1px solid rgba(0,0,0,.08); }
+      .article-hero {
+        width: min(720px, calc(100% - 64px));
+        margin: 72px auto 56px;
+      }
+      .kicker {
+        display: flex;
+        gap: 16px;
+        margin: 0 0 24px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .kicker a { color: var(--fg); }
+      .kicker time { color: var(--mute); }
+      .article-hero h1 {
+        font-size: clamp(40px, 6vw, 56px);
+        font-weight: 500;
+        letter-spacing: -0.032em;
+        line-height: 1.08;
+        margin: 0 0 20px;
+      }
+      .byline {
+        margin: 0 0 28px;
+        font-size: 16px;
+        font-weight: 500;
+      }
+      .lede {
+        margin: 0 0 36px;
+        color: var(--mute);
+        font-size: 18px;
+        line-height: 1.55;
+      }
+      .search-stack {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 12px;
+        align-items: end;
+      }
+      .field { display: flex; flex-direction: column; gap: 8px; }
+      .field span {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--mute);
+      }
+      .field input {
+        height: 44px;
+        border: 0;
+        border-bottom: 1px solid rgba(0,0,0,.16);
+        border-radius: 0;
+        background: transparent;
+        padding: 0 2px;
+        font-size: 16px;
+        font-weight: 500;
+        outline: none;
+        color: var(--fg);
+      }
+      .keep {
+        width: 100%;
+        padding: 0 32px 96px;
+      }
+      .keep h2 {
+        font-size: 14px;
+        font-weight: 500;
+        margin: 0 0 28px;
+      }
+      .trip-block {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px 48px;
+        width: min(720px, calc(100% - 64px));
+        margin: 0 auto 96px;
+      }
+      .trip-block img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        display: block;
+        border-radius: 12px;
+      }
+      .trip-block h3 {
+        margin: 16px 0 8px;
+        font-size: 22px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+      .trip-block p { margin: 0; color: var(--mute); font-size: 16px; }
+
+      /* QUIET — same product, no marketing chrome */
+      .skin-quiet {
+        --bg: #fff;
+        --fg: #0a0a0a;
+        --mute: #6e6e80;
+        --ghost: rgba(0,0,0,.06);
+        --btn: #0a0a0a;
+        --btn-fg: #fff;
+        background: var(--bg);
+        color: var(--fg);
+        font-size: 16px;
+        line-height: 1.5;
+        letter-spacing: -0.011em;
+      }
+      .skin-quiet .mast { border-bottom: 1px solid rgba(0,0,0,.08); }
+      .quiet-hero {
+        width: min(720px, calc(100% - 64px));
+        margin: 80px auto 64px;
+      }
+      .quiet-hero h1 {
+        font-size: clamp(36px, 5vw, 48px);
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+        margin: 0 0 16px;
+      }
+      .quiet-hero p {
+        margin: 0 0 40px;
+        color: var(--mute);
+        font-size: 18px;
+        max-width: 38rem;
+      }
+      .rows {
+        width: min(720px, calc(100% - 64px));
+        margin: 0 auto 80px;
+      }
+      .rows h2 {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--mute);
+        margin: 0 0 8px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px 24px;
+        padding: 22px 0;
+        border-top: 1px solid rgba(0,0,0,.1);
+      }
+      .row strong {
+        font-size: 20px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+      .row span { color: var(--mute); font-size: 14px; font-weight: 500; }
+      .row em {
+        grid-column: 1 / -1;
+        font-style: normal;
+        color: var(--mute);
+        font-size: 15px;
+      }
+      .quiet-dest {
+        width: 100%;
+        padding: 0 32px 96px;
+      }
+      .quiet-dest h2 {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--mute);
+        margin: 0 0 28px;
+      }
+
+      /* NOW — current sample, for comparison */
+      .skin-now {
+        background: #f4f4f5;
+        color: #171717;
+        font-size: 16px;
+      }
+      .now-head {
+        background: #fff;
+        border-bottom: 1px solid #e5e5e5;
+      }
+      .now-head .mast { height: 64px; }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .mark {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: #1a1a1a;
+        color: #fff;
+        display: grid;
+        place-items: center;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        height: 22px;
+        padding: 0 8px;
+        border-radius: 8px;
+        background: #f4f4f5;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .now-ghost {
+        height: 32px;
+        padding: 0 10px;
+        border: 0;
+        background: transparent;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .now-outline {
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid #e5e5e5;
+        background: #fff;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .now-body { width: min(1280px, calc(100% - 48px)); margin: 0 auto; padding: 40px 0 64px; }
+      .now-hero {
+        background: #1a1a1a;
+        color: #fafafa;
+        border-radius: 24px;
+        padding: 48px 32px 32px;
+      }
+      .now-hero .badge { background: #f4f4f5; color: #171717; margin-bottom: 20px; }
+      .now-hero h1 {
+        font-size: clamp(32px, 4vw, 48px);
+        font-weight: 600;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+        margin: 0 0 16px;
+      }
+      .now-hero p { margin: 0; color: rgba(250,250,250,.7); max-width: 36rem; }
+      .now-search {
+        margin-top: 32px;
+        background: #fff;
+        color: #171717;
+        border-radius: 14px;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 16px;
+        align-items: end;
+        box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+      }
+      .now-search label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+      .now-search input {
+        width: 100%;
+        height: 40px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px;
+        padding: 0 12px;
+        background: #fff;
+      }
+      .now-search .btn-now {
+        height: 40px;
+        padding: 0 16px;
+        border: 0;
+        border-radius: 8px;
+        background: #1a1a1a;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .now-sec { margin-top: 40px; }
+      .now-sec h2 {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        margin: 4px 0 16px;
+      }
+      .now-k { font-size: 14px; font-weight: 500; color: #737373; margin: 0; }
+      .now-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .now-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 16px 16px 20px;
+        box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+      }
+      .now-ico {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 12px;
+      }
+      .now-ico.amber { background: #fef3c7; color: #451a03; }
+      .now-ico.sky { background: #e0f2fe; color: #082f49; }
+      .now-card h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; }
+      .now-card p { margin: 0; color: #737373; font-size: 14px; }
+      .now-dest { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+      .now-foot {
+        margin-top: 40px;
+        padding-top: 24px;
+        border-top: 1px solid #e5e5e5;
+        color: #737373;
+        font-size: 14px;
+      }
+
+      @media (max-width: 900px) {
+        .art-grid, .now-dest, .trip-block { grid-template-columns: 1fr; row-gap: 48px; }
+        .now-cards { grid-template-columns: 1fr; }
+        .now-search, .search-stack { grid-template-columns: 1fr; }
+        .mast { padding: 0 20px; width: 100%; }
+        .wrap, .foot, .keep, .quiet-dest { width: 100%; padding-left: 20px; padding-right: 20px; }
+        .quiet-hero, .rows, .article-hero, .trip-block, .now-body {
+          width: calc(100% - 40px);
+        }
+        .badge-hide, .now-trips { display: none; }
+        .art-grid { row-gap: 40px; }
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .art { transition: opacity 180ms ease; }
+        .art:hover { opacity: .82; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="labbar">
+      <strong>Waypoint</strong>
+      <span class="hint">varianti · stesso contenuto, cinque pelli</span>
+      <button type="button" data-variant="now" aria-current="false">Now <kbd>1</kbd></button>
+      <button type="button" data-variant="quiet" aria-current="false">Quiet <kbd>2</kbd></button>
+      <button type="button" data-variant="news" aria-current="true">News <kbd>3</kbd></button>
+      <button type="button" data-variant="paper" aria-current="false">Paper <kbd>4</kbd></button>
+      <button type="button" data-variant="article" aria-current="false">Article <kbd>5</kbd></button>
+    </div>
+
+    <!-- 1. Current sample -->
+    <div id="now" class="skin skin-now" hidden>
+      <header class="now-head">
+        <div class="mast">
+          <div class="brand">
+            <span class="mark" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.6c-.2.5 0 1 .4 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.6 5.2c.3.4.8.6 1.3.4l.6-.3c.4-.2.6-.6.5-1.1z"/></svg>
+            </span>
+            <span class="wordmark">Waypoint</span>
+            <span class="badge badge-hide">Travel demo</span>
+          </div>
+          <nav class="mast-nav" aria-label="Account navigation">
+            <button type="button" class="now-ghost now-trips">Trips</button>
+            <button type="button" class="now-outline">Privacy settings</button>
+          </nav>
+        </div>
+      </header>
+      <div class="now-body">
+        <section class="now-hero">
+          <span class="badge">Thoughtful European escapes</span>
+          <h1>Where do you want to go next?</h1>
+          <p>Plan a flexible trip while keeping control of how the service uses your data.</p>
+          <form class="now-search" action="#" onsubmit="return false">
+            <div>
+              <label for="now-dest">Destination</label>
+              <input id="now-dest" value="Lisbon" />
+            </div>
+            <div>
+              <label for="now-dates">Travel dates</label>
+              <input id="now-dates" value="12 Sep – 18 Sep" />
+            </div>
+            <button class="btn-now" type="submit">Search trips</button>
+          </form>
+        </section>
+        <section class="now-sec">
+          <p class="now-k">Ready when you are</p>
+          <h2>Upcoming trips</h2>
+          <div class="now-cards">
+            <article class="now-card">
+              <div class="now-ico amber" aria-hidden="true">◈</div>
+              <h3>Lisbon</h3>
+              <p>12–18 Sep</p>
+              <p style="margin-top:10px">Hotel and airport transfer confirmed</p>
+            </article>
+            <article class="now-card">
+              <div class="now-ico sky" aria-hidden="true">◈</div>
+              <h3>Copenhagen</h3>
+              <p>03–07 Nov</p>
+              <p style="margin-top:10px">Flexible city break for two</p>
+            </article>
+          </div>
+        </section>
+        <section class="now-sec">
+          <p class="now-k">A little inspiration</p>
+          <h2>Destination ideas</h2>
+          <div class="now-dest">
+            <article class="now-card">
+              <h3>Porto</h3>
+              <p>Riverside stays</p>
+              <p style="margin-top:8px"><span class="badge">from €128</span></p>
+            </article>
+            <article class="now-card">
+              <h3>Ljubljana</h3>
+              <p>Green city breaks</p>
+              <p style="margin-top:8px"><span class="badge">from €104</span></p>
+            </article>
+            <article class="now-card">
+              <h3>Valencia</h3>
+              <p>Sun and design</p>
+              <p style="margin-top:8px"><span class="badge">from €119</span></p>
+            </article>
+          </div>
+        </section>
+        <footer class="now-foot">Privacy information and legal bases are declared by the demo service.</footer>
+      </div>
+    </div>
+
+    <!-- 2. Quiet product -->
+    <div id="quiet" class="skin skin-quiet" hidden>
+      <header>
+        <div class="mast">
+          <a class="wordmark" href="#">Waypoint</a>
+          <nav class="mast-nav" aria-label="Account navigation">
+            <button type="button" class="mast-link">Trips</button>
+            <button type="button" class="btn btn-ghost">Privacy settings</button>
+          </nav>
+        </div>
+      </header>
+      <section class="quiet-hero">
+        <h1>Where do you want to go next?</h1>
+        <p>Plan a flexible trip while keeping control of how the service uses your data.</p>
+        <form class="search-stack" action="#" onsubmit="return false">
+          <label class="field">
+            <span>Destination</span>
+            <input value="Lisbon" />
+          </label>
+          <label class="field">
+            <span>Travel dates</span>
+            <input value="12 Sep – 18 Sep" />
+          </label>
+          <button class="btn btn-solid" type="submit">Search</button>
+        </form>
+      </section>
+      <section class="rows" aria-labelledby="q-trips">
+        <h2 id="q-trips">Upcoming trips</h2>
+        <div class="row">
+          <strong>Lisbon</strong>
+          <span>12–18 Sep</span>
+          <em>Hotel and airport transfer confirmed</em>
+        </div>
+        <div class="row">
+          <strong>Copenhagen</strong>
+          <span>03–07 Nov</span>
+          <em>Flexible city break for two</em>
+        </div>
+      </section>
+      <section class="quiet-dest" aria-labelledby="q-ideas">
+        <h2 id="q-ideas">Destination ideas</h2>
+        <div class="art-grid">
+          <a class="art" href="#">
+            <img src="/cards/porto.jpg" alt="" />
+            <h2>Porto</h2>
+            <p class="meta"><span>Riverside stays</span><span class="mute">from €128</span></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/ljubljana.jpg" alt="" />
+            <h2>Ljubljana</h2>
+            <p class="meta"><span>Green city breaks</span><span class="mute">from €104</span></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/valencia.jpg" alt="" />
+            <h2>Valencia</h2>
+            <p class="meta"><span>Sun and design</span><span class="mute">from €119</span></p>
+          </a>
+        </div>
+      </section>
+      <footer class="foot">Privacy information and legal bases are declared by the demo service.</footer>
+    </div>
+
+    <!-- 3. News — openai.com/news -->
+    <div id="news" class="skin skin-news">
+      <header>
+        <div class="mast">
+          <a class="wordmark" href="#">Waypoint</a>
+          <nav class="mast-nav" aria-label="Account navigation">
+            <button type="button" class="mast-link">Trips</button>
+            <button type="button" class="btn btn-ghost">Privacy settings</button>
+          </nav>
+        </div>
+      </header>
+      <div class="wrap">
+        <div class="index-head">
+          <h1 class="page-title">Trips</h1>
+          <form class="search-inline" action="#" onsubmit="return false">
+            <label for="news-dest">Destination</label>
+            <input id="news-dest" value="Lisbon" />
+            <label for="news-dates">Travel dates</label>
+            <input id="news-dates" value="12–18 Sep" />
+            <button class="btn btn-solid" type="submit">Search</button>
+          </form>
+        </div>
+        <div class="filters">
+          <button type="button" aria-current="true">Upcoming</button>
+          <button type="button">Ideas</button>
+          <button type="button">Europe</button>
+        </div>
+        <div class="art-grid">
+          <a class="art" href="#">
+            <img src="/cards/lisbon.jpg" alt="" />
+            <h2>Lisbon</h2>
+            <p class="meta"><span>Confirmed</span><time>12–18 Sep</time></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/copenhagen.jpg" alt="" />
+            <h2>Copenhagen</h2>
+            <p class="meta"><span>City break</span><time>03–07 Nov</time></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/porto.jpg" alt="" />
+            <h2>Porto</h2>
+            <p class="meta"><span>Riverside stays</span><span class="mute">from €128</span></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/ljubljana.jpg" alt="" />
+            <h2>Ljubljana</h2>
+            <p class="meta"><span>Green city breaks</span><span class="mute">from €104</span></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/valencia.jpg" alt="" />
+            <h2>Valencia</h2>
+            <p class="meta"><span>Sun and design</span><span class="mute">from €119</span></p>
+          </a>
+        </div>
+      </div>
+      <footer class="foot">Privacy information and legal bases are declared by the demo service.</footer>
+    </div>
+
+    <!-- 4. Paper — news index on white -->
+    <div id="paper" class="skin skin-paper" hidden>
+      <header>
+        <div class="mast">
+          <a class="wordmark" href="#">Waypoint</a>
+          <nav class="mast-nav" aria-label="Account navigation">
+            <button type="button" class="mast-link">Trips</button>
+            <button type="button" class="btn btn-ghost">Privacy settings</button>
+          </nav>
+        </div>
+      </header>
+      <div class="wrap">
+        <div class="index-head">
+          <h1 class="page-title">Trips</h1>
+          <form class="search-inline" action="#" onsubmit="return false">
+            <label for="paper-dest">Destination</label>
+            <input id="paper-dest" value="Lisbon" />
+            <label for="paper-dates">Travel dates</label>
+            <input id="paper-dates" value="12–18 Sep" />
+            <button class="btn btn-solid" type="submit">Search</button>
+          </form>
+        </div>
+        <div class="filters">
+          <button type="button" aria-current="true">Upcoming</button>
+          <button type="button">Ideas</button>
+          <button type="button">Europe</button>
+        </div>
+        <div class="art-grid">
+          <a class="art" href="#">
+            <img src="/cards/lisbon.jpg" alt="" />
+            <h2>Lisbon</h2>
+            <p class="meta"><span>Confirmed</span><time>12–18 Sep</time></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/copenhagen.jpg" alt="" />
+            <h2>Copenhagen</h2>
+            <p class="meta"><span>City break</span><time>03–07 Nov</time></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/porto.jpg" alt="" />
+            <h2>Porto</h2>
+            <p class="meta"><span>Riverside stays</span><span class="mute">from €128</span></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/ljubljana.jpg" alt="" />
+            <h2>Ljubljana</h2>
+            <p class="meta"><span>Green city breaks</span><span class="mute">from €104</span></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/valencia.jpg" alt="" />
+            <h2>Valencia</h2>
+            <p class="meta"><span>Sun and design</span><span class="mute">from €119</span></p>
+          </a>
+        </div>
+      </div>
+      <footer class="foot">Privacy information and legal bases are declared by the demo service.</footer>
+    </div>
+
+    <!-- 5. Article — openai.com index article -->
+    <div id="article" class="skin skin-article" hidden>
+      <header>
+        <div class="mast">
+          <a class="wordmark" href="#">Waypoint</a>
+          <nav class="mast-nav" aria-label="Account navigation">
+            <button type="button" class="mast-link">Trips</button>
+            <button type="button" class="btn btn-ghost">Privacy settings</button>
+          </nav>
+        </div>
+      </header>
+      <header class="article-hero">
+        <p class="kicker"><time>12 Sep 2026</time><a href="#">Travel</a></p>
+        <h1>Where do you want to go next?</h1>
+        <p class="byline">By Waypoint</p>
+        <p class="lede">Plan a flexible European trip while keeping control of how the service uses your data.</p>
+        <form class="search-stack" action="#" onsubmit="return false">
+          <label class="field">
+            <span>Destination</span>
+            <input value="Lisbon" />
+          </label>
+          <label class="field">
+            <span>Travel dates</span>
+            <input value="12 Sep – 18 Sep" />
+          </label>
+          <button class="btn btn-solid" type="submit">Search</button>
+        </form>
+      </header>
+      <section class="trip-block" aria-label="Upcoming trips">
+        <article>
+          <img src="/cards/lisbon.jpg" alt="" />
+          <h3>Lisbon</h3>
+          <p>12–18 Sep. Hotel and airport transfer confirmed.</p>
+        </article>
+        <article>
+          <img src="/cards/copenhagen.jpg" alt="" />
+          <h3>Copenhagen</h3>
+          <p>03–07 Nov. Flexible city break for two.</p>
+        </article>
+      </section>
+      <section class="keep">
+        <h2>Keep reading</h2>
+        <div class="art-grid">
+          <a class="art" href="#">
+            <img src="/cards/porto.jpg" alt="" />
+            <h2>Porto</h2>
+            <p class="meta"><span>Riverside stays</span><span class="mute">from €128</span></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/ljubljana.jpg" alt="" />
+            <h2>Ljubljana</h2>
+            <p class="meta"><span>Green city breaks</span><span class="mute">from €104</span></p>
+          </a>
+          <a class="art" href="#">
+            <img src="/cards/valencia.jpg" alt="" />
+            <h2>Valencia</h2>
+            <p class="meta"><span>Sun and design</span><span class="mute">from €119</span></p>
+          </a>
+        </div>
+      </section>
+      <footer class="foot">Privacy information and legal bases are declared by the demo service.</footer>
+    </div>
+
+    <script>
+      const keys = { "1": "now", "2": "quiet", "3": "news", "4": "paper", "5": "article" };
+
+      function show(id) {
+        document.querySelectorAll(".skin").forEach((el) => {
+          el.hidden = el.id !== id;
+        });
+        document.querySelectorAll(".labbar button[data-variant]").forEach((btn) => {
+          btn.setAttribute("aria-current", btn.dataset.variant === id ? "true" : "false");
+        });
+        history.replaceState(null, "", "#" + id);
+        window.scrollTo(0, 0);
+      }
+
+      document.querySelectorAll(".labbar button[data-variant]").forEach((btn) => {
+        btn.addEventListener("click", () => show(btn.dataset.variant));
+      });
+      window.addEventListener("keydown", (e) => {
+        if (e.target.matches("input, textarea")) return;
+        if (keys[e.key]) show(keys[e.key]);
+      });
+
+      const start = (location.hash || "#news").slice(1);
+      show(keys[start] ? keys[start] : (document.getElementById(start) ? start : "news"));
+    </script>
+  </body>
+</html>

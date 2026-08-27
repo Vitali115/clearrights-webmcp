@@ -38,7 +38,7 @@ export default function App({ controller, privacyUi, webMcpAvailable }: AppProps
       <TravelProductPage
         privacyAction={(
           <SheetTrigger asChild>
-            <Button variant="outline">
+            <Button variant="ghost" className="h-9 rounded-full bg-foreground/5 px-5 hover:bg-foreground/10">
               Privacy settings
             </Button>
           </SheetTrigger>
