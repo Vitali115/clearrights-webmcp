@@ -46,8 +46,9 @@ export function selectPrivacyTrustTrace({
     ? snapshot.plan
     : null
   const latestReceipt = snapshot.record.receipts[0] ?? null
-  const receiptMatchesAppliedRevision = Boolean(
-    latestReceipt
+  const receiptMatchesCurrentTrace = Boolean(
+    !activePlan
+    && latestReceipt
     && latestReceipt.afterRevision === snapshot.record.state.revision
     && latestReceipt.verification.observedRevision === latestReceipt.afterRevision,
   )
@@ -58,7 +59,7 @@ export function selectPrivacyTrustTrace({
         planId: activePlan.id,
         origin: snapshot.preparationOrigin,
       }
-    : receiptMatchesAppliedRevision && latestReceipt
+    : receiptMatchesCurrentTrace && latestReceipt
       ? {
           status: latestReceipt.preparationOrigin === 'webmcp_tool'
             ? 'agent_prepared' as const
@@ -74,7 +75,7 @@ export function selectPrivacyTrustTrace({
         reviewedAt: snapshot.reviewedAt,
         method: snapshot.approvalMethod,
       }
-    : receiptMatchesAppliedRevision && latestReceipt
+    : !activePlan && receiptMatchesCurrentTrace && latestReceipt
       ? {
           status: latestReceipt.approvalMethod === 'review_hold'
             ? 'human_reviewed' as const
@@ -88,7 +89,7 @@ export function selectPrivacyTrustTrace({
     declared: { catalogVersion, noticeVersion },
     prepared,
     reviewed,
-    applied: receiptMatchesAppliedRevision && latestReceipt
+    applied: receiptMatchesCurrentTrace && latestReceipt
       ? {
           status: 'applied',
           receiptId: latestReceipt.id,
@@ -96,7 +97,7 @@ export function selectPrivacyTrustTrace({
           adapterId: latestReceipt.verification.adapterId,
         }
       : { status: 'pending', receiptId: null, revision: null, adapterId: null },
-    verified: receiptMatchesAppliedRevision && latestReceipt?.verified
+    verified: receiptMatchesCurrentTrace && latestReceipt?.verified
       ? {
           status: 'readback_matched',
           method: latestReceipt.verification.method,

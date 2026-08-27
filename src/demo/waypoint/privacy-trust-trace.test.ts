@@ -87,4 +87,42 @@ describe('Waypoint privacy trust trace', () => {
       method: 'explicit_action',
     }))
   })
+
+  it('does not combine a new pending plan with evidence from an older receipt', async () => {
+    const controller = await createController()
+    await controller.applyDirectChoice({
+      input: createDirectChoiceInput(travelCatalog, 'allow_all'),
+      method: 'allow_all',
+      entrySurface: 'initial_banner',
+      preparationOrigin: 'page_ui',
+    })
+
+    const plan = controller.stage({
+      keepCapabilities: [
+        'book_and_manage_trips',
+        'protect_account',
+        'receive_trip_updates',
+      ],
+      avoidUses: [
+        'preference_personalisation',
+        'precise_location',
+        'partner_marketing',
+      ],
+    }, 'webmcp_tool')
+
+    const trace = select(controller.getSnapshot())
+    expect(trace.prepared).toEqual({
+      status: 'agent_prepared',
+      planId: plan.id,
+      origin: 'webmcp_tool',
+    })
+    expect(trace.reviewed).toEqual({ status: 'pending', reviewedAt: null, method: null })
+    expect(trace.applied).toEqual({
+      status: 'pending',
+      receiptId: null,
+      revision: null,
+      adapterId: null,
+    })
+    expect(trace.verified).toEqual({ status: 'pending', method: null, scope: null })
+  })
 })
