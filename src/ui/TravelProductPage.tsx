@@ -26,9 +26,9 @@ const genericDestinations = [
 ]
 
 const personalisedDestinations = [
-  { city: 'Reykjavík', note: 'Matches your coastal saves', price: 'from €176', image: '/cards/copenhagen.jpg' },
-  { city: 'Marrakesh', note: 'Based on your design stays', price: 'from €142', image: '/cards/valencia.jpg' },
-  { city: 'São Miguel', note: 'For your nature shortlist', price: 'from €156', image: '/cards/porto.jpg' },
+  { city: 'Reykjavík', note: 'Matches your coastal saves', price: 'from €176', image: '/cards/reykjavik.jpg' },
+  { city: 'Marrakesh', note: 'Based on your design stays', price: 'from €142', image: '/cards/marrakesh.jpg' },
+  { city: 'São Miguel', note: 'For your nature shortlist', price: 'from €156', image: '/cards/azores.jpg' },
 ]
 
 const fieldClassName =
@@ -238,15 +238,18 @@ function NearbyGuide() {
 
 function PartnerOffer() {
   return (
-    <article data-clearrights-surface="partner-offer" data-clearrights-result="visible" className="grid min-h-72 gap-6 border border-foreground/10 p-6 sm:grid-cols-[1fr_auto] sm:items-end">
-      <div>
-        <p className="text-sm font-medium text-muted-foreground">Partner offer</p>
-        <h2 className="mt-3 text-2xl font-medium tracking-tight">A flexible rail pass for your saved city trips</h2>
-        <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
-          Shown because partner advertising is active. The demo does not contact a real advertising network.
-        </p>
+    <article data-clearrights-surface="partner-offer" data-clearrights-result="visible" className="flex min-h-72 flex-col border border-foreground/10 p-4">
+      <img src="/cards/rail-pass.jpg" alt="" className="aspect-[16/9] w-full rounded-lg object-cover" />
+      <div className="grid flex-1 gap-6 p-2 pt-6 sm:grid-cols-[1fr_auto] sm:items-end">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Partner offer</p>
+          <h2 className="mt-3 text-2xl font-medium tracking-tight">A flexible rail pass for your saved city trips</h2>
+          <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground">
+            Shown because partner advertising is active. The demo does not contact a real advertising network.
+          </p>
+        </div>
+        <Button variant="outline" className="rounded-full">View offer</Button>
       </div>
-      <Button variant="outline" className="rounded-full">View offer</Button>
     </article>
   )
 }

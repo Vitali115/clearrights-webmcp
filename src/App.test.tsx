@@ -206,6 +206,8 @@ describe('privacy settings UI', () => {
     expect(document.querySelector('[data-clearrights-surface="travel-discovery"]')).toHaveAttribute('data-clearrights-result', 'personalised')
     expect(document.querySelector('[data-clearrights-surface="nearby-guide"]')).toBeInTheDocument()
     expect(document.querySelector('[data-clearrights-surface="partner-offer"]')).toBeInTheDocument()
+    expect(document.querySelector('img[src="/cards/reykjavik.jpg"]')).toBeInTheDocument()
+    expect(document.querySelector('img[src="/cards/rail-pass.jpg"]')).toBeInTheDocument()
     expect(controller.getReceipt()).toEqual(expect.objectContaining({
       kind: 'initial_choice',
       choiceMethod: 'allow_all',
