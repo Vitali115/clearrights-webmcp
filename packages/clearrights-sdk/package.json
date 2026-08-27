@@ -1,0 +1,13 @@
+{
+  "name": "@clearrights/sdk",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./privacy": "./src/privacy/index.ts",
+    "./accessibility": "./src/accessibility/index.ts",
+    "./site-guide": "./src/site-guide/index.ts"
+  },
+  "types": "./src/index.ts"
+}

@@ -7,7 +7,10 @@
     "types": ["vite/client", "webmcp-types"],
     "paths": {
       "@/*": ["./src/*"],
-      "@clearrights/privacy-sdk": ["./packages/privacy-control-sdk/src/index.ts"]
+      "@clearrights/sdk": ["./packages/clearrights-sdk/src/index.ts"],
+      "@clearrights/sdk/privacy": ["./packages/clearrights-sdk/src/privacy/index.ts"],
+      "@clearrights/sdk/accessibility": ["./packages/clearrights-sdk/src/accessibility/index.ts"],
+      "@clearrights/sdk/site-guide": ["./packages/clearrights-sdk/src/site-guide/index.ts"]
     },
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
@@ -26,5 +29,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "packages/privacy-control-sdk/src"]
+  "include": ["src", "packages/clearrights-sdk/src"]
 }

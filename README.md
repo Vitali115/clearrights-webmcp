@@ -2,7 +2,7 @@
 
 ClearRights is a WebMCP-native privacy-control SDK demonstrated inside the fictional Waypoint Travel product. One developer-defined catalog powers the initial **Privacy choices** banner, the full settings index, structured WebMCP tools, deterministic planning, separate agent and human checks, enforcement-adapter readback, and scoped receipts.
 
-The repository is an OpenAI hackathon demo, but its core boundary is real: `@clearrights/privacy-sdk` is a framework-independent workspace package and Waypoint consumes it through repository and enforcement adapters. The included adapter changes visible product behaviour in the browser. No backend, legal-compliance engine, identity proof, CMP, or external data-pipeline integration is claimed.
+The repository is an OpenAI hackathon demo, but its core boundary is real: `@clearrights/sdk/privacy` is a framework-independent workspace module and Waypoint consumes it through repository and enforcement adapters. The included adapter changes visible product behaviour in the browser. No backend, legal-compliance engine, identity proof, CMP, or external data-pipeline integration is claimed.
 
 ## Run locally
 
@@ -90,7 +90,7 @@ Tool input and output contracts are generated from the configured catalog and va
 
 ## SDK
 
-The package lives at `packages/privacy-control-sdk` and deliberately has no React, DOM, localStorage, or WebMCP dependency.
+The package lives at `packages/clearrights-sdk` and deliberately has no React, DOM, localStorage, or WebMCP dependency.
 
 ```ts
 const privacy = await createPrivacyRuntime({
@@ -123,7 +123,7 @@ The runtime also fails closed with `enforcement_drift` when adapter readback doe
 ## Architecture
 
 ```text
-packages/privacy-control-sdk
+packages/clearrights-sdk
   catalog, planner, presets, workflow, runtime, repository and enforcement ports
 
 src/demo

@@ -1,1 +1,1 @@
-export * from '@clearrights/privacy-sdk'
+export * from '@clearrights/sdk/privacy'

@@ -6,10 +6,13 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
-      '@clearrights/privacy-sdk': path.resolve(import.meta.dirname, './packages/privacy-control-sdk/src/index.ts'),
-    },
+    alias: [
+      { find: '@clearrights/sdk/privacy', replacement: path.resolve(import.meta.dirname, './packages/clearrights-sdk/src/privacy/index.ts') },
+      { find: '@clearrights/sdk/accessibility', replacement: path.resolve(import.meta.dirname, './packages/clearrights-sdk/src/accessibility/index.ts') },
+      { find: '@clearrights/sdk/site-guide', replacement: path.resolve(import.meta.dirname, './packages/clearrights-sdk/src/site-guide/index.ts') },
+      { find: '@clearrights/sdk', replacement: path.resolve(import.meta.dirname, './packages/clearrights-sdk/src/index.ts') },
+      { find: '@', replacement: path.resolve(import.meta.dirname, './src') },
+    ],
   },
   test: {
     environment: 'jsdom',

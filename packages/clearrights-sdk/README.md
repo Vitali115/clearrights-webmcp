@@ -1,16 +1,14 @@
-# `@clearrights/privacy-sdk`
+# `@clearrights/sdk`
 
-Framework-independent privacy planning and enforcement runtime used by the Waypoint WebMCP demo.
+Framework-independent ClearRights modules used by the Waypoint WebMCP demo.
 
 ## Public surface
 
-- `definePrivacyCatalog`
-- `createPrivacyPlan`
-- `createPresetInput`
-- `createPrivacyRuntime`
-- catalog, repository, enforcement, plan, receipt, and workflow types
+- `@clearrights/sdk/privacy`
+- `@clearrights/sdk/accessibility`
+- `@clearrights/sdk/site-guide`
 
-The package is a private workspace package for the hackathon demo and is not published to npm.
+The package is private to the hackathon workspace and is not published to npm. It contains no React, DOM, storage, WebMCP, or Waypoint dependency.
 
 ## Enforcement contract
 
