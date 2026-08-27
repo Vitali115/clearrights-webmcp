@@ -77,6 +77,10 @@ TypeScript, React, Vite, Zod, Vitest, WebMCP's imperative `document.modelContext
 
 Manual privacy settings continue to work when WebMCP is unavailable.
 
+### Recorded evaluation evidence
+
+[`EVALS.md`](EVALS.md) preserves three separate evidence layers: deterministic repository checks, the native Chrome 152 WebMCP lifecycle, and final-build natural-language runs in GPT-5.6 Sol, Terra, and Luna. Sol and Terra completed the five-case path. Terra's earlier post-hold ambiguity was reproduced, hardened with a machine-readable reviewed `nextAction`, and then resolved in the final-build run. Luna remained blocked before tool discovery by its client/runtime, so it is reported as blocked rather than converted into an application failure or an aggregate percentage.
+
 ## Video storyboard — target 2:30
 
 | Time | Visual | English narration goal |
@@ -102,9 +106,11 @@ The repository has no production CMP, backend, authentication, geography engine,
 - [x] Default branch contains the MIT license and reproducible install instructions.
 - [x] Vercel deployment builds with `npm ci` and `npm run build` to `dist`.
 - [x] Public deployment has no secret, login, or required environment variable.
-- [ ] Tool count is 8 normally and 9 only after unchanged human review.
-- [ ] All five eval prompts have three recorded clean-session runs in ChatGPT.
-- [ ] Chrome 149 and manual fallback observations are recorded in `EVALS.md`.
+- [x] Tool count is 8 normally and 9 only after unchanged human review.
+- [x] One final-build five-case run is recorded for each of Sol, Terra, and Luna, including Luna's client/runtime discovery block.
+- [ ] Three clean five-case sessions are recorded for every client for which a repeated-run claim will be made.
+- [x] Chrome 152 native WebMCP and ordinary-browser fallback observations are recorded in `EVALS.md`.
+- [ ] The complete ordinary-browser manual review and application path is recorded.
 - [ ] YouTube video is public and under three minutes.
 - [ ] Devpost links, testing instructions, and submission text are final.
 - [ ] Final artifacts are ready by September 2; September 3 is buffer only.

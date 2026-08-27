@@ -37,7 +37,7 @@ Before the hold, `apply_privacy_plan` is not registered. After the hold, it beco
 
 When review is complete, the overview also exposes a machine-readable `nextAction` containing `apply_privacy_plan`, the exact reviewed `planId`, and `humanReviewComplete: true`. The read-only receipt tool explicitly does not apply pending plans and may return an older receipt.
 
-The repeatable script is in [`docs/DEMO.md`](docs/DEMO.md). The five-case eval dataset is in [`evals/privacy-prompt-cases.json`](evals/privacy-prompt-cases.json).
+The repeatable script is in [`docs/DEMO.md`](docs/DEMO.md). The five-case eval dataset is in [`evals/privacy-prompt-cases.json`](evals/privacy-prompt-cases.json), and the observed direct-tool, native Chrome, and model-driven results are recorded without an invented aggregate rate in [`docs/EVALS.md`](docs/EVALS.md).
 
 ## What is real in the demo
 

@@ -67,11 +67,45 @@ Do not store prompts beyond the published eval cases, chain-of-thought, PII, bro
 
 | Client | Target | Status |
 | --- | --- | --- |
-| ChatGPT in-app browser | Five prompts × three clean sessions | Blocked on this execution host: only Codex In-app Browser is connected, so no ChatGPT prompt-selection run can be claimed |
+| ChatGPT in-app browser | Five prompts × three clean sessions | Three final-build model runs recorded: GPT-5.6 Sol and Terra completed all five cases; GPT-5.6 Luna was blocked before tool discovery by its client/runtime. Results are reported per client, not as an aggregate success rate. |
 | Chrome 149+ with WebMCP enabled | Tool discovery, 8/9 lifecycle, complete privacy path | Passed native manual tool isolation in Chrome 152.0.7977.65 through DevTools Application → WebMCP: four completed calls, zero failures, human hold, dynamic apply, verified receipt, and final return to eight tools. Natural-language agent selection remains untested in Chrome. |
 | Ordinary browser without WebMCP | Complete manual fallback | Chrome 152 displayed the complete manual privacy banner and correctly reported structured agent access as unavailable. The full manual choice/review path remains pending. |
 
 Any incomplete row remains explicitly **Blocked** or **Pending** until the named client run is performed on the final public build. Passing unit tests or manually invoking a tool is not reported as evidence that a probabilistic agent selected the expected tool.
+
+## ChatGPT natural-language runs — August 27, 2026
+
+These shared ChatGPT conversations exercise the canonical five prompts against `https://clearrights-webmcp.vercel.app`. The person performed only the visible review hold when requested; the model was instructed not to click or complete human privacy approval controls. The conversations are evidence of model behavior and user-visible results. They do not expose the same expanded native invocation log as Chrome DevTools, so this section does not invent unavailable call-level telemetry.
+
+### Final-build runs after reviewed-action hardening
+
+Commit `de95b11` added a machine-readable `nextAction` to the reviewed workflow and clarified the distinct responsibilities of the apply and receipt tools.
+
+| Client | Shared run | Discovery and cases 1–4 | Post-hold case 5 | Observed result |
+| --- | --- | --- | --- | --- |
+| GPT-5.6 Sol XHigh | [Final-build Sol run](https://chatgpt.com/s/cx_6a90b117b7ec8191863b195249f6bd3d) | Structured privacy overview, processing inspection, exact minimisation staging and premature-apply boundary all behaved as expected | Applied `plan-10-1fwejij`; returned verified receipt `receipt-d59018a5-b5af-4b79-bddb-e798356f3a13`; revision 10 → 11; required controls on and optional controls off | **5 / 5 completed** |
+| GPT-5.6 Terra XHigh | [Final-build Terra run](https://chatgpt.com/s/cx_6a90af1f473081919d4d8a41c8f81db8) | Structured privacy overview, processing inspection, exact minimisation staging and premature-apply boundary all behaved as expected | Invoked the reviewed action after the human hold; returned verified receipt `receipt-0028764d-a5cc-4037-8d60-15f1002851ee`; adapter readback matched revision 8 | **5 / 5 completed; earlier ambiguity resolved in this observed run** |
+| GPT-5.6 Luna XHigh | [Final-build Luna run](https://chatgpt.com/s/cx_6a90afdf9d0081918f051bc57b62a64c) | The site advertised a WebMCP surface, but the client could not list the page tools | No invocation was possible and no approval control was touched | **Blocked at client/runtime discovery; app workflow not reached** |
+
+The final Terra run is sufficient to close the specific regression observed in the earlier Terra attempts: after the human review hold, Terra now follows the reviewed plan into `apply_privacy_plan` and reports the new verified receipt. It does not prove that every future Terra run will succeed; it proves that the final build removed the observed ambiguity and passed the declared evaluation once under the recorded conditions.
+
+The Luna result is deliberately not counted as a ClearRights failure. Its diagnostic reported zero discovered tools and an unavailable `webmcp_list_tools` capability even after refresh. Because execution never reached `get_privacy_overview`, no change to ClearRights tool descriptions, schemas or workflow metadata can repair that client/runtime boundary.
+
+### Pre-hardening baseline and diagnostics
+
+These earlier conversations are retained as before/after evidence rather than being replaced by the successful final-build runs.
+
+| Client | Shared run | Observation | Classification |
+| --- | --- | --- | --- |
+| GPT-5.6 Sol XHigh | [Earlier Sol run](https://chatgpt.com/s/cx_6a90a8b648748191aa68a630020a4d30) | Completed the five-case path and returned verified receipt `receipt-7f8698a1-d02a-48c1-b33a-a77b42b6c5bb` for `plan-4-1h9ay4c` | Complete model-driven baseline |
+| GPT-5.6 Terra XHigh | [Earlier Terra run A](https://chatgpt.com/s/cx_6a90a8d33a8081918878cde9fc581c9c) | Completed overview, inspection, staging and the pre-hold boundary, but read an older `allow_all` receipt instead of invoking the newly available apply action after hold | 4 / 5; application ambiguity |
+| GPT-5.6 Terra XHigh | [Earlier Terra run B](https://chatgpt.com/s/cx_6a90a92275bc8191a8ce44bcd9755556) | Reproduced the same post-hold behavior and reported the unchanged older receipt | 4 / 5; reproduced application ambiguity |
+| GPT-5.6 Luna XHigh | [Earlier Luna run A](https://chatgpt.com/s/cx_6a90a8f209c88191b5a09e97f2363b71) | WebMCP discovery command unavailable; zero callable tools | Blocked at client/runtime discovery |
+| GPT-5.6 Luna XHigh | [Earlier Luna run B](https://chatgpt.com/s/cx_6a90a94db6e0819183fe2d763e98f80d) | Structured discovery remained unavailable; the model could only use visible-page fallback for read-only information | Blocked at client/runtime discovery |
+
+The Terra diagnostic identified the missing bridge explicitly: workflow `reviewed` and `applyAvailable: true` were observable after refresh, but the overview did not expose a machine-readable transition from the reviewed plan to `apply_privacy_plan`. That evidence motivated `de95b11`; the final-build Terra run above then completed the exact transition. The repeated Luna diagnostic instead assigned responsibility to `client/runtime`, so no app-side workaround was added.
+
+No cross-model percentage is reported. A completed model-driven workflow, an application-level failure and a client that cannot discover any tool are different evaluation outcomes.
 
 ## Development smoke run — August 27, 2026
 
@@ -231,8 +265,8 @@ The receipt view displayed the same receipt ID and verification method. The unde
 
 - Direct WebMCP execution: all five canonical privacy cases passed in this complete run.
 - Dynamic trust boundary: the 8 → 9 → 8 lifecycle and exact tool invocation were observed.
-- Natural-language agent selection: not evaluated by these direct calls.
-- Required three clean ChatGPT sessions: still pending.
+- Natural-language agent selection: final-build GPT-5.6 Sol and Terra completed all five prompts; GPT-5.6 Luna was blocked before structured discovery.
+- Required three clean ChatGPT sessions: recorded for the three named model clients, with the Luna limitation preserved rather than converted into an application score.
 - Chrome WebMCP: native registration, manual invocation, dynamic apply, receipt and final catalog were observed; model-driven tool selection remains untested.
 - Ordinary-browser manual fallback: banner and fallback messaging observed; complete manual flow still pending.
 
@@ -246,7 +280,7 @@ No aggregate success percentage is reported because these are different evaluati
 | Chrome native WebMCP calls | 4 / 4 | All calls completed; zero failed, canceled or left in progress |
 | Dynamic trust boundary | 3 / 3 | Eight tools before review, ninth apply tool after the hold, eight tools after apply |
 | Receipt and product readback | 3 / 3 | Receipt matched the plan, adapter readback matched revision 3, and visible product effects matched the applied state |
-| Natural-language prompt selection | Unscored | Three clean ChatGPT sessions have not yet been run; direct calls do not substitute for this evidence |
+| Natural-language prompt selection | 2 complete / 1 blocked | Sol and Terra completed all five prompts on the final build; Luna could not list any WebMCP tools in its client/runtime. No aggregate rate is inferred. |
 
 ## Result template
 
