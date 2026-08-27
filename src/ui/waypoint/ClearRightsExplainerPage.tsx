@@ -48,7 +48,7 @@ export function ClearRightsExplainerPage({
 
       <article>
         <section className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-14 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20">
-          <p className="text-sm font-medium text-muted-foreground">Built with ClearRights</p>
+          <p className="text-sm font-medium text-muted-foreground">ClearRights SDK v0.2 · experimental workspace</p>
           <h1
             tabIndex={-1}
             data-route-focus
@@ -56,36 +56,73 @@ export function ClearRightsExplainerPage({
           >
             ClearRights developer integration
           </h1>
-          <p className="mt-7 max-w-3xl text-lg leading-relaxed text-muted-foreground">
-            ClearRights is the headless SDK. Waypoint Travel is the host product that supplies catalogs, storage, adapters, UI, and product effects.
+          <p className="mt-7 max-w-4xl text-3xl font-medium tracking-tight">
+            Declare product controls once. Use them everywhere.
           </p>
-          <p className="mt-5 max-w-3xl font-medium">A fictional travel application used to demonstrate ClearRights integrations.</p>
+          <p className="mt-5 max-w-3xl text-lg leading-relaxed text-muted-foreground">
+            ClearRights turns developer-authored product facts into headless runtimes that people and compatible agents can inspect through the same structured model. The host applies every effect through an explicit adapter and verifies the result.
+          </p>
+          <p className="mt-5 max-w-3xl font-medium">
+            Waypoint Travel is the fictional host application. The SDK workspace is private and is not currently published to npm.
+          </p>
         </section>
 
-        <section className="border-y border-foreground/10" aria-labelledby="live-integration-status">
-          <div className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-10 sm:w-[min(64rem,calc(100%-4rem))]">
-            <h2 id="live-integration-status" className="text-sm font-medium text-muted-foreground">Live integration status</h2>
-            <dl className="mt-5 grid sm:grid-cols-2 lg:grid-cols-4">
-              <Status label="WebMCP" value={webMcpAvailable ? `${toolCount} tools registered` : 'Unavailable · manual fallback active'} />
-              <Status label="Privacy" value={`${optionalEnabled} of ${optional.length} optional on · revision ${snapshot.record.state.revision}`} />
-              <Status label="Accessibility" value={`${waypointAccessibilityCatalog.primitives.length} preferences · revision ${accessibilitySnapshot.revision} · ${accessibilitySnapshot.undoAvailable ? 'Undo available' : 'No Undo'}`} />
-              <Status label="Site Guide" value={`${waypointSiteGuideCatalog.destinations.length} declared · ${siteGuideSnapshot.currentDestinationId ?? 'no current destination'}`} />
-            </dl>
+        <section className="border-y border-foreground/10 bg-foreground/[0.025]" aria-labelledby="integration-flow-heading">
+          <div className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-14 sm:w-[min(64rem,calc(100%-4rem))] sm:py-16">
+            <p className="text-sm font-medium text-muted-foreground">The integration contract</p>
+            <h2 id="integration-flow-heading" className="mt-3 max-w-3xl text-3xl font-medium tracking-tight">
+              From declared product facts to a verified product effect.
+            </h2>
+            <div className="mt-10 grid border-t border-foreground/10 md:grid-cols-5">
+              <IntegrationStep number="01" title="Declare" body="Describe controls, consequences, preferences, and safe destinations in host-owned catalogs." />
+              <IntegrationStep number="02" title="Create" body="Instantiate the independent Privacy, Accessibility, and Site Guide runtimes." />
+              <IntegrationStep number="03" title="Connect" body="Provide storage, enforcement, DOM, and navigation adapters owned by the host." />
+              <IntegrationStep number="04" title="Expose" body="Use the same controllers from the product UI and the catalog-derived WebMCP tools." />
+              <IntegrationStep number="05" title="Verify" body="Read applied state back, issue scoped receipts, and map snapshots to real product surfaces." />
+            </div>
           </div>
         </section>
 
-        <ProductEffectsInspector
-          experience={experience}
-          appliedRevision={snapshot.record.state.revision}
-          pendingPlan={snapshot.plan && (snapshot.workflow === 'staged' || snapshot.workflow === 'reviewed')
-            ? {
-                id: snapshot.plan.id,
-                status: snapshot.workflow,
-                changeCount: snapshot.plan.changes.length,
-              }
-            : null}
-          onOpenPreview={onOpenPreview}
-        />
+        <section className="mx-auto grid w-[min(64rem,calc(100%-2.5rem))] gap-12 py-16 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20 lg:grid-cols-2" aria-labelledby="responsibilities-heading">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Responsibility boundary</p>
+            <h2 id="responsibilities-heading" className="mt-3 text-2xl font-medium tracking-tight">ClearRights supplies the rules.</h2>
+            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
+              <li>Validated, framework-independent catalogs and domain models.</li>
+              <li>Deterministic planning and domain-specific approval policies.</li>
+              <li>Runtime snapshots, subscriptions, adapter ports, and failure-closed checks.</li>
+              <li>Structured inputs from which the host can generate UI and WebMCP schemas.</li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Host responsibility</p>
+            <h2 className="mt-3 text-2xl font-medium tracking-tight">Your product supplies the effects.</h2>
+            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
+              <li>Factually and legally accurate catalog content.</li>
+              <li>Persistence, enforcement, navigation, authentication, and recovery.</li>
+              <li>The customer UI and the mapping from snapshots to product surfaces.</li>
+              <li>Production integrations such as CMP, backend, feature flags, or data pipelines.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section className="border-y border-foreground/10" aria-labelledby="implementation-heading">
+          <div className="mx-auto grid w-[min(64rem,calc(100%-2.5rem))] gap-10 py-16 sm:w-[min(64rem,calc(100%-4rem))] lg:grid-cols-[0.85fr_1.15fr]">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Minimal host integration</p>
+              <h2 id="implementation-heading" className="mt-3 text-2xl font-medium tracking-tight">Six explicit steps. No universal runtime.</h2>
+              <ol className="mt-7 space-y-4 text-sm leading-relaxed text-muted-foreground">
+                <li><strong className="text-foreground">1.</strong> Import the required SDK subpaths.</li>
+                <li><strong className="text-foreground">2.</strong> Define one catalog per domain.</li>
+                <li><strong className="text-foreground">3.</strong> Implement the adapter ports for your host.</li>
+                <li><strong className="text-foreground">4.</strong> Create each runtime during bootstrap.</li>
+                <li><strong className="text-foreground">5.</strong> Register tools against those same controllers.</li>
+                <li><strong className="text-foreground">6.</strong> Subscribe to snapshots and derive your product view model.</li>
+              </ol>
+            </div>
+            <pre className="overflow-x-auto border border-foreground/10 bg-foreground/[0.025] p-5 text-[13px] leading-relaxed"><code>{`import { definePrivacyCatalog, createPrivacyRuntime }\n  from "@clearrights/sdk/privacy";\nimport { defineAccessibilityCatalog, createAccessibilityRuntime }\n  from "@clearrights/sdk/accessibility";\nimport { defineSiteGuideCatalog, createSiteGuideRuntime }\n  from "@clearrights/sdk/site-guide";\n\nconst privacy = await createPrivacyRuntime({\n  catalog: privacyCatalog,\n  repository: privacyRepository,\n  enforcement: privacyAdapter,\n  clock,\n  idGenerator,\n});\n\nprivacy.subscribe((snapshot) => {\n  renderProduct(selectExperience(snapshot.record.state));\n});`}</code></pre>
+          </div>
+        </section>
 
         <section className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-16 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20" aria-labelledby="modules-heading">
           <h2 id="modules-heading" className="text-2xl font-medium tracking-tight">Three modules, three policies</h2>
@@ -108,32 +145,51 @@ export function ClearRightsExplainerPage({
           </div>
         </section>
 
-        <section className="border-y border-foreground/10 bg-foreground/[0.025]" aria-labelledby="catalog-heading">
+        <section className="border-y border-foreground/10 bg-foreground/[0.025]" aria-labelledby="waypoint-files-heading">
           <div className="mx-auto grid w-[min(64rem,calc(100%-2.5rem))] gap-10 py-16 sm:w-[min(64rem,calc(100%-4rem))] lg:grid-cols-[0.8fr_1.2fr]">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Developer-authored catalogs</p>
-              <h2 id="catalog-heading" className="mt-3 text-2xl font-medium tracking-tight">Product facts become structured context.</h2>
+              <p className="text-sm font-medium text-muted-foreground">Use Waypoint as the reference host</p>
+              <h2 id="waypoint-files-heading" className="mt-3 text-2xl font-medium tracking-tight">Every layer has a concrete implementation.</h2>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                Waypoint declares labels, summaries, consequences, factual background, limitations, available preference options, and safe destinations. The UI can stay concise while an agent inspects the complete structured definition.
-              </p>
-              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                Developer context has <strong className="text-foreground">contentProvenance: site_developer</strong>. It is untrusted descriptive data, never an instruction for the agent to execute.
+                Catalog text has <strong className="text-foreground">contentProvenance: site_developer</strong>. It remains descriptive data rather than an instruction for the agent. Product components consume a host view model instead of reading SDK IDs or storage directly.
               </p>
             </div>
-            <pre className="overflow-x-auto border border-foreground/10 bg-background p-5 text-[13px] leading-relaxed"><code>{`definePrivacyCatalog({
-  processing: [{
-    id: "recommendations",
-    control: { mode: "opt_in", mutable: true },
-    description: { summary, details },
-    consequences: { whenEnabled, whenDisabled },
-    developerContext: { factualBackground, limitations },
-  }],
-});
-
-defineAccessibilityCatalog({ primitives: [/* options */] });
-defineSiteGuideCatalog({ destinations: [/* safe targets */] });`}</code></pre>
+            <dl className="grid border-t border-foreground/10 text-sm">
+              <FileReference label="Catalogs" value="src/demo/waypoint/*-catalog.ts" />
+              <FileReference label="Host adapters" value="src/adapters/{storage,enforcement,accessibility,navigation}/" />
+              <FileReference label="Bootstrap" value="src/adapters/browser/bootstrap.ts" />
+              <FileReference label="WebMCP mapping" value="src/adapters/webmcp/" />
+              <FileReference label="Product effects" value="src/demo/waypoint/product-effects.ts" />
+              <FileReference label="Host UI" value="src/ui/waypoint/" />
+            </dl>
           </div>
         </section>
+
+        <section className="border-b border-foreground/10" aria-labelledby="live-integration-status">
+          <div className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-10 sm:w-[min(64rem,calc(100%-4rem))]">
+            <p className="text-sm font-medium text-muted-foreground">Evidence from this running host</p>
+            <h2 id="live-integration-status" className="mt-3 text-2xl font-medium tracking-tight">Live integration status</h2>
+            <dl className="mt-5 grid sm:grid-cols-2 lg:grid-cols-4">
+              <Status label="WebMCP" value={webMcpAvailable ? `${toolCount} tools registered` : 'Unavailable · manual fallback active'} />
+              <Status label="Privacy" value={`${optionalEnabled} of ${optional.length} optional on · revision ${snapshot.record.state.revision}`} />
+              <Status label="Accessibility" value={`${waypointAccessibilityCatalog.primitives.length} preferences · revision ${accessibilitySnapshot.revision} · ${accessibilitySnapshot.undoAvailable ? 'Undo available' : 'No Undo'}`} />
+              <Status label="Site Guide" value={`${waypointSiteGuideCatalog.destinations.length} declared · ${siteGuideSnapshot.currentDestinationId ?? 'no current destination'}`} />
+            </dl>
+          </div>
+        </section>
+
+        <ProductEffectsInspector
+          experience={experience}
+          appliedRevision={snapshot.record.state.revision}
+          pendingPlan={snapshot.plan && (snapshot.workflow === 'staged' || snapshot.workflow === 'reviewed')
+            ? {
+                id: snapshot.plan.id,
+                status: snapshot.workflow,
+                changeCount: snapshot.plan.changes.length,
+              }
+            : null}
+          onOpenPreview={onOpenPreview}
+        />
 
         <section className="mx-auto grid w-[min(64rem,calc(100%-2.5rem))] gap-10 py-16 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20 lg:grid-cols-2" aria-labelledby="adapters-heading">
           <div>
@@ -167,9 +223,28 @@ defineSiteGuideCatalog({ destinations: [/* safe targets */] });`}</code></pre>
       </article>
 
       <footer className="border-t border-foreground/10 px-5 py-8 text-sm text-muted-foreground sm:px-8">
-        Waypoint Travel is fictional. ClearRights is demonstrated through local, inspectable adapters and makes no promise of legal compliance.
+        Built with ClearRights · Waypoint Travel is fictional. The local demo makes no promise of legal compliance.
       </footer>
     </main>
+  )
+}
+
+function IntegrationStep({ number, title, body }: { number: string; title: string; body: string }) {
+  return (
+    <article className="border-b border-foreground/10 py-6 md:border-r md:pr-5 md:not-first:pl-5 md:last:border-r-0">
+      <p className="font-mono text-xs text-muted-foreground">{number}</p>
+      <h3 className="mt-3 font-medium">{title}</h3>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{body}</p>
+    </article>
+  )
+}
+
+function FileReference({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-2 border-b border-foreground/10 py-4 sm:grid-cols-[9rem_1fr]">
+      <dt className="font-medium">{label}</dt>
+      <dd><code className="break-all text-muted-foreground">{value}</code></dd>
+    </div>
   )
 }
 
