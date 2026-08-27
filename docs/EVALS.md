@@ -266,7 +266,7 @@ The receipt view displayed the same receipt ID and verification method. The unde
 - Direct WebMCP execution: all five canonical privacy cases passed in this complete run.
 - Dynamic trust boundary: the 8 → 9 → 8 lifecycle and exact tool invocation were observed.
 - Natural-language agent selection: final-build GPT-5.6 Sol and Terra completed all five prompts; GPT-5.6 Luna was blocked before structured discovery.
-- Required three clean ChatGPT sessions: recorded for the three named model clients, with the Luna limitation preserved rather than converted into an application score.
+- Final-build ChatGPT sample: one five-prompt run was recorded for each of Sol, Terra, and Luna, with the Luna limitation preserved rather than converted into an application score.
 - Chrome WebMCP: native registration, manual invocation, dynamic apply, receipt and final catalog were observed; model-driven tool selection remains untested.
 - Ordinary-browser manual fallback: banner and fallback messaging observed; complete manual flow still pending.
 
@@ -282,16 +282,24 @@ No aggregate success percentage is reported because these are different evaluati
 | Receipt and product readback | 3 / 3 | Receipt matched the plan, adapter readback matched revision 3, and visible product effects matched the applied state |
 | Natural-language prompt selection | 2 complete / 1 blocked | Sol and Terra completed all five prompts on the final build; Luna could not list any WebMCP tools in its client/runtime. No aggregate rate is inferred. |
 
-## Result template
+## Final evaluation conclusions
 
-Copy one row per attempt into the final submission notes:
+| Area | Status | Evidence-based conclusion |
+| --- | --- | --- |
+| Core privacy workflow | **Passed** | Overview, developer-authored inspection, deterministic staging, premature-apply blocking, human review, exact apply, adapter readback and verified receipt were observed end to end. |
+| Human/agent boundary | **Passed** | `apply_privacy_plan` was absent before review, present only for the unchanged reviewed plan, and absent again after apply. The person performed the hold; the agent performed the structured apply. |
+| Native browser WebMCP | **Passed** | Chrome 152 completed four native calls with zero failures and exposed the 8 → 9 → 8 lifecycle. |
+| Natural-language selection | **Passed on Sol and Terra; client-blocked on Luna** | Sol and Terra completed the final five-prompt path. Luna could not list any page tool, so no ClearRights operation was attempted. |
+| Product effects | **Passed** | The applied privacy snapshot changed the real Waypoint surfaces: required services remained, discovery became generic, and location and partner surfaces were removed. |
+| Display preferences | **Passed for the recorded path** | Larger text, dark appearance and reduced motion were applied, read back from the DOM adapter, then restored to system values without changing privacy state. |
+| Site Guide | **Passed for the recorded path** | Catalog-driven navigation opened Cancellation policy, focused its heading, preserved the agent indicator and returned correctly with browser Back. |
+| Responsive presentation | **Passed for the recorded smoke path** | The full-viewport mobile privacy sheet was observed without horizontal overflow; the desktop product and review surfaces were also exercised. |
+| Ordinary-browser fallback | **Partially observed** | The manual banner and unavailable-WebMCP messaging worked in Chrome 152. A complete manual review-and-apply recording was not produced. |
+| Exhaustive accessibility sweep | **Not scored** | The recorded paths cover focus on Site Guide navigation and reduced-motion application, but not a complete public-build sweep of every keyboard path and forced-colors state. |
+| Repeated probabilistic runs | **Not scored** | One final-build run per named model was recorded. No claim is made for three repetitions per model or for a universal success rate. |
 
-| Client | Date | Attempt | Case | Calls observed | UI observed | Result |
-| --- | --- | ---: | --- | --- | --- | --- |
-| _TBD_ | _TBD_ | 1 | `privacy-overview-required` | _TBD_ | _TBD_ | _TBD_ |
+### Submission conclusion
 
-Summarise failures literally. For example, distinguish an unavailable browser feature, an incorrect tool selection, a schema error, a missing human step, and an adapter failure.
+The evidence supports the central ClearRights Privacy claim: a compatible agent can inspect developer-declared controls and prepare a deterministic privacy plan; a person must review that exact plan; the host then applies it through an explicit adapter, reads the complete state back and issues a matching receipt. This is demonstrated both through Chrome's native WebMCP surface and through natural-language ChatGPT runs.
 
-## Accessibility and browser regression
-
-The final public build also requires manual checks at desktop and mobile widths for keyboard navigation, focus restoration, forced-colors behavior, reduced motion, hash routes, browser Back, reset, and visible product effects. Record the tested browser versions rather than claiming general compatibility.
+The evidence does **not** support a claim of universal WebMCP client compatibility. Luna's runtime could not discover any page-defined tool, and the ordinary-browser fallback was not recorded through its complete manual apply path. These limits are client and coverage boundaries, not silently counted as successful application runs.
