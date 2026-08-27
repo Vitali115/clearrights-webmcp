@@ -4,7 +4,7 @@ ClearRights Privacy is a WebMCP reference implementation for agent-prepared, hum
 
 > **A developer declares privacy controls once. An agent can inspect and prepare an exact plan, a person reviews that plan, and the host applies and reads the result back through an explicit adapter.**
 
-Waypoint Travel is the fictional product that demonstrates the complete workflow. The repository also contains the private workspace package `@clearrights/sdk@0.2.0`, a minimal independent host, and two secondary modules for Accessibility Preferences and Site Guide.
+Waypoint Travel is the fictional product that demonstrates the complete workflow. The repository also contains the private workspace package `@clearrights/sdk@0.2.0`, a minimal independent host, and two secondary modules: ClearRights Accessibility Preferences—shown in Waypoint as **Display preferences**—and Site Guide.
 
 The package is not published to npm. Clone this repository to run or study the integration.
 
@@ -92,7 +92,7 @@ Eight tools are registered normally. `apply_privacy_plan` becomes the ninth only
 | `set_accessibility_preferences` | Apply, read back, and keep one Undo. |
 | `navigate_to_site_destination` | Open one developer-declared route or panel. |
 
-Accessibility and Site Guide remain functional demonstrations of the architecture, but privacy is the primary product and submission path.
+Display preferences and Site Guide appear under **Additional agent-ready controls** in Waypoint. Their SDK modules remain functional demonstrations of the architecture, but privacy is the primary product and submission path.
 
 ## From demo adapters to production
 

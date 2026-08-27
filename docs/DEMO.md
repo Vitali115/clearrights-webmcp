@@ -1,6 +1,6 @@
 # ClearRights Privacy demo runbook
 
-This runbook is the shortest repeatable path through the working Waypoint Travel integration. Privacy is the main story. Accessibility Preferences and Site Guide are optional closing examples.
+This runbook is the shortest repeatable path through the working Waypoint Travel integration. Privacy is the main story. Display preferences and Site Guide are optional closing examples under **Additional agent-ready controls**.
 
 ## Before presenting
 
@@ -100,11 +100,11 @@ The hold demonstrates deliberate review of an unchanged plan. It is not identity
 
 If time remains, demonstrate that the same host architecture supports other domains without weakening the privacy gate.
 
-### Accessibility Preferences
+### Display preferences
 
 > Make the text larger, reduce motion, and use dark mode.
 
-The change applies locally, is read back, and keeps one Undo. It creates no privacy receipt and makes no accessibility-compliance claim.
+This is Waypoint's UI name for the ClearRights Accessibility Preferences module. The change applies locally, is read back, and keeps one Undo. It creates no privacy receipt and makes no accessibility-compliance claim.
 
 ### Site Guide
 

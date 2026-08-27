@@ -137,7 +137,7 @@ describe('privacy settings UI', () => {
     expect(screen.getByText(/0 of 3 optional on/)).toBeVisible()
     expect(screen.getByText('GPC unavailable · informational only')).toBeVisible()
     expect(screen.getByText(/definePrivacyCatalog/)).toBeVisible()
-    expect(screen.getByRole('heading', { name: 'Accessibility Preferences' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'ClearRights Accessibility Preferences' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'ClearRights Site Guide' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Product effects' })).toBeVisible()
     expect(screen.getByText('PrivacyRepository')).toBeVisible()

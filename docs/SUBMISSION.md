@@ -46,7 +46,7 @@ Declared by Waypoint
   → Readback matched
 ```
 
-Accessibility Preferences and Site Guide remain small secondary modules to demonstrate that catalog-driven host controls can reuse architectural conventions while retaining different approval policies.
+Display preferences (powered by ClearRights Accessibility Preferences) and Site Guide remain small secondary modules to demonstrate that catalog-driven host controls can reuse architectural conventions while retaining different approval policies.
 
 ## Public testing instructions
 
@@ -73,7 +73,7 @@ Manual privacy settings continue to work when WebMCP is unavailable.
 | 1:25–1:45 | Human hold, apply, readback, receipt | Show the unchanged-plan gate and host verification. |
 | 1:45–2:05 | Waypoint home before/after | Show generic discovery and hidden location/partner surfaces. |
 | 2:05–2:20 | Trust trace, GPC, adapter map | Explain real evidence and the production boundary. |
-| 2:20–2:30 | Accessibility and Site Guide | Present them briefly as extensions, not competing products. |
+| 2:20–2:30 | Display preferences and Site Guide | Present them briefly as extensions, not competing products. |
 
 Use English narration, no music, no credentials, no vendor logos, and no claim of certification or legal compliance.
 

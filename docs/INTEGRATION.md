@@ -14,7 +14,7 @@ host-authored catalogs
   → adapter readback and scoped evidence
 ```
 
-ClearRights Privacy is the primary integration. Accessibility Preferences and Site Guide remain independent, optional modules with different approval policies; there is no universal control runtime.
+ClearRights Privacy is the primary integration. ClearRights Accessibility Preferences—shown in Waypoint as **Display preferences**—and Site Guide remain independent, optional modules with different approval policies; there is no universal control runtime.
 
 ## 1. Import only the modules you use
 
@@ -32,7 +32,7 @@ Each catalog belongs to the host product:
 
 - Privacy defines processing, controls, capabilities, uses, consequences, policy context, and bounded developer context.
 - Accessibility defines the labels and available options for the five supported primitives, including the host-mapped `system | light | dark` color scheme.
-- Site Guide defines curated same-origin routes and supported Personal Controls panels.
+- Site Guide defines curated same-origin routes and supported host-panel destinations.
 
 Developer context is descriptive data. WebMCP exposes it with `contentProvenance: "site_developer"`; an agent must not interpret it as an instruction.
 

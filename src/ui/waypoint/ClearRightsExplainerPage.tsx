@@ -76,7 +76,7 @@ export function ClearRightsExplainerPage({
             A developer declares privacy controls once. A compatible agent can inspect them and prepare an exact plan, a person reviews that plan, and the host applies and reads the result back through an explicit adapter.
           </p>
           <p className="mt-5 max-w-3xl font-medium">
-            Waypoint Travel is the fictional host that proves the full workflow. Accessibility Preferences and Site Guide remain available as secondary examples of the same agent-ready architecture.
+            Waypoint Travel is the fictional host that proves the full workflow. Display preferences—powered by ClearRights Accessibility Preferences—and Site Guide remain available as secondary examples of the same agent-ready architecture.
           </p>
         </section>
 
@@ -180,9 +180,9 @@ export function ClearRightsExplainerPage({
           <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">These modules remain fully functional, but they are supporting examples rather than the primary submission path.</p>
           <div className="mt-8 grid border-t border-foreground/10 lg:grid-cols-2">
             <Module
-              name="Accessibility Preferences"
+              name="ClearRights Accessibility Preferences"
               contract="inspect → set → readback → Undo"
-              body="Immediate local preferences for text, color scheme, contrast, motion, and reading layout. This is not an accessibility overlay or a compliance claim."
+              body="Shown in Waypoint as Display preferences: immediate local controls for text, color scheme, contrast, motion, and reading layout. This is not an accessibility overlay or a compliance claim."
             />
             <Module
               name="ClearRights Site Guide"
@@ -221,7 +221,7 @@ export function ClearRightsExplainerPage({
               <Status label="WebMCP" value={webMcpAvailable ? `${toolCount} tools registered` : 'Unavailable · manual fallback active'} />
               <Status label="Privacy" value={`${optionalEnabled} of ${optional.length} optional on · revision ${snapshot.record.state.revision}`} />
               <Status label="Browser signal" value={gpcLabel(observedPrivacySignals)} />
-              <Status label="Accessibility" value={`${waypointAccessibilityCatalog.primitives.length} preferences · revision ${accessibilitySnapshot.revision} · ${accessibilitySnapshot.undoAvailable ? 'Undo available' : 'No Undo'}`} />
+              <Status label="Display preferences" value={`${waypointAccessibilityCatalog.primitives.length} controls · revision ${accessibilitySnapshot.revision} · ${accessibilitySnapshot.undoAvailable ? 'Undo available' : 'No Undo'}`} />
               <Status label="Site Guide" value={`${waypointSiteGuideCatalog.destinations.length} declared · ${siteGuideSnapshot.currentDestinationId ?? 'no current destination'}`} />
             </dl>
           </div>
