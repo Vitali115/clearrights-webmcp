@@ -1,4 +1,4 @@
-# Integrating ClearRights into a host product
+# Integrating ClearRights Privacy into a host product
 
 ClearRights is currently a private workspace package used by this repository. It is not published to npm. The runnable reference is `examples/minimal-host`; Waypoint Travel is the complete browser implementation.
 
@@ -14,7 +14,7 @@ host-authored catalogs
   → adapter readback and scoped evidence
 ```
 
-There is no universal control runtime. Privacy, Accessibility Preferences, and Site Guide keep separate models and approval policies.
+ClearRights Privacy is the primary integration. Accessibility Preferences and Site Guide remain independent, optional modules with different approval policies; there is no universal control runtime.
 
 ## 1. Import only the modules you use
 
@@ -52,6 +52,21 @@ See:
 | `SiteNavigationAdapter` | Open a validated catalog target, manage focus, report location | `src/adapters/navigation/waypoint-navigation-adapter.ts` |
 
 The in-memory implementations in `examples/minimal-host/memory-adapters.ts` are intentionally local and replaceable. Production adapters remain responsible for authentication, authorisation, transactions, retries, retention, and recovery.
+
+### Privacy adapter mapping
+
+| ClearRights boundary | Waypoint proof | Production target | Evidence required from the host |
+| --- | --- | --- | --- |
+| `PrivacyRepository` | Versioned localStorage record | CMP or consent backend | Current revision, notice state, complete decisions, and receipt history |
+| `PrivacyEnforcementAdapter.apply` | Local demo enforcement | CMP decision API, feature flags, or data pipeline | Exact target state associated with an operation ID |
+| `readCurrentState` | Local adapter readback | Authoritative CMP/backend query | Complete state after apply; any mismatch fails closed |
+| `PrivacyReceipt` | Last ten browser receipts | Scoped audit or receipt store | Catalog/notice versions, before/after, approval method, adapter, scope, and readback |
+| Browser signal reader | `navigator.globalPrivacyControl` | Browser signal plus server-side `Sec-GPC` handling | Observation only; `false` is not consent and no automatic mapping is performed |
+| Product-effect selector | Waypoint React view model | Product components, feature services, or API responses | Product surfaces consume only the applied snapshot |
+
+Possible authorised adapter targets include the documented [OneTrust consent group APIs](https://developer.onetrust.com/onetrust/reference/getconsentgrouplistusingget) and [Usercentrics decision APIs](https://docs.usercentrics.com/cmp_in_app_sdk/latest/api/usercentrics-core/). They are reference examples, not bundled integrations, certifications, or claims that vendor transactions are already implemented here.
+
+Global Privacy Control is a narrower observed signal, not a substitute for the complete ClearRights catalog. Waypoint exposes its client-side state as informational data. A production server that acts on the [`Sec-GPC` header](https://www.w3.org/TR/gpc/) must implement and verify that behavior outside this repository.
 
 ## 4. Create runtimes during host bootstrap
 

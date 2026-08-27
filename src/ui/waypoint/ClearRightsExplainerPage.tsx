@@ -239,22 +239,57 @@ export function ClearRightsExplainerPage({
           onOpenPreview={onOpenPreview}
         />
 
-        <section className="mx-auto grid w-[min(64rem,calc(100%-2.5rem))] gap-10 py-16 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20 lg:grid-cols-2" aria-labelledby="adapters-heading">
-          <div>
-            <h2 id="adapters-heading" className="text-2xl font-medium tracking-tight">Active adapters and scope</h2>
-            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-muted-foreground">
-              <li>Privacy: versioned local repository plus <code>local_demo</code> enforcement and post-apply readback.</li>
-              <li>Accessibility: separate local repository plus DOM data attributes and full readback.</li>
-              <li>Site Guide: visible hash navigation controlled by the Waypoint host.</li>
-              <li>Activity: session-only timeline, capped at 25 user-readable events.</li>
-            </ul>
+        <section className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-16 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20" aria-labelledby="adapters-heading">
+          <p className="text-sm font-medium text-muted-foreground">From local proof to production boundary</p>
+          <h2 id="adapters-heading" className="mt-3 text-2xl font-medium tracking-tight">Every real effect belongs to an explicit host adapter.</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            Waypoint uses local adapters so the full workflow is runnable without accounts or credentials. A production host replaces those ports with its authoritative systems while keeping the planner, approval gate, tool schemas, and readback contract.
+          </p>
+          <div className="mt-9 border-t border-foreground/10 text-sm">
+            <AdapterMapping
+              port="PrivacyRepository"
+              demo="Versioned localStorage record"
+              production="CMP or consent backend decision record"
+              evidence="Read revision and complete processing state"
+            />
+            <AdapterMapping
+              port="PrivacyEnforcementAdapter.apply"
+              demo="Waypoint local enforcement state"
+              production="CMP decisions, feature flags, or data-pipeline commands"
+              evidence="Operation ID and exact target state"
+            />
+            <AdapterMapping
+              port="readCurrentState"
+              demo="Local adapter readback"
+              production="Authoritative CMP/backend query"
+              evidence="Fail closed when any processing value differs"
+            />
+            <AdapterMapping
+              port="PrivacyReceipt"
+              demo="Last ten receipts in this browser"
+              production="Scoped audit or receipt store"
+              evidence="Catalog, notice, before/after, adapter, and readback"
+            />
+            <AdapterMapping
+              port="Privacy signal reader"
+              demo="navigator.globalPrivacyControl"
+              production="Browser signal plus server-side Sec-GPC handling"
+              evidence="Observed only; never treated as blanket consent"
+            />
+            <AdapterMapping
+              port="Product-effect selector"
+              demo="Waypoint React view model"
+              production="Product components, feature services, or API responses"
+              evidence="Only the applied snapshot reaches product surfaces"
+            />
           </div>
-          <div>
-            <h2 className="text-2xl font-medium tracking-tight">Production integration boundary</h2>
-            <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
-              A host can replace the adapters with a CMP, CRM, feature-flag service, consent backend, or product data pipeline. It remains responsible for authentication, authorisation, transactions, error recovery, retention, and the legal accuracy of its catalog.
-            </p>
-          </div>
+          <p className="mt-7 max-w-4xl text-xs leading-relaxed text-muted-foreground">
+            Documented integration targets include{' '}
+            <a className="underline underline-offset-4" href="https://developer.onetrust.com/onetrust/reference/getconsentgrouplistusingget" target="_blank" rel="noreferrer">OneTrust consent groups</a>
+            {' '}and{' '}
+            <a className="underline underline-offset-4" href="https://docs.usercentrics.com/cmp_in_app_sdk/latest/api/usercentrics-core/" target="_blank" rel="noreferrer">Usercentrics decisions</a>.
+            {' '}They are examples of systems that an authorised host adapter could call; no vendor integration, certification, or trademark asset is bundled here.
+          </p>
         </section>
 
         <section className="border-t border-foreground/10" aria-labelledby="limits-heading">
@@ -395,6 +430,27 @@ function FileReference({ label, value }: { label: string; value: string }) {
       <dt className="font-medium">{label}</dt>
       <dd><code className="break-all text-muted-foreground">{value}</code></dd>
     </div>
+  )
+}
+
+function AdapterMapping({
+  port,
+  demo,
+  production,
+  evidence,
+}: {
+  port: string
+  demo: string
+  production: string
+  evidence: string
+}) {
+  return (
+    <article className="grid gap-4 border-b border-foreground/10 py-5 md:grid-cols-[1fr_1fr_1.15fr_1.15fr]">
+      <div><p className="font-mono text-xs text-muted-foreground">ClearRights port</p><p className="mt-2 font-medium">{port}</p></div>
+      <div><p className="text-xs text-muted-foreground">Waypoint proof</p><p className="mt-2">{demo}</p></div>
+      <div><p className="text-xs text-muted-foreground">Production target</p><p className="mt-2">{production}</p></div>
+      <div><p className="text-xs text-muted-foreground">Required evidence</p><p className="mt-2">{evidence}</p></div>
+    </article>
   )
 }
 
