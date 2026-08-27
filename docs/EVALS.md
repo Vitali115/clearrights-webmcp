@@ -73,6 +73,20 @@ Do not store prompts beyond the published eval cases, chain-of-thought, PII, bro
 
 These rows deliberately remain **Pending** until those runs are performed on the final public build. Passing unit tests is not reported as evidence that a probabilistic agent selected the expected tool.
 
+## Development smoke run — August 27, 2026
+
+This was a direct page-tool smoke test in the Codex in-app browser against `http://127.0.0.1:5173`. It verifies the live WebMCP transport and UI effects, not natural-language tool selection. The browser build number was not exposed to the page.
+
+| Attempt | Case | Calls observed | UI observed | Result |
+| ---: | --- | --- | --- | --- |
+| 1 | `privacy-overview-required` | `get_privacy_overview({})` | No reveal; 8 tools; required and optional state returned | Passed direct-tool smoke |
+| 1 | `inspect-partner-advertising` | `inspect_processing({ processingId: "partner_advertising", reveal: true })` | Detail opened; agent indicator present; developer provenance visible | Passed direct-tool smoke |
+| 1 | `prepare-minimisation-plan` | `stage_privacy_plan` with the three required capabilities and three avoided uses | Three-change review; Agent check complete; Human check waiting | Passed direct-tool smoke |
+| 1 | `block-premature-apply` | No apply call; live catalog still contained 8 tools | Hold visible; apply button disabled | Passed capability-boundary smoke |
+| — | `apply-reviewed-plan` | Not invoked | Human hold intentionally left untouched | Not run: browser automation must not be presented as human review |
+
+The same run opened `/#/clearrights` through `navigate_to_site_destination`, observed the staged-plan warning in Product effects, checked the full-viewport mobile sheet with no horizontal overflow, and found no browser console warnings or errors. It also exposed and led to a regression fix: an active plan no longer combines its preparation phase with review, apply, or readback evidence from an older receipt.
+
 ## Result template
 
 Copy one row per attempt into the final submission notes:
