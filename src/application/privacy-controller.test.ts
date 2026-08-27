@@ -110,6 +110,26 @@ describe('PrivacyController', () => {
     expect(controller.getReceiptHistory()).toEqual([])
   })
 
+  it('records an explicit banner choice even when its preset is a no-op', async () => {
+    const deps = dependencies()
+    const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
+
+    const receipt = await controller.applyInitialChoice('accept_all')
+
+    expect(receipt).toEqual(expect.objectContaining({
+      kind: 'initial_choice',
+      approvalMethod: 'banner_button',
+      preparationOrigin: 'page_ui',
+      choiceMethod: 'accept_all',
+      changes: [],
+    }))
+    expect(controller.getSnapshot().record.notice).toEqual(expect.objectContaining({
+      status: 'recorded',
+      method: 'accept_all',
+    }))
+    expect(controller.getSnapshot().record.state.revision).toBe(2)
+  })
+
   it('keeps the ten most recent verified receipts in newest-first order', async () => {
     const deps = dependencies()
     const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })

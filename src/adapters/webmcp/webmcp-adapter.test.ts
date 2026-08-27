@@ -197,9 +197,10 @@ describe('WebMCP adapter', () => {
 
     const history = await modelContext.execute('get_privacy_history', {}) as {
       ok: true
-      data: { receipts: Array<{ id: string }> }
+      data: { receipts: Array<{ id: string; preparationOrigin: string }> }
     }
     expect(history.data.receipts.map(({ id }) => id)).toEqual(['receipt-webmcp'])
+    expect(history.data.receipts[0]?.preparationOrigin).toBe('webmcp_tool')
     adapter.dispose()
   })
 

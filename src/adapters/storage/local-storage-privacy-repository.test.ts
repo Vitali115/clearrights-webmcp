@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { PrivacyReceipt } from '@/domain'
 import { createTravelSeed } from '@/demo/travel-seed'
 import {
   LEGACY_PRIVACY_STORAGE_KEY,
+  LEGACY_V2_PRIVACY_STORAGE_KEY,
   LocalStoragePrivacyRepository,
   PRIVACY_STORAGE_KEY,
 } from './local-storage-privacy-repository'
@@ -23,7 +23,7 @@ class MemoryStorage {
   }
 }
 
-function createReceipt(): PrivacyReceipt {
+function createLegacyReceipt() {
   return {
     id: 'receipt-legacy',
     planId: 'plan-legacy',
@@ -37,7 +37,7 @@ function createReceipt(): PrivacyReceipt {
     verified: true,
     verification: {
       observedRevision: 2,
-      method: 'persisted_state_readback',
+      method: 'persisted_state_readback' as const,
     },
   }
 }
@@ -52,16 +52,24 @@ describe('LocalStoragePrivacyRepository', () => {
     const repaired = await repository.load()
 
     expect(first).toEqual(repaired)
+    expect(repaired.schemaVersion).toBe(3)
+    expect(repaired.notice.status).toBe('pending')
     expect(Object.values(repaired.state.processing).every(Boolean)).toBe(true)
   })
 
   it('repairs a stored record that disables required processing', async () => {
     const storage = new MemoryStorage()
     storage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify({
-      schemaVersion: 2,
+      schemaVersion: 3,
       state: {
         revision: 9,
         processing: { ...createTravelSeed().processing, trip_fulfilment: false },
+      },
+      notice: {
+        version: 'waypoint-privacy-choices-2026.2',
+        status: 'pending',
+        recordedAt: null,
+        method: null,
       },
       receipts: [],
     }))
@@ -81,20 +89,42 @@ describe('LocalStoragePrivacyRepository', () => {
         revision: 2,
         processing: createTravelSeed().processing,
       },
-      latestReceipt: createReceipt(),
+      latestReceipt: createLegacyReceipt(),
     }))
     const repository = new LocalStoragePrivacyRepository(storage, createTravelSeed)
 
     const migrated = await repository.load()
 
-    expect(migrated.schemaVersion).toBe(2)
+    expect(migrated.schemaVersion).toBe(3)
     expect(migrated.state.revision).toBe(2)
     expect(migrated.receipts.map(({ id }) => id)).toEqual(['receipt-legacy'])
+    expect(migrated.receipts[0]).toEqual(expect.objectContaining({
+      kind: 'settings_change',
+      approvalMethod: 'review_hold',
+      preparationOrigin: 'page_ui',
+    }))
+    expect(migrated.notice.status).toBe('pending')
     expect(storage.getItem(LEGACY_PRIVACY_STORAGE_KEY)).toBeNull()
     expect(storage.getItem(PRIVACY_STORAGE_KEY)).not.toBeNull()
   })
 
-  it('removes a corrupt legacy record and creates a clean v2 seed', async () => {
+  it('migrates v2 history and removes the v2 key', async () => {
+    const storage = new MemoryStorage()
+    storage.setItem(LEGACY_V2_PRIVACY_STORAGE_KEY, JSON.stringify({
+      schemaVersion: 2,
+      state: createTravelSeed(),
+      receipts: [createLegacyReceipt()],
+    }))
+    const repository = new LocalStoragePrivacyRepository(storage, createTravelSeed)
+
+    const migrated = await repository.load()
+
+    expect(migrated.schemaVersion).toBe(3)
+    expect(migrated.receipts).toHaveLength(1)
+    expect(storage.getItem(LEGACY_V2_PRIVACY_STORAGE_KEY)).toBeNull()
+  })
+
+  it('removes a corrupt legacy record and creates a clean v3 seed', async () => {
     const storage = new MemoryStorage()
     storage.setItem(LEGACY_PRIVACY_STORAGE_KEY, '{invalid')
     const repository = new LocalStoragePrivacyRepository(storage, createTravelSeed)
@@ -102,8 +132,14 @@ describe('LocalStoragePrivacyRepository', () => {
     const repaired = await repository.load()
 
     expect(repaired).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       state: createTravelSeed(),
+      notice: {
+        version: 'waypoint-privacy-choices-2026.2',
+        status: 'pending',
+        recordedAt: null,
+        method: null,
+      },
       receipts: [],
     })
     expect(storage.getItem(LEGACY_PRIVACY_STORAGE_KEY)).toBeNull()
@@ -117,6 +153,7 @@ describe('LocalStoragePrivacyRepository', () => {
 
     expect(reset.state.revision).toBe(2)
     expect(reset.receipts).toEqual([])
+    expect(reset.notice.status).toBe('pending')
     expect(Object.values(reset.state.processing).every(Boolean)).toBe(true)
   })
 })

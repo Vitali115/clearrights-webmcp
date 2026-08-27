@@ -95,12 +95,29 @@ export interface PrivacyPlan {
   isNoOp: boolean
 }
 
+export type PrivacyChoiceMethod = 'accept_all' | 'essential_only' | 'managed_settings'
+export type PrivacyApprovalMethod = 'banner_button' | 'review_hold'
+export type PrivacyPreparationOrigin = 'page_ui' | 'webmcp_tool'
+export type PrivacyVerificationScope = 'local_demo' | 'external'
+
+export interface PrivacyNoticeState {
+  version: string
+  status: 'pending' | 'recorded'
+  recordedAt: string | null
+  method: PrivacyChoiceMethod | null
+}
+
 export interface PrivacyReceipt {
   id: string
+  kind: 'initial_choice' | 'settings_change'
   planId: string
   catalogVersion: string
+  noticeVersion: string
   issuedAt: string
   reviewedAt: string
+  approvalMethod: PrivacyApprovalMethod
+  preparationOrigin: PrivacyPreparationOrigin
+  choiceMethod: PrivacyChoiceMethod | null
   beforeRevision: number
   afterRevision: number
   changes: readonly PlanChange[]
@@ -109,6 +126,8 @@ export interface PrivacyReceipt {
   verification: {
     observedRevision: number
     method: 'persisted_state_readback'
+    adapterId: string
+    scope: PrivacyVerificationScope
   }
 }
 

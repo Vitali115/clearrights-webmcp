@@ -70,6 +70,7 @@ export function createToolDefinitions(
         return {
           catalogVersion: catalog.version,
           noticeVersion: catalog.noticeVersion,
+          noticeStatus: snapshot.record.notice.status,
           workflow: snapshot.workflow,
           revision: snapshot.record.state.revision,
           applyAvailable: snapshot.workflow === 'reviewed',
@@ -115,7 +116,7 @@ export function createToolDefinitions(
       inputSchema: z.toJSONSchema(schemas.stageInput),
       annotations: { readOnlyHint: false, untrustedContentHint: false },
       execute: (input) => executeValidated(schemas.stageInput, schemas.privacyPlan, input, (parsed) => {
-        const plan = controller.stage(parsed)
+        const plan = controller.stage(parsed, 'webmcp_tool')
         privacyUi.navigate({
           view: 'review',
           origin: 'agent',
@@ -249,10 +250,15 @@ function createCatalogSchemas(catalog: ProcessingCatalog) {
   }).strict()
   const privacyReceipt = z.object({
     id: z.string(),
+    kind: z.enum(['initial_choice', 'settings_change']),
     planId: z.string(),
     catalogVersion: z.string(),
+    noticeVersion: z.string(),
     issuedAt: z.string(),
     reviewedAt: z.string(),
+    approvalMethod: z.enum(['banner_button', 'review_hold']),
+    preparationOrigin: z.enum(['page_ui', 'webmcp_tool']),
+    choiceMethod: z.enum(['accept_all', 'essential_only', 'managed_settings']).nullable(),
     beforeRevision: z.number().int().positive(),
     afterRevision: z.number().int().positive(),
     changes: z.array(planChange),
@@ -261,6 +267,8 @@ function createCatalogSchemas(catalog: ProcessingCatalog) {
     verification: z.object({
       observedRevision: z.number().int().positive(),
       method: z.literal('persisted_state_readback'),
+      adapterId: z.string(),
+      scope: z.enum(['local_demo', 'external']),
     }).strict(),
   }).strict()
   const inspectInput = z.object({
@@ -274,6 +282,7 @@ function createCatalogSchemas(catalog: ProcessingCatalog) {
   const overviewOutput = z.object({
     catalogVersion: z.string(),
     noticeVersion: z.string(),
+    noticeStatus: z.enum(['pending', 'recorded']),
     workflow: z.enum(['idle', 'staged', 'reviewed', 'applied']),
     revision: z.number().int().positive(),
     applyAvailable: z.boolean(),

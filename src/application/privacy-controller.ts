@@ -1,7 +1,12 @@
 import {
   createPrivacyPlan,
+  createPresetInput,
   type PlannerInput,
+  type PrivacyApprovalMethod,
+  type PrivacyChoiceMethod,
   type PrivacyPlan,
+  type PrivacyPreparationOrigin,
+  type PrivacyPreset,
   type PrivacyReceipt,
   type ProcessingCatalog,
   type ProcessingDefinition,
@@ -28,6 +33,8 @@ export interface PrivacyControllerSnapshot {
   record: PrivacyRecord
   plan: PrivacyPlan | null
   reviewedAt: string | null
+  approvalMethod: PrivacyApprovalMethod | null
+  preparationOrigin: PrivacyPreparationOrigin | null
 }
 
 export interface ProcessingInspection {
@@ -39,9 +46,10 @@ export interface PrivacyController {
   getSnapshot(): PrivacyControllerSnapshot
   subscribe(listener: (snapshot: PrivacyControllerSnapshot) => void): () => void
   inspect(processingId: ProcessingId): ProcessingInspection
-  stage(input: PlannerInput): PrivacyPlan
-  setReviewed(reviewed: boolean): void
+  stage(input: PlannerInput, origin?: PrivacyPreparationOrigin): PrivacyPlan
+  setReviewed(reviewed: boolean, method?: PrivacyApprovalMethod): void
   apply(planId: string): Promise<PrivacyReceipt>
+  applyInitialChoice(preset: PrivacyPreset): Promise<PrivacyReceipt>
   getReceipt(): PrivacyReceipt | null
   getReceiptHistory(): PrivacyReceipt[]
   resetDemo(confirmed: boolean): Promise<void>
@@ -75,6 +83,8 @@ export async function createPrivacyController({
     record: await repository.load(),
     plan: null,
     reviewedAt: null,
+    approvalMethod: null,
+    preparationOrigin: null,
   }
   const listeners = new Set<(next: PrivacyControllerSnapshot) => void>()
 
@@ -96,17 +106,19 @@ export async function createPrivacyController({
         enabled: snapshot.record.state.processing[processingId],
       })
     },
-    stage(input) {
+    stage(input, origin = 'page_ui') {
       const plan = createPrivacyPlan(catalog, snapshot.record.state, input)
       publish({
         ...snapshot,
         workflow: transitionWorkflow(snapshot.workflow, 'stage'),
         plan,
         reviewedAt: null,
+        approvalMethod: null,
+        preparationOrigin: origin,
       })
       return clone(plan)
     },
-    setReviewed(reviewed) {
+    setReviewed(reviewed, method = 'review_hold') {
       if (!reviewed && snapshot.workflow === 'staged') return
       if (reviewed && snapshot.plan?.isNoOp) {
         throw new ApplicationError('no_changes', 'A plan with no preference changes cannot be reviewed or applied.')
@@ -116,10 +128,17 @@ export async function createPrivacyController({
         ...snapshot,
         workflow: transitionWorkflow(snapshot.workflow, event),
         reviewedAt: reviewed ? clock.now() : null,
+        approvalMethod: reviewed ? method : null,
       })
     },
     async apply(planId) {
-      if (snapshot.workflow !== 'reviewed' || !snapshot.plan || !snapshot.reviewedAt) {
+      if (
+        snapshot.workflow !== 'reviewed'
+        || !snapshot.plan
+        || !snapshot.reviewedAt
+        || !snapshot.approvalMethod
+        || !snapshot.preparationOrigin
+      ) {
         throw new ApplicationError('review_required', 'The staged plan must be reviewed by a person before apply.')
       }
       if (snapshot.plan.id !== planId) {
@@ -131,6 +150,8 @@ export async function createPrivacyController({
 
       const reviewedPlan = clone(snapshot.plan)
       const reviewedAt = snapshot.reviewedAt
+      const approvalMethod = snapshot.approvalMethod
+      const preparationOrigin = snapshot.preparationOrigin
 
       const persisted = await repository.load()
       if (persisted.state.revision !== reviewedPlan.baseRevision) {
@@ -145,6 +166,7 @@ export async function createPrivacyController({
         snapshot.workflow !== 'reviewed'
         || snapshot.plan?.id !== reviewedPlan.id
         || snapshot.reviewedAt !== reviewedAt
+        || snapshot.approvalMethod !== approvalMethod
       ) {
         throw new ApplicationError('review_revoked', 'Human review was revoked before the plan could be committed.')
       }
@@ -152,10 +174,15 @@ export async function createPrivacyController({
       const afterRevision = persisted.state.revision + 1
       const receipt: PrivacyReceipt = {
         id: idGenerator.next(),
+        kind: 'settings_change',
         planId: checkedPlan.id,
         catalogVersion: catalog.version,
+        noticeVersion: catalog.noticeVersion,
         issuedAt: clock.now(),
         reviewedAt,
+        approvalMethod,
+        preparationOrigin,
+        choiceMethod: persisted.notice.status === 'pending' ? 'managed_settings' : null,
         beforeRevision: persisted.state.revision,
         afterRevision,
         changes: checkedPlan.changes,
@@ -164,14 +191,19 @@ export async function createPrivacyController({
         verification: {
           observedRevision: afterRevision,
           method: 'persisted_state_readback',
+          adapterId: 'local-storage-preferences',
+          scope: 'local_demo',
         },
       }
       const nextRecord: PrivacyRecord = {
-        schemaVersion: 2,
+        schemaVersion: 3,
         state: {
           revision: afterRevision,
           processing: clone(checkedPlan.target),
         },
+        notice: persisted.notice.status === 'pending'
+          ? recordedNotice(catalog.noticeVersion, receipt.issuedAt, 'managed_settings')
+          : persisted.notice,
         receipts: [receipt, ...persisted.receipts].slice(0, PRIVACY_RECEIPT_HISTORY_LIMIT),
       }
 
@@ -191,6 +223,69 @@ export async function createPrivacyController({
         record: observed,
         plan: checkedPlan,
         reviewedAt,
+        approvalMethod,
+        preparationOrigin,
+      })
+      return clone(receipt)
+    },
+    async applyInitialChoice(preset) {
+      const persisted = await repository.load()
+      const plan = createPrivacyPlan(catalog, persisted.state, createPresetInput(catalog, preset))
+      const reviewedAt = clock.now()
+      const issuedAt = clock.now()
+      const afterRevision = persisted.state.revision + 1
+      const choiceMethod: PrivacyChoiceMethod = preset
+      const receipt: PrivacyReceipt = {
+        id: idGenerator.next(),
+        kind: 'initial_choice',
+        planId: plan.id,
+        catalogVersion: catalog.version,
+        noticeVersion: catalog.noticeVersion,
+        issuedAt,
+        reviewedAt,
+        approvalMethod: 'banner_button',
+        preparationOrigin: 'page_ui',
+        choiceMethod,
+        beforeRevision: persisted.state.revision,
+        afterRevision,
+        changes: plan.changes,
+        finalState: clone(plan.target),
+        verified: true,
+        verification: {
+          observedRevision: afterRevision,
+          method: 'persisted_state_readback',
+          adapterId: 'local-storage-preferences',
+          scope: 'local_demo',
+        },
+      }
+      const nextRecord: PrivacyRecord = {
+        schemaVersion: 3,
+        state: {
+          revision: afterRevision,
+          processing: clone(plan.target),
+        },
+        notice: recordedNotice(catalog.noticeVersion, issuedAt, choiceMethod),
+        receipts: [receipt, ...persisted.receipts].slice(0, PRIVACY_RECEIPT_HISTORY_LIMIT),
+      }
+
+      await repository.commit(persisted.state.revision, nextRecord)
+      const observed = await repository.load()
+      if (
+        observed.state.revision !== afterRevision
+        || !sameState(observed.state.processing, plan.target)
+        || observed.notice.status !== 'recorded'
+        || observed.receipts[0]?.id !== receipt.id
+      ) {
+        throw new ApplicationError('verification_failed', 'The stored initial choice did not match the selected preset.')
+      }
+
+      publish({
+        workflow: 'applied',
+        record: observed,
+        plan,
+        reviewedAt,
+        approvalMethod: 'banner_button',
+        preparationOrigin: 'page_ui',
       })
       return clone(receipt)
     },
@@ -211,11 +306,26 @@ export async function createPrivacyController({
         record: resetRecord,
         plan: null,
         reviewedAt: null,
+        approvalMethod: null,
+        preparationOrigin: null,
       })
     },
   }
 
   return controller
+}
+
+function recordedNotice(
+  version: string,
+  recordedAt: string,
+  method: PrivacyChoiceMethod,
+) {
+  return {
+    version,
+    status: 'recorded' as const,
+    recordedAt,
+    method,
+  }
 }
 
 function sameState(

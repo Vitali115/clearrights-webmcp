@@ -1,4 +1,4 @@
-import type { UserPrivacyState } from '@/domain'
+import type { PrivacyReceipt, UserPrivacyState } from '@/domain'
 import {
   PRIVACY_RECEIPT_HISTORY_LIMIT,
   RepositoryConflictError,
@@ -8,7 +8,8 @@ import {
 import { travelCatalog } from '@/demo/travel-catalog'
 import { z } from 'zod'
 
-export const PRIVACY_STORAGE_KEY = 'clearrights.demo.v2'
+export const PRIVACY_STORAGE_KEY = 'clearrights.demo.v3'
+export const LEGACY_V2_PRIVACY_STORAGE_KEY = 'clearrights.demo.v2'
 export const LEGACY_PRIVACY_STORAGE_KEY = 'clearrights.demo.v1'
 
 export interface StorageLike {
@@ -16,6 +17,10 @@ export interface StorageLike {
   setItem(key: string, value: string): void
   removeItem(key: string): void
 }
+
+const processingIdSchema = z.enum(
+  travelCatalog.processing.map(({ id }) => id) as [string, ...string[]],
+)
 
 const processingStateSchema = z.object(Object.fromEntries(
   travelCatalog.processing.map(({ id }) => [id, z.boolean()]),
@@ -31,10 +36,6 @@ const processingStateSchema = z.object(Object.fromEntries(
   }
 })
 
-const processingIdSchema = z.enum(
-  travelCatalog.processing.map(({ id }) => id) as [string, ...string[]],
-)
-
 const changeSchema = z.object({
   processingId: processingIdSchema,
   label: z.string(),
@@ -43,7 +44,7 @@ const changeSchema = z.object({
   reason: z.string(),
 }).strict()
 
-const receiptSchema = z.object({
+const legacyReceiptSchema = z.object({
   id: z.string().min(1),
   planId: z.string().min(1),
   catalogVersion: z.string().min(1),
@@ -60,54 +61,101 @@ const receiptSchema = z.object({
   }).strict(),
 }).strict()
 
+const receiptSchema = legacyReceiptSchema.extend({
+  kind: z.enum(['initial_choice', 'settings_change']),
+  noticeVersion: z.string().min(1),
+  approvalMethod: z.enum(['banner_button', 'review_hold']),
+  preparationOrigin: z.enum(['page_ui', 'webmcp_tool']),
+  choiceMethod: z.enum(['accept_all', 'essential_only', 'managed_settings']).nullable(),
+  verification: z.object({
+    observedRevision: z.number().int().positive(),
+    method: z.literal('persisted_state_readback'),
+    adapterId: z.string().min(1),
+    scope: z.enum(['local_demo', 'external']),
+  }).strict(),
+}).strict()
+
+const stateSchema = z.object({
+  revision: z.number().int().positive(),
+  processing: processingStateSchema,
+}).strict()
+
 const legacyRecordSchema = z.object({
   schemaVersion: z.literal(1),
-  state: z.object({
-    revision: z.number().int().positive(),
-    processing: processingStateSchema,
-  }).strict(),
-  latestReceipt: receiptSchema.nullable(),
+  state: stateSchema,
+  latestReceipt: legacyReceiptSchema.nullable(),
+}).strict()
+
+const v2RecordSchema = z.object({
+  schemaVersion: z.literal(2),
+  state: stateSchema,
+  receipts: z.array(legacyReceiptSchema).max(PRIVACY_RECEIPT_HISTORY_LIMIT),
 }).strict()
 
 const recordSchema = z.object({
-  schemaVersion: z.literal(2),
-  state: z.object({
-    revision: z.number().int().positive(),
-    processing: processingStateSchema,
-  }).strict(),
+  schemaVersion: z.literal(3),
+  state: stateSchema,
+  notice: z.object({
+    version: z.string().min(1),
+    status: z.enum(['pending', 'recorded']),
+    recordedAt: z.string().min(1).nullable(),
+    method: z.enum(['accept_all', 'essential_only', 'managed_settings']).nullable(),
+  }).strict().superRefine((notice, context) => {
+    const complete = notice.recordedAt !== null && notice.method !== null
+    if ((notice.status === 'recorded') !== complete) {
+      context.addIssue({
+        code: 'custom',
+        message: 'A recorded notice requires both timestamp and method.',
+      })
+    }
+  }),
   receipts: z.array(receiptSchema).max(PRIVACY_RECEIPT_HISTORY_LIMIT),
 }).strict()
 
 export class LocalStoragePrivacyRepository implements PrivacyRepository {
   private readonly storage: StorageLike
   private readonly createSeed: () => UserPrivacyState
+  private readonly noticeVersion: string
 
   constructor(
     storage: StorageLike,
     createSeed: () => UserPrivacyState,
+    noticeVersion = travelCatalog.noticeVersion,
   ) {
     this.storage = storage
     this.createSeed = createSeed
+    this.noticeVersion = noticeVersion
   }
 
   async load(): Promise<PrivacyRecord> {
     const stored = this.storage.getItem(PRIVACY_STORAGE_KEY)
     if (stored) {
       try {
-        return recordSchema.parse(JSON.parse(stored))
+        return recordSchema.parse(JSON.parse(stored)) as PrivacyRecord
       } catch {
         return this.writeSeed()
       }
     }
+
+    const v2 = this.storage.getItem(LEGACY_V2_PRIVACY_STORAGE_KEY)
+    if (v2) {
+      try {
+        const parsed = v2RecordSchema.parse(JSON.parse(v2))
+        const migrated = this.migrateRecord(parsed.state, parsed.receipts)
+        this.storage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(migrated))
+        this.storage.removeItem(LEGACY_V2_PRIVACY_STORAGE_KEY)
+        return migrated
+      } catch {
+        this.storage.removeItem(LEGACY_V2_PRIVACY_STORAGE_KEY)
+        return this.writeSeed()
+      }
+    }
+
     const legacy = this.storage.getItem(LEGACY_PRIVACY_STORAGE_KEY)
     if (legacy) {
       try {
         const parsed = legacyRecordSchema.parse(JSON.parse(legacy))
-        const migrated = recordSchema.parse({
-          schemaVersion: 2,
-          state: parsed.state,
-          receipts: parsed.latestReceipt ? [parsed.latestReceipt] : [],
-        })
+        const migrated = this.migrateRecord(parsed.state, parsed.latestReceipt ? [parsed.latestReceipt] : [])
         this.storage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(migrated))
         this.storage.removeItem(LEGACY_PRIVACY_STORAGE_KEY)
         return migrated
@@ -116,6 +164,7 @@ export class LocalStoragePrivacyRepository implements PrivacyRepository {
         return this.writeSeed()
       }
     }
+
     return this.writeSeed()
   }
 
@@ -134,26 +183,68 @@ export class LocalStoragePrivacyRepository implements PrivacyRepository {
     if (current.state.revision !== expectedRevision) throw new RepositoryConflictError()
     const seed = this.createSeed()
     const resetRecord: PrivacyRecord = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       state: {
         ...seed,
         revision: expectedRevision + 1,
       },
+      notice: pendingNotice(this.noticeVersion),
       receipts: [],
     }
-    const validated = recordSchema.parse(resetRecord)
+    const validated = recordSchema.parse(resetRecord) as PrivacyRecord
     this.storage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(validated))
     return validated
   }
 
+  private migrateRecord(
+    state: UserPrivacyState,
+    receipts: readonly z.infer<typeof legacyReceiptSchema>[],
+  ): PrivacyRecord {
+    return recordSchema.parse({
+      schemaVersion: 3,
+      state,
+      notice: pendingNotice(this.noticeVersion),
+      receipts: receipts.map((receipt) => migrateReceipt(receipt, this.noticeVersion)),
+    }) as PrivacyRecord
+  }
+
   private writeSeed(): PrivacyRecord {
     const record: PrivacyRecord = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       state: this.createSeed(),
+      notice: pendingNotice(this.noticeVersion),
       receipts: [],
     }
-    const validated = recordSchema.parse(record)
+    const validated = recordSchema.parse(record) as PrivacyRecord
     this.storage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(validated))
     return validated
+  }
+}
+
+function pendingNotice(version: string) {
+  return {
+    version,
+    status: 'pending' as const,
+    recordedAt: null,
+    method: null,
+  }
+}
+
+function migrateReceipt(
+  receipt: z.infer<typeof legacyReceiptSchema>,
+  noticeVersion: string,
+): PrivacyReceipt {
+  return {
+    ...receipt,
+    kind: 'settings_change',
+    noticeVersion,
+    approvalMethod: 'review_hold',
+    preparationOrigin: 'page_ui',
+    choiceMethod: null,
+    verification: {
+      ...receipt.verification,
+      adapterId: 'legacy-local-storage',
+      scope: 'local_demo',
+    },
   }
 }
