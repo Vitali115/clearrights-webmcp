@@ -363,7 +363,7 @@ export function PrivacyCenter({
               </>
             )}
 
-            {snapshot.workflow === 'applied' && snapshot.record.latestReceipt && (
+            {snapshot.record.latestReceipt && (
               <Card className="ring-2 ring-primary/15">
                 <CardHeader>
                   <Badge variant="secondary" className="mb-2 w-fit"><CheckCircle2 data-icon="inline-start" /> Verified receipt</Badge>

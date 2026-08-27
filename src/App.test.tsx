@@ -13,11 +13,11 @@ class MemoryStorage {
   setItem(key: string, value: string) { this.values.set(key, value) }
 }
 
-async function createController() {
+async function createController(storage = new MemoryStorage()) {
   let tick = 0
   return createPrivacyController({
     catalog: travelCatalog,
-    repository: new LocalStoragePrivacyRepository(new MemoryStorage(), createTravelSeed),
+    repository: new LocalStoragePrivacyRepository(storage, createTravelSeed),
     clock: { now: () => `2026-08-27T12:00:0${tick++}.000Z` },
     idGenerator: { next: () => 'receipt-ui-test' },
   })
@@ -110,5 +110,26 @@ describe('ClearRights UI', () => {
     expect(screen.getByText('There are no preference changes to review or apply.')).toBeVisible()
     expect(screen.getByLabelText('I reviewed this plan and understand its effects.')).toBeDisabled()
     expect(screen.getByRole('button', { name: /Review plan to apply/ })).toBeDisabled()
+  })
+
+  it('shows the latest verified receipt after the controller reloads', async () => {
+    const user = userEvent.setup()
+    const storage = new MemoryStorage()
+    const controller = await createController(storage)
+    const plan = controller.stage({
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
+    })
+    controller.setReviewed(true)
+    const receipt = await controller.apply(plan.id)
+    const reloaded = await createController(storage)
+
+    render(<App controller={reloaded} webMcpAvailable />)
+    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+
+    expect(reloaded.getSnapshot().workflow).toBe('idle')
+    expect(screen.getByText('Verified receipt')).toBeVisible()
+    expect(screen.getByText(receipt.id)).toBeVisible()
+    expect(screen.getByText('1 → 2')).toBeVisible()
   })
 })
