@@ -4,13 +4,16 @@ import {
   USE_IDS,
   type ProcessingCatalog,
 } from '@/domain'
-import type { PrivacyController } from '@/application'
+import type { PrivacyController, PrivacyViewCoordinator } from '@/application'
 import { z } from 'zod'
 
-export const emptyInputSchema = z.object({}).strict()
+export const revealInputSchema = z.object({
+  reveal: z.boolean().optional().default(false),
+}).strict()
 
 export const inspectInputSchema = z.object({
   processingId: z.enum(PROCESSING_IDS),
+  reveal: z.boolean().optional().default(false),
 }).strict()
 
 export const stageInputSchema = z.object({
@@ -125,6 +128,10 @@ export const receiptOutputSchema = z.object({
   receipt: privacyReceiptSchema.nullable(),
 }).strict()
 
+export const historyOutputSchema = z.object({
+  receipts: z.array(privacyReceiptSchema).max(10),
+}).strict()
+
 const errorSchema = z.object({
   code: z.string().min(1).max(64),
   message: z.string().min(1).max(300),
@@ -163,16 +170,24 @@ export async function executeValidated<I, O>(
 export function createToolDefinitions(
   controller: PrivacyController,
   catalog: ProcessingCatalog,
+  privacyUi: PrivacyViewCoordinator,
 ) {
   const common: WebMCP.ModelContextTool[] = [
     {
       name: 'get_privacy_overview',
       title: 'Get privacy overview',
       description: 'Read the service-declared privacy activities, current states, planner options, and workflow status.',
-      inputSchema: z.toJSONSchema(emptyInputSchema),
+      inputSchema: z.toJSONSchema(revealInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: (input) => executeValidated(emptyInputSchema, overviewOutputSchema, input, () => {
+      execute: (input) => executeValidated(revealInputSchema, overviewOutputSchema, input, ({ reveal }) => {
         const snapshot = controller.getSnapshot()
+        if (reveal) {
+          privacyUi.navigate({
+            view: 'home',
+            origin: 'agent',
+            message: 'The agent opened the Privacy Center overview so you can inspect the current setup.',
+          })
+        }
         return {
           workflow: snapshot.workflow,
           revision: snapshot.record.state.revision,
@@ -198,8 +213,18 @@ export function createToolDefinitions(
       description: 'Read the service-declared purpose, data, legal basis, controls, dependencies, consequences, and current state for one activity.',
       inputSchema: z.toJSONSchema(inspectInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: (input) => executeValidated(inspectInputSchema, inspectionOutputSchema, input, ({ processingId }) =>
-        controller.inspect(processingId)),
+      execute: (input) => executeValidated(inspectInputSchema, inspectionOutputSchema, input, ({ processingId, reveal }) => {
+        const inspection = controller.inspect(processingId)
+        if (reveal) {
+          privacyUi.navigate({
+            view: 'activity',
+            processingId,
+            origin: 'agent',
+            message: `The agent opened ${inspection.definition.label} so you can review its purpose, data, dependencies, and consequences.`,
+          })
+        }
+        return inspection
+      }),
     },
     {
       name: 'stage_privacy_plan',
@@ -207,18 +232,53 @@ export function createToolDefinitions(
       description: 'Prepare and display a deterministic minimisation plan from capabilities to keep and data uses to avoid.',
       inputSchema: z.toJSONSchema(stageInputSchema),
       annotations: { readOnlyHint: false, untrustedContentHint: false },
-      execute: (input) => executeValidated(stageInputSchema, privacyPlanSchema, input, (parsed) =>
-        controller.stage(parsed)),
+      execute: (input) => executeValidated(stageInputSchema, privacyPlanSchema, input, (parsed) => {
+        const plan = controller.stage(parsed)
+        privacyUi.navigate({
+          view: 'review',
+          origin: 'agent',
+          message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
+        })
+        return plan
+      }),
     },
     {
       name: 'get_privacy_receipt',
       title: 'Get privacy receipt',
       description: 'Read the latest receipt verified by persisted-state readback, if a reviewed plan has been applied.',
-      inputSchema: z.toJSONSchema(emptyInputSchema),
+      inputSchema: z.toJSONSchema(revealInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: (input) => executeValidated(emptyInputSchema, receiptOutputSchema, input, () => ({
-        receipt: controller.getReceipt(),
-      })),
+      execute: (input) => executeValidated(revealInputSchema, receiptOutputSchema, input, ({ reveal }) => {
+        const receipt = controller.getReceipt()
+        if (reveal) {
+          privacyUi.navigate({
+            view: 'receipt',
+            origin: 'agent',
+            message: receipt
+              ? 'The agent opened the latest verified receipt so you can inspect what was applied.'
+              : 'The agent opened the receipt view. No verified receipt is available yet.',
+          })
+        }
+        return { receipt }
+      }),
+    },
+    {
+      name: 'get_privacy_history',
+      title: 'Get privacy history',
+      description: 'Read up to ten verified privacy receipts in newest-first order.',
+      inputSchema: z.toJSONSchema(revealInputSchema),
+      annotations: { readOnlyHint: true, untrustedContentHint: false },
+      execute: (input) => executeValidated(revealInputSchema, historyOutputSchema, input, ({ reveal }) => {
+        const receipts = controller.getReceiptHistory()
+        if (reveal) {
+          privacyUi.navigate({
+            view: 'history',
+            origin: 'agent',
+            message: 'The agent opened Previous changes so you can inspect the verified receipt history.',
+          })
+        }
+        return { receipts }
+      }),
     },
   ]
 
@@ -228,8 +288,15 @@ export function createToolDefinitions(
     description: 'Apply the exact staged plan after a person has reviewed it in the visible privacy center, then verify persisted state and return a receipt.',
     inputSchema: z.toJSONSchema(applyInputSchema),
     annotations: { readOnlyHint: false, untrustedContentHint: false },
-    execute: (input) => executeValidated(applyInputSchema, privacyReceiptSchema, input, ({ planId }) =>
-      controller.apply(planId)),
+    execute: (input) => executeValidated(applyInputSchema, privacyReceiptSchema, input, async ({ planId }) => {
+      const receipt = await controller.apply(planId)
+      privacyUi.navigate({
+        view: 'receipt',
+        origin: 'agent',
+        message: 'The agent applied the human-approved plan and opened its verified receipt for your confirmation.',
+      })
+      return receipt
+    }),
   }
 
   return { common, apply }

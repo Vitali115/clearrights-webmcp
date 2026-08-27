@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { createPrivacyController, type PrivacyController } from '@/application'
+import {
+  createPrivacyController,
+  createPrivacyViewCoordinator,
+  type PrivacyController,
+} from '@/application'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
@@ -43,15 +47,20 @@ async function setup() {
     clock: { now: () => `2026-08-27T11:00:0${time++}.000Z` },
     idGenerator: { next: () => 'receipt-webmcp' },
   })
-  return { controller, modelContext: new FakeModelContext() }
+  return {
+    controller,
+    privacyUi: createPrivacyViewCoordinator(),
+    modelContext: new FakeModelContext(),
+  }
 }
 
 describe('WebMCP adapter', () => {
-  it('registers exactly four tools at load with the correct read-only hints', async () => {
-    const { controller, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog)
+  it('registers exactly five tools at load with the correct read-only hints', async () => {
+    const { controller, privacyUi, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
 
     expect([...modelContext.tools.keys()].sort()).toEqual([
+      'get_privacy_history',
       'get_privacy_overview',
       'get_privacy_receipt',
       'inspect_processing',
@@ -60,19 +69,20 @@ describe('WebMCP adapter', () => {
     expect(modelContext.tools.get('get_privacy_overview')?.annotations?.readOnlyHint).toBe(true)
     expect(modelContext.tools.get('inspect_processing')?.annotations?.readOnlyHint).toBe(true)
     expect(modelContext.tools.get('get_privacy_receipt')?.annotations?.readOnlyHint).toBe(true)
+    expect(modelContext.tools.get('get_privacy_history')?.annotations?.readOnlyHint).toBe(true)
     expect(modelContext.tools.get('stage_privacy_plan')?.annotations?.readOnlyHint).toBe(false)
     adapter.dispose()
   })
 
   it('adds apply only for reviewed state and removes it after revoke or apply', async () => {
-    const { controller, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog)
+    const { controller, privacyUi, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
     const plan = controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: [] })
     controller.setReviewed(true)
     await adapter.whenSettled()
 
     expect(modelContext.tools.has('apply_privacy_plan')).toBe(true)
-    expect(modelContext.tools.size).toBe(5)
+    expect(modelContext.tools.size).toBe(6)
 
     controller.setReviewed(false)
     await adapter.whenSettled()
@@ -85,12 +95,16 @@ describe('WebMCP adapter', () => {
 
     expect(result).toEqual(expect.objectContaining({ ok: true }))
     expect(modelContext.tools.has('apply_privacy_plan')).toBe(false)
+    expect(privacyUi.getSnapshot()).toEqual(expect.objectContaining({
+      navigation: expect.objectContaining({ view: 'receipt', origin: 'agent' }),
+      agentActivity: expect.objectContaining({ status: 'opened', view: 'receipt' }),
+    }))
     adapter.dispose()
   })
 
   it('never registers apply for a no-op plan', async () => {
-    const { controller, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog)
+    const { controller, privacyUi, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
     controller.stage({
       keepCapabilities: [
         'book_and_manage_trips',
@@ -110,8 +124,8 @@ describe('WebMCP adapter', () => {
   })
 
   it('validates inputs and outputs and avoids duplicate apply registration', async () => {
-    const { controller, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog)
+    const { controller, privacyUi, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
     controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: [] })
     controller.setReviewed(true)
     controller.setReviewed(false)
@@ -134,9 +148,61 @@ describe('WebMCP adapter', () => {
     adapter.dispose()
   })
 
+  it('keeps read-only calls hidden by default and reveals their requested view on demand', async () => {
+    const { controller, privacyUi, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+
+    expect(await modelContext.execute('get_privacy_overview', {})).toEqual(expect.objectContaining({ ok: true }))
+    expect(privacyUi.getSnapshot().agentActivity).toBeNull()
+
+    await modelContext.execute('get_privacy_overview', { reveal: true })
+    expect(privacyUi.getSnapshot().navigation.view).toBe('home')
+    expect(privacyUi.getSnapshot().agentActivity?.status).toBe('opened')
+
+    await modelContext.execute('inspect_processing', { processingId: 'recommendations', reveal: true })
+    expect(privacyUi.getSnapshot().navigation).toEqual({
+      view: 'activity',
+      origin: 'agent',
+      processingId: 'recommendations',
+    })
+
+    await modelContext.execute('get_privacy_history', { reveal: true })
+    expect(privacyUi.getSnapshot().navigation.view).toBe('history')
+
+    await modelContext.execute('get_privacy_receipt', { reveal: true })
+    expect(privacyUi.getSnapshot().navigation.view).toBe('receipt')
+    adapter.dispose()
+  })
+
+  it('opens review whenever a plan is staged and returns receipt history newest-first', async () => {
+    const { controller, privacyUi, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+
+    const staged = await modelContext.execute('stage_privacy_plan', {
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
+    }) as { ok: true; data: { id: string } }
+
+    expect(staged.ok).toBe(true)
+    expect(privacyUi.getSnapshot().navigation.view).toBe('review')
+    expect(privacyUi.getSnapshot().agentActivity?.message).toContain('approve them manually')
+
+    controller.setReviewed(true)
+    await adapter.whenSettled()
+    await modelContext.execute('apply_privacy_plan', { planId: staged.data.id })
+    await adapter.whenSettled()
+
+    const history = await modelContext.execute('get_privacy_history', {}) as {
+      ok: true
+      data: { receipts: Array<{ id: string }> }
+    }
+    expect(history.data.receipts.map(({ id }) => id)).toEqual(['receipt-webmcp'])
+    adapter.dispose()
+  })
+
   it('keeps the app usable when modelContext is unavailable', async () => {
-    const { controller } = await setup()
-    const adapter = await startWebMcpAdapter(undefined, controller, travelCatalog)
+    const { controller, privacyUi } = await setup()
+    const adapter = await startWebMcpAdapter(undefined, controller, travelCatalog, privacyUi)
 
     expect(adapter.available).toBe(false)
     expect(controller.stage({ keepCapabilities: [], avoidUses: [] }).changes).toHaveLength(3)

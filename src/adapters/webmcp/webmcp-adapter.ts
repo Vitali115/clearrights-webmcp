@@ -1,4 +1,4 @@
-import type { PrivacyController } from '@/application'
+import type { PrivacyController, PrivacyViewCoordinator } from '@/application'
 import type { ProcessingCatalog } from '@/domain'
 import { createToolDefinitions } from './tool-contracts'
 
@@ -12,6 +12,7 @@ export async function startWebMcpAdapter(
   modelContext: WebMCP.ModelContext | undefined,
   controller: PrivacyController,
   catalog: ProcessingCatalog,
+  privacyUi: PrivacyViewCoordinator,
 ): Promise<WebMcpAdapter> {
   if (!modelContext) {
     return {
@@ -21,7 +22,7 @@ export async function startWebMcpAdapter(
     }
   }
 
-  const tools = createToolDefinitions(controller, catalog)
+  const tools = createToolDefinitions(controller, catalog, privacyUi)
   const commonRegistration = new AbortController()
   let applyRegistration: AbortController | null = null
   let disposed = false

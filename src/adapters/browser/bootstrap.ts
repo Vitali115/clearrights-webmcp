@@ -15,7 +15,7 @@ export async function bootstrapBrowserApp() {
       next: () => `receipt-${globalThis.crypto.randomUUID()}`,
     },
   })
-  const webMcp = await startWebMcpAdapter(document.modelContext, controller, travelCatalog)
+  const webMcp = await startWebMcpAdapter(document.modelContext, controller, travelCatalog, privacyUi)
 
   return {
     controller,
