@@ -16,8 +16,10 @@ import { TravelProductPage } from '@/ui/TravelProductPage'
 import { PersonalControls } from '@/ui/waypoint/PersonalControls'
 import { WaypointInfoPage } from '@/ui/waypoint/WaypointInfoPage'
 import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
+import { travelCatalog } from '@/demo/travel-catalog'
 import { getWaypointInfoPage } from '@/demo/waypoint/info-pages'
 import { selectWaypointExperience } from '@/demo/waypoint/product-effects'
+import { selectPrivacyTrustTrace } from '@/demo/waypoint/privacy-trust-trace'
 import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
 
 const ClearRightsExplainerPage = lazy(async () => {
@@ -171,6 +173,11 @@ export default function App({
     privacyReceipt: snapshot.record.receipts[0] ?? null,
     accessibility: accessibilitySnapshot,
   })
+  const privacyTrustTrace = selectPrivacyTrustTrace({
+    snapshot,
+    catalogVersion: travelCatalog.version,
+    noticeVersion: travelCatalog.noticeVersion,
+  })
 
   return (
     <Sheet open={controlsSnapshot.open} onOpenChange={setSheetOpen}>
@@ -216,6 +223,7 @@ export default function App({
             accessibilitySnapshot={accessibilitySnapshot}
             siteGuideSnapshot={siteGuideSnapshot}
             observedPrivacySignals={observedPrivacySignals}
+            privacyTrustTrace={privacyTrustTrace}
             experience={experience}
             webMcpAvailable={webMcpAvailable}
             controlsAction={controlsAction}

@@ -140,6 +140,10 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('heading', { name: 'Accessibility Preferences' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'ClearRights Site Guide' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Product effects' })).toBeVisible()
+    expect(screen.getByRole('heading', { name: 'Privacy trust trace' })).toBeVisible()
+    expect(screen.getAllByTestId('privacy-trust-stage')).toHaveLength(5)
+    expect(screen.getByText('Waiting for a plan')).toBeVisible()
+    expect(screen.getByText('No matching receipt yet')).toBeVisible()
     expect(screen.getByText('Showing applied privacy revision 1.')).toBeVisible()
     expect(screen.queryByText('Pending draft is not shown in this product preview')).not.toBeInTheDocument()
     expect(screen.getAllByTestId('product-effect-row')).toHaveLength(6)
@@ -218,6 +222,9 @@ describe('privacy settings UI', () => {
       status: 'recorded',
       method: 'reject_optional',
     }))
+    await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
+    expect(await screen.findByText('Direct human choice')).toBeVisible()
+    expect(screen.getByText('Direct action · hold not required')).toBeVisible()
     expect(controller.getReceipt()).toEqual(expect.objectContaining({
       kind: 'initial_choice',
       changes: [],

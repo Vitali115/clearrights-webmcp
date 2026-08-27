@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
 import type { WaypointExperienceViewModel } from '@/demo/waypoint/product-effects'
+import type { PrivacyTrustTrace } from '@/demo/waypoint/privacy-trust-trace'
 import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
 import { ProductEffectsInspector } from './ProductEffectsInspector'
 
@@ -13,6 +14,7 @@ export function ClearRightsExplainerPage({
   accessibilitySnapshot,
   siteGuideSnapshot,
   observedPrivacySignals,
+  privacyTrustTrace,
   experience,
   webMcpAvailable,
   controlsAction,
@@ -25,6 +27,7 @@ export function ClearRightsExplainerPage({
   accessibilitySnapshot: AccessibilitySnapshot
   siteGuideSnapshot: SiteGuideSnapshot
   observedPrivacySignals: ObservedPrivacySignals
+  privacyTrustTrace: PrivacyTrustTrace
   experience: WaypointExperienceViewModel
   webMcpAvailable: boolean
   controlsAction: ReactNode
@@ -112,6 +115,8 @@ export function ClearRightsExplainerPage({
             </div>
           </div>
         </section>
+
+        <PrivacyTrustTraceSection trace={privacyTrustTrace} />
 
         <section className="border-y border-foreground/10 bg-foreground/[0.025]" aria-labelledby="integration-flow-heading">
           <div className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-14 sm:w-[min(64rem,calc(100%-4rem))] sm:py-16">
@@ -269,6 +274,82 @@ export function ClearRightsExplainerPage({
         Built with ClearRights · Waypoint Travel is fictional. The local demo makes no promise of legal compliance.
       </footer>
     </main>
+  )
+}
+
+function PrivacyTrustTraceSection({ trace }: { trace: PrivacyTrustTrace }) {
+  const stages = [
+    {
+      title: 'Declared by Waypoint',
+      complete: true,
+      value: `Catalog ${trace.declared.catalogVersion}`,
+      detail: `Notice ${trace.declared.noticeVersion}`,
+    },
+    {
+      title: 'Prepared by agent',
+      complete: trace.prepared.status === 'agent_prepared',
+      value: trace.prepared.status === 'agent_prepared'
+        ? 'Agent-prepared plan'
+        : trace.prepared.status === 'human_direct'
+          ? 'Direct human choice'
+          : trace.prepared.planId
+            ? 'Manual draft · no agent preparation'
+            : 'Waiting for a plan',
+      detail: trace.prepared.planId ?? 'No plan ID',
+    },
+    {
+      title: 'Reviewed by human',
+      complete: trace.reviewed.status !== 'pending',
+      value: trace.reviewed.status === 'human_reviewed'
+        ? 'Human review recorded'
+        : trace.reviewed.status === 'not_required'
+          ? 'Direct action · hold not required'
+          : 'Waiting for human review',
+      detail: trace.reviewed.method ?? 'No approval method',
+    },
+    {
+      title: 'Applied by adapter',
+      complete: trace.applied.status === 'applied',
+      value: trace.applied.status === 'applied'
+        ? `Revision ${trace.applied.revision}`
+        : 'Nothing applied in this trace',
+      detail: trace.applied.adapterId ?? 'No adapter evidence',
+    },
+    {
+      title: 'Readback matched',
+      complete: trace.verified.status === 'readback_matched',
+      value: trace.verified.status === 'readback_matched'
+        ? 'Verified against applied state'
+        : 'No matching receipt yet',
+      detail: trace.verified.method
+        ? `${trace.verified.method} · ${trace.verified.scope}`
+        : 'No verification evidence',
+    },
+  ]
+
+  return (
+    <section className="border-b border-foreground/10 bg-foreground/[0.025]" aria-labelledby="privacy-trust-trace-heading">
+      <div className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-14 sm:w-[min(64rem,calc(100%-4rem))] sm:py-16">
+        <p className="text-sm font-medium text-muted-foreground">Evidence from the current browser state</p>
+        <h2 id="privacy-trust-trace-heading" className="mt-3 text-3xl font-medium tracking-tight">Privacy trust trace</h2>
+        <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+          Every completed step below is derived from a catalog version, plan origin, human review timestamp, applied receipt, or adapter readback. It is never inferred from page navigation alone.
+        </p>
+        <ol className="mt-9 grid border-t border-foreground/10 md:grid-cols-5">
+          {stages.map((stage, index) => (
+            <li key={stage.title} data-testid="privacy-trust-stage" className="border-b border-foreground/10 py-6 md:border-r md:pr-5 md:not-first:pl-5 md:last:border-r-0">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-mono text-xs text-muted-foreground">0{index + 1}</span>
+                <span className={`size-2 rounded-full ${stage.complete ? 'bg-foreground' : 'border border-foreground/30'}`} aria-hidden="true" />
+              </div>
+              <h3 className="mt-4 font-medium">{stage.title}</h3>
+              <p className="mt-3 text-sm leading-relaxed">{stage.value}</p>
+              <p className="mt-2 break-all font-mono text-xs leading-relaxed text-muted-foreground">{stage.detail}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
   )
 }
 
