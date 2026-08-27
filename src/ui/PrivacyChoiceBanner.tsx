@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { PrivacyController } from '@/application'
-import type { PrivacyPreset } from '@/domain'
+import { createDirectChoiceInput, type DirectChoicePreset } from '@/domain'
+import { travelCatalog } from '@/demo/travel-catalog'
 import { Button } from '@/components/ui/button'
 import { CopyAgentInstructionsButton } from './CopyAgentInstructionsButton'
 
@@ -21,16 +22,21 @@ export function PrivacyChoiceBanner({
   onLearn,
   onApplied,
 }: PrivacyChoiceBannerProps) {
-  const [applying, setApplying] = useState<PrivacyPreset | null>(null)
+  const [applying, setApplying] = useState<DirectChoicePreset | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   if (!pending) return null
 
-  const applyChoice = async (preset: PrivacyPreset) => {
+  const applyChoice = async (preset: DirectChoicePreset) => {
     setApplying(preset)
     setError(null)
     try {
-      await controller.applyInitialChoice(preset)
+      await controller.applyDirectChoice({
+        input: createDirectChoiceInput(travelCatalog, preset),
+        method: preset,
+        entrySurface: 'initial_banner',
+        preparationOrigin: 'page_ui',
+      })
       onApplied()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'The privacy choice could not be applied.')
@@ -56,18 +62,18 @@ export function PrivacyChoiceBanner({
               variant="outline"
               className="rounded-full"
               disabled={applying !== null}
-              onClick={() => void applyChoice('essential_only')}
+              onClick={() => void applyChoice('reject_optional')}
             >
-              {applying === 'essential_only' ? 'Applying…' : 'Essential only'}
+              {applying === 'reject_optional' ? 'Applying…' : 'Essential only'}
             </Button>
             <Button
               type="button"
               variant="outline"
               className="rounded-full"
               disabled={applying !== null}
-              onClick={() => void applyChoice('accept_all')}
+              onClick={() => void applyChoice('allow_all')}
             >
-              {applying === 'accept_all' ? 'Applying…' : 'Accept all'}
+              {applying === 'allow_all' ? 'Applying…' : 'Accept all'}
             </Button>
             <Button
               type="button"

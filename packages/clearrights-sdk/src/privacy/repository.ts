@@ -3,7 +3,7 @@ import type { PrivacyNoticeState, PrivacyReceipt, UserPrivacyState } from './mod
 export const PRIVACY_RECEIPT_HISTORY_LIMIT = 10
 
 export interface PrivacyRecord {
-  schemaVersion: 3
+  schemaVersion: 4
   state: UserPrivacyState
   notice: PrivacyNoticeState
   receipts: PrivacyReceipt[]

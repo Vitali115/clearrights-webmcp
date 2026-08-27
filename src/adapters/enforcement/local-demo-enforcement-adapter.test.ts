@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { createTravelSeed } from '@/demo/travel-seed'
-import { DEMO_ENFORCEMENT_STORAGE_KEY, LocalDemoEnforcementAdapter } from './local-demo-enforcement-adapter'
+import {
+  DEMO_ENFORCEMENT_STORAGE_KEY,
+  LEGACY_DEMO_ENFORCEMENT_STORAGE_KEY,
+  LocalDemoEnforcementAdapter,
+} from './local-demo-enforcement-adapter'
 
 class MemoryStorage {
   values = new Map<string, string>()
   getItem(key: string) { return this.values.get(key) ?? null }
   setItem(key: string, value: string) { this.values.set(key, value) }
+  removeItem(key: string) { this.values.delete(key) }
 }
 
 describe('LocalDemoEnforcementAdapter', () => {
@@ -45,5 +50,20 @@ describe('LocalDemoEnforcementAdapter', () => {
 
     expect(await adapter.readCurrentState()).toEqual(migrated)
     expect(storage.getItem(DEMO_ENFORCEMENT_STORAGE_KEY)).toContain('bootstrap-sync-7')
+  })
+
+  it('migrates the legacy enforcement record and removes it after readback', async () => {
+    const storage = new MemoryStorage()
+    const migrated = { ...createTravelSeed().processing, recommendations: true }
+    storage.setItem(LEGACY_DEMO_ENFORCEMENT_STORAGE_KEY, JSON.stringify({
+      schemaVersion: 1,
+      state: migrated,
+      lastOperationId: 'legacy-operation',
+    }))
+
+    const adapter = new LocalDemoEnforcementAdapter(storage, createTravelSeed)
+    expect(await adapter.readCurrentState()).toEqual(migrated)
+    expect(storage.getItem(DEMO_ENFORCEMENT_STORAGE_KEY)).toContain('"schemaVersion":2')
+    expect(storage.getItem(LEGACY_DEMO_ENFORCEMENT_STORAGE_KEY)).toBeNull()
   })
 })

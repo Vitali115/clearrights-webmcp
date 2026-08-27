@@ -1,64 +1,54 @@
 import type {
   PrivacyEnforcementAdapter,
   PrivacyEnforcementCommand,
+  ProcessingCatalog,
   ProcessingState,
   UserPrivacyState,
 } from '@/domain'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { z } from 'zod'
 
-export const DEMO_ENFORCEMENT_STORAGE_KEY = 'clearrights.demo.enforcement.v1'
+export const DEMO_ENFORCEMENT_STORAGE_KEY = 'waypoint.privacy.enforcement.v2'
+export const LEGACY_DEMO_ENFORCEMENT_STORAGE_KEY = 'clearrights.demo.enforcement.v1'
 
 export interface EnforcementStorageLike {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
+  removeItem?(key: string): void
 }
-
-const processingStateSchema = z.object(Object.fromEntries(
-  travelCatalog.processing.map(({ id }) => [id, z.boolean()]),
-)).strict().superRefine((state, context) => {
-  for (const { id } of travelCatalog.processing.filter(({ control }) => control.mode === 'required')) {
-    if (!state[id]) {
-      context.addIssue({ code: 'custom', path: [id], message: 'Required processing must remain enabled.' })
-    }
-  }
-})
-
-const recordSchema = z.object({
-  schemaVersion: z.literal(1),
-  state: processingStateSchema,
-  lastOperationId: z.string().min(1).nullable(),
-}).strict()
 
 export class LocalDemoEnforcementAdapter implements PrivacyEnforcementAdapter {
   readonly id = 'waypoint-local-demo'
   readonly scope = 'local_demo' as const
   private readonly storage: EnforcementStorageLike
   private readonly createSeed: () => UserPrivacyState
+  private readonly catalog: ProcessingCatalog
+  private readonly schema: ReturnType<typeof createRecordSchema>
 
   constructor(
     storage: EnforcementStorageLike,
     createSeed: () => UserPrivacyState,
+    catalog: ProcessingCatalog = travelCatalog,
   ) {
     this.storage = storage
     this.createSeed = createSeed
+    this.catalog = catalog
+    this.schema = createRecordSchema(catalog)
   }
 
   async apply(command: PrivacyEnforcementCommand): Promise<void> {
     const current = this.loadRecord()
     if (current.lastOperationId === command.operationId) {
-      if (!sameState(current.state, command.target)) {
+      if (!this.sameState(current.state, command.target)) {
         throw new Error('An enforcement operation ID cannot be reused with a different target.')
       }
       return
     }
-
-    const next = recordSchema.parse({
-      schemaVersion: 1,
+    this.persistAndRead({
+      schemaVersion: 2,
       state: command.target,
       lastOperationId: command.operationId,
     })
-    this.storage.setItem(DEMO_ENFORCEMENT_STORAGE_KEY, JSON.stringify(next))
   }
 
   async readCurrentState(): Promise<ProcessingState> {
@@ -66,35 +56,73 @@ export class LocalDemoEnforcementAdapter implements PrivacyEnforcementAdapter {
   }
 
   async synchronize(state: ProcessingState, revision: number): Promise<void> {
-    const synchronized = recordSchema.parse({
-      schemaVersion: 1,
+    this.persistAndRead({
+      schemaVersion: 2,
       state,
       lastOperationId: `bootstrap-sync-${revision}`,
     })
-    this.storage.setItem(DEMO_ENFORCEMENT_STORAGE_KEY, JSON.stringify(synchronized))
   }
 
   private loadRecord() {
-    const stored = this.storage.getItem(DEMO_ENFORCEMENT_STORAGE_KEY)
-    if (stored) {
+    const current = this.storage.getItem(DEMO_ENFORCEMENT_STORAGE_KEY)
+    if (current) {
       try {
-        return recordSchema.parse(JSON.parse(stored))
+        return this.schema.parse(JSON.parse(current))
       } catch {
-        // The demo adapter repairs its isolated browser state from the repeatable seed.
+        return this.writeSeed()
       }
     }
-    const seeded = recordSchema.parse({
-      schemaVersion: 1,
+
+    const legacy = this.storage.getItem(LEGACY_DEMO_ENFORCEMENT_STORAGE_KEY)
+    if (legacy) {
+      try {
+        const parsed = this.schema.parse({ ...JSON.parse(legacy), schemaVersion: 2 })
+        const verified = this.persistAndRead(parsed)
+        this.storage.removeItem?.(LEGACY_DEMO_ENFORCEMENT_STORAGE_KEY)
+        return verified
+      } catch {
+        const seeded = this.writeSeed()
+        this.storage.removeItem?.(LEGACY_DEMO_ENFORCEMENT_STORAGE_KEY)
+        return seeded
+      }
+    }
+    return this.writeSeed()
+  }
+
+  private writeSeed() {
+    return this.persistAndRead({
+      schemaVersion: 2,
       state: this.createSeed().processing,
       lastOperationId: null,
     })
-    this.storage.setItem(DEMO_ENFORCEMENT_STORAGE_KEY, JSON.stringify(seeded))
-    return seeded
+  }
+
+  private persistAndRead(record: unknown) {
+    const validated = this.schema.parse(record)
+    this.storage.setItem(DEMO_ENFORCEMENT_STORAGE_KEY, JSON.stringify(validated))
+    const written = this.storage.getItem(DEMO_ENFORCEMENT_STORAGE_KEY)
+    if (!written) throw new Error('Privacy enforcement write could not be read back.')
+    return this.schema.parse(JSON.parse(written))
+  }
+
+  private sameState(left: ProcessingState, right: ProcessingState) {
+    return this.catalog.processing.every(({ id }) => left[id] === right[id])
   }
 }
 
-function sameState(left: ProcessingState, right: ProcessingState) {
-  return travelCatalog.processing.every(({ id }) => left[id] === right[id])
+function createRecordSchema(catalog: ProcessingCatalog) {
+  const state = z.object(Object.fromEntries(
+    catalog.processing.map(({ id }) => [id, z.boolean()]),
+  )).strict().superRefine((value, context) => {
+    for (const { id } of catalog.processing.filter(({ control }) => control.mode === 'required')) {
+      if (!value[id]) context.addIssue({ code: 'custom', path: [id], message: 'Required processing must remain enabled.' })
+    }
+  })
+  return z.object({
+    schemaVersion: z.literal(2),
+    state,
+    lastOperationId: z.string().min(1).nullable(),
+  }).strict()
 }
 
 function clone<T>(value: T): T {

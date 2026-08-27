@@ -130,16 +130,40 @@ export interface PrivacyPlan {
   isNoOp: boolean
 }
 
-export type PrivacyChoiceMethod = 'accept_all' | 'essential_only' | 'managed_settings'
-export type PrivacyApprovalMethod = 'banner_button' | 'review_hold'
+export type DirectChoiceMethod = 'allow_all' | 'reject_optional' | 'managed'
+export type PrivacyApprovalMethod = 'explicit_action' | 'review_hold'
 export type PrivacyPreparationOrigin = 'page_ui' | 'webmcp_tool'
 export type PrivacyVerificationScope = 'local_demo' | 'external'
+export type PrivacyEntrySurface =
+  | 'initial_banner'
+  | 'footer_link'
+  | 'account_settings'
+  | 'embedded_panel'
+  | 'agent_only'
 
 export interface PrivacyNoticeState {
-  version: string
-  status: 'pending' | 'recorded'
+  status: 'pending' | 'recorded' | 'outdated'
+  currentVersion: string
+  recordedVersion: string | null
   recordedAt: string | null
-  method: PrivacyChoiceMethod | null
+  method: DirectChoiceMethod | null
+}
+
+export interface PrivacyReceiptPolicyContext {
+  id: string
+  label: string
+  legalBasis?: string
+  category?: string
+  userAction?: string
+}
+
+export interface PrivacyReceiptDecision {
+  processingId: ProcessingId
+  label: string
+  enabled: boolean
+  choice: 'required' | 'allowed' | 'denied'
+  controlMode: ControlMode
+  policyContexts: readonly PrivacyReceiptPolicyContext[]
 }
 
 export interface PrivacyReceipt {
@@ -152,17 +176,22 @@ export interface PrivacyReceipt {
   reviewedAt: string
   approvalMethod: PrivacyApprovalMethod
   preparationOrigin: PrivacyPreparationOrigin
-  choiceMethod: PrivacyChoiceMethod | null
+  entrySurface: PrivacyEntrySurface
+  choiceMethod: DirectChoiceMethod | null
   beforeRevision: number
   afterRevision: number
+  beforeState: ProcessingState
+  afterState: ProcessingState
   changes: readonly PlanChange[]
-  finalState: ProcessingState
+  decisions: readonly PrivacyReceiptDecision[]
   verified: true
+  migrated?: boolean
   verification: {
     observedRevision: number
     method: 'persisted_state_readback' | 'adapter_readback'
     adapterId: string
     scope: PrivacyVerificationScope
+    readback: ProcessingState
   }
 }
 

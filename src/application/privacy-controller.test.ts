@@ -3,6 +3,7 @@ import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-
 import { LocalDemoEnforcementAdapter } from '@/adapters/enforcement/local-demo-enforcement-adapter'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
+import { createDirectChoiceInput } from '@/domain'
 import { ApplicationError, createPrivacyController } from './index'
 
 class MemoryStorage {
@@ -74,8 +75,21 @@ describe('PrivacyController', () => {
       method: 'adapter_readback',
       adapterId: 'waypoint-local-demo',
       scope: 'local_demo',
+      readback: receipt.afterState,
     }))
     expect(receipt.changes).toHaveLength(3)
+    expect(receipt.beforeState.recommendations).toBe(false)
+    expect(receipt.afterState.recommendations).toBe(true)
+    expect(receipt.decisions).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        processingId: 'recommendations',
+        choice: 'allowed',
+        controlMode: 'opt_in',
+        policyContexts: expect.arrayContaining([
+          expect.objectContaining({ id: 'waypoint-personalisation-choice' }),
+        ]),
+      }),
+    ]))
 
     const reloaded = await createPrivacyController({ catalog: travelCatalog, ...deps })
     expect(reloaded.getSnapshot().workflow).toBe('idle')
@@ -165,20 +179,39 @@ describe('PrivacyController', () => {
     const deps = dependencies()
     const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
 
-    const receipt = await controller.applyInitialChoice('essential_only')
+    const receipt = await controller.applyDirectChoice({
+      input: createDirectChoiceInput(travelCatalog, 'reject_optional'),
+      method: 'reject_optional',
+      entrySurface: 'initial_banner',
+      preparationOrigin: 'page_ui',
+    })
 
     expect(receipt).toEqual(expect.objectContaining({
       kind: 'initial_choice',
-      approvalMethod: 'banner_button',
+      approvalMethod: 'explicit_action',
       preparationOrigin: 'page_ui',
-      choiceMethod: 'essential_only',
+      entrySurface: 'initial_banner',
+      choiceMethod: 'reject_optional',
       changes: [],
     }))
     expect(controller.getSnapshot().record.notice).toEqual(expect.objectContaining({
       status: 'recorded',
-      method: 'essential_only',
+      method: 'reject_optional',
     }))
     expect(controller.getSnapshot().record.state.revision).toBe(2)
+  })
+
+  it('rejects a direct-choice label that does not match its planner input', async () => {
+    const deps = dependencies()
+    const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
+
+    await expect(controller.applyDirectChoice({
+      input: createDirectChoiceInput(travelCatalog, 'allow_all'),
+      method: 'reject_optional',
+      entrySurface: 'initial_banner',
+      preparationOrigin: 'page_ui',
+    })).rejects.toMatchObject({ code: 'direct_choice_mismatch' })
+    expect(controller.getReceipt()).toBeNull()
   })
 
   it('keeps the ten most recent verified receipts in newest-first order', async () => {
@@ -209,6 +242,48 @@ describe('PrivacyController', () => {
     expect(controller.getReceiptHistory()).toHaveLength(10)
     expect(controller.getReceiptHistory()[0]?.id).toBe('receipt-12')
     expect(controller.getReceiptHistory()[9]?.id).toBe('receipt-3')
+  })
+
+  it('marks a changed notice outdated without changing settings, then records a new no-op choice', async () => {
+    const deps = dependencies()
+    const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
+    await controller.applyDirectChoice({
+      input: createDirectChoiceInput(travelCatalog, 'reject_optional'),
+      method: 'reject_optional',
+      entrySurface: 'initial_banner',
+      preparationOrigin: 'page_ui',
+    })
+    const previousReceiptId = controller.getReceipt()?.id
+    const updatedCatalog = {
+      ...travelCatalog,
+      noticeVersion: 'waypoint-privacy-choices-2026.4',
+    }
+    const updatedController = await createPrivacyController({
+      catalog: updatedCatalog,
+      repository: new LocalStoragePrivacyRepository(deps.storage, createTravelSeed, updatedCatalog),
+      enforcement: new LocalDemoEnforcementAdapter(deps.storage, createTravelSeed, updatedCatalog),
+      clock: deps.clock,
+      idGenerator: deps.idGenerator,
+    })
+
+    expect(updatedController.getSnapshot().record.notice).toEqual(expect.objectContaining({
+      status: 'outdated',
+      currentVersion: updatedCatalog.noticeVersion,
+      recordedVersion: travelCatalog.noticeVersion,
+    }))
+    expect(updatedController.getSnapshot().record.state.processing).toEqual(createTravelSeed().processing)
+    expect(updatedController.getReceipt()?.id).toBe(previousReceiptId)
+
+    const receipt = await updatedController.applyDirectChoice({
+      input: createDirectChoiceInput(updatedCatalog, 'reject_optional'),
+      method: 'reject_optional',
+      entrySurface: 'initial_banner',
+      preparationOrigin: 'page_ui',
+    })
+    expect(receipt.changes).toEqual([])
+    expect(receipt.noticeVersion).toBe(updatedCatalog.noticeVersion)
+    expect(updatedController.getSnapshot().record.notice.status).toBe('recorded')
+    expect(updatedController.getReceiptHistory()).toHaveLength(2)
   })
 
   it('requires confirmation and resets demo state and receipt', async () => {

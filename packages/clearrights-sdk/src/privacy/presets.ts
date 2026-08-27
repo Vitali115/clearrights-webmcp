@@ -1,13 +1,13 @@
 import type { ProcessingCatalog } from './catalog'
 import type { PlannerInput } from './model'
 
-export type PrivacyPreset = 'accept_all' | 'essential_only'
+export type DirectChoicePreset = 'allow_all' | 'reject_optional'
 
-export function createPresetInput(
+export function createDirectChoiceInput(
   catalog: ProcessingCatalog,
-  preset: PrivacyPreset,
+  preset: DirectChoicePreset,
 ): PlannerInput {
-  if (preset === 'accept_all') {
+  if (preset === 'allow_all') {
     return {
       keepCapabilities: catalog.capabilities.map(({ id }) => id),
       avoidUses: [],

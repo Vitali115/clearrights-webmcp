@@ -91,7 +91,7 @@ describe('privacy settings UI', () => {
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument())
     expect(controller.getSnapshot().record.notice).toEqual(expect.objectContaining({
       status: 'recorded',
-      method: 'essential_only',
+      method: 'reject_optional',
     }))
     expect(controller.getReceipt()).toEqual(expect.objectContaining({
       kind: 'initial_choice',
@@ -130,7 +130,7 @@ describe('privacy settings UI', () => {
     expect(screen.getByText(/3 of 3 optional data uses active/)).toBeVisible()
     expect(controller.getReceipt()).toEqual(expect.objectContaining({
       kind: 'initial_choice',
-      choiceMethod: 'accept_all',
+      choiceMethod: 'allow_all',
       changes: expect.arrayContaining([
         expect.objectContaining({ processingId: 'recommendations', after: true }),
       ]),

@@ -754,7 +754,8 @@ function ReceiptDetails({ receipt }: { receipt: PrivacyReceipt }) {
         <Detail label="Revision" value={`${receipt.beforeRevision} → ${receipt.afterRevision}`} />
         <Detail label="Applied" value={formatDate(receipt.issuedAt)} />
         <Detail label="Human review recorded" value={formatDate(receipt.reviewedAt)} />
-        <Detail label="Approval" value={receipt.approvalMethod === 'banner_button' ? 'Explicit banner action' : 'Review hold'} />
+        <Detail label="Approval" value={receipt.approvalMethod === 'explicit_action' ? 'Explicit action' : 'Review hold'} />
+        <Detail label="Entry surface" value={receipt.entrySurface.replaceAll('_', ' ')} />
         <Detail label="Prepared through" value={receipt.preparationOrigin === 'webmcp_tool' ? 'WebMCP tool' : 'Page interface'} />
         <Detail label="Verification" value={`${receipt.verification.adapterId} · ${receipt.verification.method} · revision ${receipt.verification.observedRevision}`} />
       </div>
@@ -774,10 +775,10 @@ function ReceiptDetails({ receipt }: { receipt: PrivacyReceipt }) {
       <div>
         <p className="mb-2 text-xs font-medium text-muted-foreground">Final settings</p>
         <ul>
-          {travelCatalog.processing.map((definition) => (
-            <li key={definition.id} className="flex justify-between gap-3 border-t border-foreground/10 py-2 text-sm">
-              <span>{definition.label}</span>
-              <span className="font-medium text-muted-foreground">{receipt.finalState[definition.id] ? 'On' : 'Off'}</span>
+          {receipt.decisions.map((decision) => (
+            <li key={decision.processingId} className="flex justify-between gap-3 border-t border-foreground/10 py-2 text-sm">
+              <span>{decision.label}</span>
+              <span className="font-medium text-muted-foreground">{decision.enabled ? 'On' : 'Off'} · {decision.choice}</span>
             </li>
           ))}
         </ul>

@@ -79,7 +79,7 @@ export default function App({ controller, privacyUi, webMcpAvailable }: AppProps
           />
           <PrivacyChoiceBanner
             controller={controller}
-            pending={snapshot.record.notice.status === 'pending'}
+            pending={snapshot.record.notice.status !== 'recorded'}
             webMcpAvailable={webMcpAvailable}
             onManage={openPrivacySettings}
             onLearn={() => navigatePage('privacy')}
