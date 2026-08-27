@@ -113,7 +113,7 @@ Eight tools are registered in the normal state. A ninth, `apply_privacy_plan`, e
 
 | Tool | Behaviour |
 | --- | --- |
-| `get_privacy_overview` | Compact privacy state and planner options; optional reveal. |
+| `get_privacy_overview` | Compact applied privacy state, separate pending plan, and planner options; optional reveal. |
 | `inspect_processing` | Complete definition and developer context for one declared processing ID; optional reveal. |
 | `stage_privacy_plan` | Deterministically stages and reveals the exact privacy review. |
 | `get_privacy_receipt` | Latest verified receipt; optional reveal. |
@@ -135,7 +135,7 @@ Example demo requests:
 
 One responsive sheet composes Privacy, Accessibility, Site Guide, and a secondary Activity timeline. Manual access remains complete without WebMCP.
 
-Agent-opened panels and routes show a blue activity dot until the first meaningful click, keyboard action, or content scroll. Engagement removes the dot but never selects the privacy hold or counts as approval. The timeline is separate and records only concise, user-readable outcomes.
+Agent-opened panels and routes show a blue activity dot until the first meaningful click, keyboard action, or content scroll. Engagement removes the dot and is described only as an interaction; it never selects the privacy hold, implies review, or counts as approval. The timeline is separate and records only concise, user-readable outcomes.
 
 `Reset demo data` restores the privacy seed and pending notice, clears receipts, synchronises local privacy enforcement, resets all accessibility preferences and Undo, clears Activity, closes the sheet, and returns to `/#/` without creating a new event after the clear.
 
@@ -166,7 +166,9 @@ The registry is host configuration in `src/demo/waypoint/product-effects.ts`; it
 | Motion | Waypoint motion | System-aware or reduced |
 | Reading layout | Secondary content | Inline or inside a reachable native disclosure |
 
-Every mapped product surface has a `data-clearrights-surface` hook for inspection, but the normal customer experience displays no technical badges. The developer page filters the live mapping by Privacy or Accessibility, shows runtime value and adapter readback, and exposes the complete current view model.
+Every mapped product surface has a `data-clearrights-surface` hook for inspection, but the normal customer experience displays no technical badges. The developer page filters the live mapping by Privacy or Accessibility and exposes the complete current view model. It labels the applied privacy revision separately from any pending draft. A privacy effect is called verified only when the latest receipt matches that exact revision and value; Accessibility reports the DOM readback produced by its adapter.
+
+Focused reading layout keeps search, upcoming trips, and essential services primary. Its closed disclosure still states whether travel ideas are generic or based on represented interests, so the current privacy outcome remains understandable without reopening secondary content.
 
 The preview query `effects=1` adds discrete surface outlines and reports hidden surfaces. It does not persist, create Activity, change a preference, record a privacy choice, or add a WebMCP tool. Exiting the preview removes the query while preserving browser history.
 

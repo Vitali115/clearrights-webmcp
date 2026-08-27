@@ -153,6 +153,8 @@ export default function App({
   const infoPage = route.kind === 'info' ? getWaypointInfoPage(route.id) : null
   const experience = selectWaypointExperience({
     privacyState: snapshot.record.state.processing,
+    privacyRevision: snapshot.record.state.revision,
+    privacyReceipt: snapshot.record.receipts[0] ?? null,
     accessibility: accessibilitySnapshot,
   })
 

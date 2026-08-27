@@ -1,4 +1,9 @@
-import type { AccessibilitySnapshot, AccessibilityState, ProcessingState } from '@/domain'
+import type {
+  AccessibilitySnapshot,
+  AccessibilityState,
+  PrivacyReceipt,
+  ProcessingState,
+} from '@/domain'
 
 export type WaypointProductEffectSource = 'privacy' | 'accessibility'
 
@@ -35,8 +40,20 @@ export interface WaypointProductEffect extends WaypointProductEffectDefinition {
   runtimeValue: string
   result: WaypointProductEffectResult
   adapterId: string
-  adapterScope: 'local_demo'
-  readback: string
+  adapterScope: 'local_demo' | 'external'
+  verification:
+    | {
+        kind: 'privacy_receipt'
+        verified: boolean
+        value: string | null
+        receiptId: string | null
+      }
+    | {
+        kind: 'accessibility_readback'
+        verified: true
+        value: string
+        receiptId: null
+      }
 }
 
 export interface WaypointExperienceViewModel {
@@ -148,9 +165,13 @@ export const waypointProductEffectRegistry: readonly WaypointProductEffectDefini
 
 export function selectWaypointExperience({
   privacyState,
+  privacyRevision,
+  privacyReceipt,
   accessibility,
 }: {
   privacyState: ProcessingState
+  privacyRevision: number
+  privacyReceipt: PrivacyReceipt | null
   accessibility: AccessibilitySnapshot
 }): WaypointExperienceViewModel {
   const discovery = privacyState.recommendations ? 'personalised' : 'generic'
@@ -158,15 +179,29 @@ export function selectWaypointExperience({
   const partnerOffer = privacyState.partner_advertising ? 'visible' : 'hidden'
   const effects = waypointProductEffectRegistry.map((definition): WaypointProductEffect => {
     const runtimeValue = runtimeValueFor(definition.settingId, privacyState, accessibility.current)
+    const receiptVerifiesCurrentValue = definition.source === 'privacy'
+      && privacyReceipt?.verified === true
+      && privacyReceipt.afterRevision === privacyRevision
+      && String(privacyReceipt.verification.readback[definition.settingId]) === runtimeValue
     return {
       ...definition,
       runtimeValue,
       result: resultFor(definition.settingId, privacyState, accessibility.current),
       adapterId: definition.source === 'privacy' ? 'waypoint-local-demo' : accessibility.adapterId,
-      adapterScope: 'local_demo',
-      readback: definition.source === 'privacy'
-        ? runtimeValue
-        : String(accessibility.current[definition.settingId as keyof AccessibilityState]),
+      adapterScope: definition.source === 'privacy' ? 'local_demo' : accessibility.scope,
+      verification: definition.source === 'privacy'
+        ? {
+            kind: 'privacy_receipt',
+            verified: receiptVerifiesCurrentValue,
+            value: receiptVerifiesCurrentValue ? runtimeValue : null,
+            receiptId: receiptVerifiesCurrentValue ? privacyReceipt.id : null,
+          }
+        : {
+            kind: 'accessibility_readback',
+            verified: true,
+            value: String(accessibility.current[definition.settingId as keyof AccessibilityState]),
+            receiptId: null,
+          },
     }
   })
 

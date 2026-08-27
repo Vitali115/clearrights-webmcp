@@ -16,9 +16,13 @@ const filters: Array<{ id: ProductEffectFilter; label: string }> = [
 
 export function ProductEffectsInspector({
   experience,
+  appliedRevision,
+  pendingPlan,
   onOpenPreview,
 }: {
   experience: WaypointExperienceViewModel
+  appliedRevision: number
+  pendingPlan: { id: string; status: 'staged' | 'reviewed'; changeCount: number } | null
   onOpenPreview(): void
 }) {
   const [filter, setFilter] = useState<ProductEffectFilter>('all')
@@ -36,9 +40,19 @@ export function ProductEffectsInspector({
             <p className="mt-4 max-w-2xl text-sm leading-relaxed text-muted-foreground">
               Waypoint maps ClearRights snapshots to named product surfaces once. React receives this final view model rather than reading storage or SDK identifiers inside product components.
             </p>
+            <p className="mt-3 text-sm font-medium">Showing applied privacy revision {appliedRevision}.</p>
           </div>
           <Button className="w-fit rounded-full" onClick={onOpenPreview}>Open live product preview</Button>
         </div>
+
+        {pendingPlan && (
+          <div role="status" className="mt-8 border border-foreground/15 bg-background p-4 text-sm leading-relaxed">
+            <p className="font-medium">Pending draft is not shown in this product preview</p>
+            <p className="mt-1 text-muted-foreground">
+              {pendingPlan.changeCount} {pendingPlan.changeCount === 1 ? 'change' : 'changes'} in {pendingPlan.id} remain {pendingPlan.status}. The product effects below continue to use revision {appliedRevision} until the exact draft is human-approved and applied.
+            </p>
+          </div>
+        )}
 
         <div className="mt-8 flex flex-wrap gap-2" aria-label="Filter product effects">
           {filters.map(({ id, label }) => (
@@ -80,7 +94,12 @@ export function ProductEffectsInspector({
                 <p className="text-xs font-medium text-muted-foreground">Current result</p>
                 <p className="mt-2 font-medium capitalize">{effect.result}</p>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  {effect.adapterId} · {effect.adapterScope}<br />Readback: {effect.readback}
+                  {effect.adapterId} · {effect.adapterScope}<br />
+                  {effect.verification.verified
+                    ? effect.verification.kind === 'privacy_receipt'
+                      ? `Verified receipt: ${effect.verification.receiptId} · ${effect.verification.value}`
+                      : `DOM readback: ${effect.verification.value}`
+                    : 'No receipt verifies this applied revision'}
                 </p>
               </div>
             </article>

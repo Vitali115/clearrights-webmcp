@@ -41,7 +41,12 @@ describe('Waypoint product effect registry', () => {
   it.each(Array.from({ length: 8 }, (_, bits) => bits))(
     'selects the three optional privacy effects for combination %i',
     (bits) => {
-      const experience = selectWaypointExperience({ privacyState: privacyState(bits), accessibility })
+      const experience = selectWaypointExperience({
+        privacyState: privacyState(bits),
+        privacyRevision: 1,
+        privacyReceipt: null,
+        accessibility,
+      })
 
       expect(experience.discovery).toBe(bits & 1 ? 'personalised' : 'generic')
       expect(experience.nearbyGuide).toBe(bits & 2 ? 'visible' : 'hidden')
@@ -58,6 +63,8 @@ describe('Waypoint product effect registry', () => {
   it('projects accessibility preferences without changing privacy effects', () => {
     const experience = selectWaypointExperience({
       privacyState: privacyState(0),
+      privacyRevision: 1,
+      privacyReceipt: null,
       accessibility: {
         ...accessibility,
         current: {
@@ -80,5 +87,17 @@ describe('Waypoint product effect registry', () => {
       'partner-offer',
       'secondary-content',
     ]))
+    expect(experience.effects.find(({ id }) => id === 'privacy-discovery')?.verification).toEqual({
+      kind: 'privacy_receipt',
+      verified: false,
+      value: null,
+      receiptId: null,
+    })
+    expect(experience.effects.find(({ id }) => id === 'accessibility-root-scale')?.verification).toEqual({
+      kind: 'accessibility_readback',
+      verified: true,
+      value: 'extra_large',
+      receiptId: null,
+    })
   })
 })

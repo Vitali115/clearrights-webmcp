@@ -74,7 +74,18 @@ export function ClearRightsExplainerPage({
           </div>
         </section>
 
-        <ProductEffectsInspector experience={experience} onOpenPreview={onOpenPreview} />
+        <ProductEffectsInspector
+          experience={experience}
+          appliedRevision={snapshot.record.state.revision}
+          pendingPlan={snapshot.plan && (snapshot.workflow === 'staged' || snapshot.workflow === 'reviewed')
+            ? {
+                id: snapshot.plan.id,
+                status: snapshot.workflow,
+                changeCount: snapshot.plan.changes.length,
+              }
+            : null}
+          onOpenPreview={onOpenPreview}
+        />
 
         <section className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-16 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20" aria-labelledby="modules-heading">
           <h2 id="modules-heading" className="text-2xl font-medium tracking-tight">Three modules, three policies</h2>

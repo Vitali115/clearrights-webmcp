@@ -122,6 +122,8 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('heading', { name: 'Accessibility Preferences' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'ClearRights Site Guide' })).toBeVisible()
     expect(screen.getByRole('heading', { name: 'Product effects' })).toBeVisible()
+    expect(screen.getByText('Showing applied privacy revision 1.')).toBeVisible()
+    expect(screen.queryByText('Pending draft is not shown in this product preview')).not.toBeInTheDocument()
     expect(screen.getAllByTestId('product-effect-row')).toHaveLength(10)
     expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
 
@@ -143,6 +145,20 @@ describe('privacy settings UI', () => {
 
     await user.click(screen.getByRole('button', { name: 'Personal controls' }))
     expect(screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
+  })
+
+  it('keeps pending privacy drafts separate from the applied product effects inspector', async () => {
+    const controller = await createController()
+    controller.stage({
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates', 'personalised_recommendations'],
+      avoidUses: [],
+    }, 'webmcp_tool')
+    window.history.replaceState(null, '', '#/clearrights')
+    renderApp(controller, true)
+
+    expect(screen.getByText('Pending draft is not shown in this product preview')).toBeVisible()
+    expect(screen.getByText(/1 change in plan-1-/)).toBeVisible()
+    expect(screen.getByText(/continue to use revision 1 until/)).toBeVisible()
   })
 
   it('redirects the legacy privacy hash to the ClearRights developer page', async () => {
