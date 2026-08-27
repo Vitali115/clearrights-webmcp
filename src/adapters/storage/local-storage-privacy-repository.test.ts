@@ -54,7 +54,14 @@ describe('LocalStoragePrivacyRepository', () => {
     expect(first).toEqual(repaired)
     expect(repaired.schemaVersion).toBe(3)
     expect(repaired.notice.status).toBe('pending')
-    expect(Object.values(repaired.state.processing).every(Boolean)).toBe(true)
+    expect(repaired.state.processing).toEqual(expect.objectContaining({
+      trip_fulfilment: true,
+      account_security: true,
+      transactional_updates: true,
+      recommendations: false,
+      location_suggestions: false,
+      partner_advertising: false,
+    }))
   })
 
   it('repairs a stored record that disables required processing', async () => {
@@ -154,6 +161,8 @@ describe('LocalStoragePrivacyRepository', () => {
     expect(reset.state.revision).toBe(2)
     expect(reset.receipts).toEqual([])
     expect(reset.notice.status).toBe('pending')
-    expect(Object.values(reset.state.processing).every(Boolean)).toBe(true)
+    expect(reset.state.processing.recommendations).toBe(false)
+    expect(reset.state.processing.location_suggestions).toBe(false)
+    expect(reset.state.processing.partner_advertising).toBe(false)
   })
 })

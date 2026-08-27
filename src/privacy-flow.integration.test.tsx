@@ -56,8 +56,8 @@ describe('agent-guided privacy flow', () => {
 
     await act(async () => {
       await modelContext.execute('stage_privacy_plan', {
-        keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
-        avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
+        keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
+        avoidUses: [],
       })
     })
 

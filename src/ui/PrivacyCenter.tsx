@@ -259,7 +259,7 @@ export function PrivacyCenter({
             <AlertDialogHeader>
               <AlertDialogTitle>Reset demo data?</AlertDialogTitle>
               <AlertDialogDescription>
-                This restores all optional settings and permanently deletes the full change history.
+                This turns optional settings off, reopens Privacy choices, and permanently deletes the full change history.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -472,7 +472,11 @@ function ReceiptHistoryItem({
       <summary className="flex cursor-pointer list-none items-center gap-3 py-4 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
         <span className="min-w-0 flex-1">
           <span className="block font-medium">{formatDate(receipt.issuedAt)}</span>
-          <span className="block truncate text-sm text-muted-foreground">{receipt.changes.length} changes · {receipt.id}</span>
+          <span className="block truncate text-sm text-muted-foreground">
+            {receipt.kind === 'initial_choice'
+              ? `Initial choice · ${receipt.id}`
+              : `${receipt.changes.length} changes · ${receipt.id}`}
+          </span>
         </span>
         {latest && <span className="text-xs font-medium">Latest</span>}
         <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
@@ -696,14 +700,16 @@ function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHo
       <p className="text-sm font-medium">Verified</p>
       <p className="mt-2 text-[1.35rem] font-medium tracking-tight">Privacy settings applied</p>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        The stored state was reread and matched the exact human-reviewed target.
+        The {receipt.verification.adapterId} adapter was read after apply and matched the exact human-approved target.
       </p>
       <div className="mt-8">
         <ReceiptDetails receipt={receipt} />
       </div>
       <div className="mt-8 border-t border-foreground/10 pt-5 text-sm">
         <p className="font-medium">What verified means</p>
-        <p className="mt-1 text-muted-foreground">Application readback matched the reviewed target. This is not a signature or legal proof.</p>
+        <p className="mt-1 text-muted-foreground">
+          Adapter readback matched the reviewed target within the {receipt.verification.scope === 'local_demo' ? 'local demo' : 'external adapter'} scope. This is not a signature or legal proof.
+        </p>
       </div>
       <Button className="mt-6 h-9 rounded-full px-5" onClick={onHome}>Return to privacy settings</Button>
     </div>
@@ -715,11 +721,14 @@ function ReceiptDetails({ receipt }: { receipt: PrivacyReceipt }) {
     <div className="space-y-4 text-sm">
       <div className="grid gap-3 sm:grid-cols-2">
         <Detail label="Receipt" value={receipt.id} />
+        <Detail label="Event" value={receipt.kind === 'initial_choice' ? 'Initial privacy choice' : 'Settings change'} />
         <Detail label="Plan" value={receipt.planId} />
         <Detail label="Revision" value={`${receipt.beforeRevision} → ${receipt.afterRevision}`} />
         <Detail label="Applied" value={formatDate(receipt.issuedAt)} />
         <Detail label="Human review recorded" value={formatDate(receipt.reviewedAt)} />
-        <Detail label="Verification" value={`Readback revision ${receipt.verification.observedRevision}`} />
+        <Detail label="Approval" value={receipt.approvalMethod === 'banner_button' ? 'Explicit banner action' : 'Review hold'} />
+        <Detail label="Prepared through" value={receipt.preparationOrigin === 'webmcp_tool' ? 'WebMCP tool' : 'Page interface'} />
+        <Detail label="Verification" value={`${receipt.verification.adapterId} · ${receipt.verification.method} · revision ${receipt.verification.observedRevision}`} />
       </div>
       <div className="border-t border-foreground/10 pt-4">
         <p className="mb-2 text-xs font-medium text-muted-foreground">Applied changes</p>

@@ -116,11 +116,8 @@ describe('WebMCP adapter', () => {
         'book_and_manage_trips',
         'protect_account',
         'receive_trip_updates',
-        'personalised_recommendations',
-        'nearby_suggestions',
-        'partner_offers',
       ],
-      avoidUses: [],
+      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
     })
 
     expect(() => controller.setReviewed(true)).toThrowError(expect.objectContaining({ code: 'no_changes' }))
@@ -185,8 +182,8 @@ describe('WebMCP adapter', () => {
     const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
 
     const staged = await modelContext.execute('stage_privacy_plan', {
-      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
-      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
+      keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
+      avoidUses: [],
     }) as { ok: true; data: { id: string } }
 
     expect(staged.ok).toBe(true)
@@ -212,7 +209,10 @@ describe('WebMCP adapter', () => {
     const adapter = await startWebMcpAdapter(undefined, controller, travelCatalog, privacyUi)
 
     expect(adapter.available).toBe(false)
-    expect(controller.stage({ keepCapabilities: [], avoidUses: [] }).changes).toHaveLength(3)
+    expect(controller.stage({
+      keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
+      avoidUses: [],
+    }).changes).toHaveLength(3)
     adapter.dispose()
   })
 })

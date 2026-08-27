@@ -38,8 +38,8 @@ describe('PrivacyController', () => {
     const deps = dependencies()
     const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
     const plan = controller.stage({
-      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
-      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
+      keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
+      avoidUses: [],
     })
 
     expect(controller.getSnapshot().workflow).toBe('staged')
@@ -60,7 +60,7 @@ describe('PrivacyController', () => {
     expect(reloaded.getSnapshot().workflow).toBe('idle')
     expect(reloaded.getReceipt()?.id).toBe(receipt.id)
     expect(reloaded.getReceiptHistory()).toHaveLength(1)
-    expect(reloaded.getSnapshot().record.state.processing.recommendations).toBe(false)
+    expect(reloaded.getSnapshot().record.state.processing.recommendations).toBe(true)
   })
 
   it('revokes review when a plan is replaced', async () => {
@@ -108,8 +108,8 @@ describe('PrivacyController', () => {
       idGenerator: deps.idGenerator,
     })
     const plan = controller.stage({
-      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
-      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
+      keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
+      avoidUses: [],
     })
     controller.setReviewed(true)
 
@@ -128,11 +128,8 @@ describe('PrivacyController', () => {
         'book_and_manage_trips',
         'protect_account',
         'receive_trip_updates',
-        'personalised_recommendations',
-        'nearby_suggestions',
-        'partner_offers',
       ],
-      avoidUses: [],
+      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
     })
 
     expect(plan.isNoOp).toBe(true)
@@ -147,18 +144,18 @@ describe('PrivacyController', () => {
     const deps = dependencies()
     const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
 
-    const receipt = await controller.applyInitialChoice('accept_all')
+    const receipt = await controller.applyInitialChoice('essential_only')
 
     expect(receipt).toEqual(expect.objectContaining({
       kind: 'initial_choice',
       approvalMethod: 'banner_button',
       preparationOrigin: 'page_ui',
-      choiceMethod: 'accept_all',
+      choiceMethod: 'essential_only',
       changes: [],
     }))
     expect(controller.getSnapshot().record.notice).toEqual(expect.objectContaining({
       status: 'recorded',
-      method: 'accept_all',
+      method: 'essential_only',
     }))
     expect(controller.getSnapshot().record.state.revision).toBe(2)
   })
@@ -168,21 +165,21 @@ describe('PrivacyController', () => {
     const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
 
     for (let index = 0; index < 12; index += 1) {
-      const disableOptional = index % 2 === 0
+      const enableOptional = index % 2 === 0
       const plan = controller.stage({
-        keepCapabilities: disableOptional
-          ? ['book_and_manage_trips', 'protect_account', 'receive_trip_updates']
-          : [
+        keepCapabilities: enableOptional
+          ? [
               'book_and_manage_trips',
               'protect_account',
               'receive_trip_updates',
               'personalised_recommendations',
               'nearby_suggestions',
               'partner_offers',
-            ],
-        avoidUses: disableOptional
-          ? ['preference_personalisation', 'precise_location', 'partner_marketing']
-          : [],
+            ]
+          : ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+        avoidUses: enableOptional
+          ? []
+          : ['preference_personalisation', 'precise_location', 'partner_marketing'],
       })
       controller.setReviewed(true)
       await controller.apply(plan.id)
@@ -196,7 +193,10 @@ describe('PrivacyController', () => {
   it('requires confirmation and resets demo state and receipt', async () => {
     const deps = dependencies()
     const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
-    const plan = controller.stage({ keepCapabilities: [], avoidUses: [] })
+    const plan = controller.stage({
+      keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
+      avoidUses: [],
+    })
     controller.setReviewed(true)
     await controller.apply(plan.id)
 
@@ -206,6 +206,7 @@ describe('PrivacyController', () => {
     expect(controller.getSnapshot().workflow).toBe('idle')
     expect(controller.getReceipt()).toBeNull()
     expect(controller.getReceiptHistory()).toEqual([])
-    expect(Object.values(controller.getSnapshot().record.state.processing).every(Boolean)).toBe(true)
+    expect(controller.getSnapshot().record.state.processing.recommendations).toBe(false)
+    expect(controller.getSnapshot().record.notice.status).toBe('pending')
   })
 })

@@ -3,6 +3,7 @@ import type { PrivacyController, PrivacyViewCoordinator } from '@/application'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetTrigger } from '@/components/ui/sheet'
 import { PrivacyCenter } from '@/ui/PrivacyCenter'
+import { PrivacyChoiceBanner } from '@/ui/PrivacyChoiceBanner'
 import { TravelProductPage } from '@/ui/TravelProductPage'
 
 interface AppProps {
@@ -33,6 +34,11 @@ export default function App({ controller, privacyUi, webMcpAvailable }: AppProps
     }
   }
 
+  const openPrivacySettings = () => {
+    privacyUi.navigate({ view: 'home', origin: 'human' })
+    setPrivacyOpen(true)
+  }
+
   return (
     <Sheet open={privacyOpen} onOpenChange={setSheetOpen}>
       <TravelProductPage
@@ -43,6 +49,12 @@ export default function App({ controller, privacyUi, webMcpAvailable }: AppProps
             </Button>
           </SheetTrigger>
         )}
+      />
+      <PrivacyChoiceBanner
+        controller={controller}
+        pending={snapshot.record.notice.status === 'pending'}
+        webMcpAvailable={webMcpAvailable}
+        onManage={openPrivacySettings}
       />
       <PrivacyCenter
         key={snapshot.plan?.id ?? `idle-${snapshot.record.state.revision}`}

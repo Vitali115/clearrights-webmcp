@@ -49,6 +49,56 @@ async function holdToConfirm() {
 afterEach(cleanup)
 
 describe('privacy settings UI', () => {
+  it('records Essential only even when the conservative seed already matches it', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    renderApp(controller, true)
+
+    expect(screen.getByRole('region', { name: 'Privacy choices' })).toBeVisible()
+    expect(screen.getByText('Structured agent access detected in this browser.')).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Essential only' }))
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument())
+    expect(controller.getSnapshot().record.notice).toEqual(expect.objectContaining({
+      status: 'recorded',
+      method: 'essential_only',
+    }))
+    expect(controller.getReceipt()).toEqual(expect.objectContaining({
+      kind: 'initial_choice',
+      changes: [],
+    }))
+  })
+
+  it('keeps the notice pending when Manage choices only opens the settings', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    renderApp(controller)
+
+    await user.click(screen.getByRole('button', { name: 'Manage choices' }))
+
+    expect(screen.getByRole('dialog', { name: 'Privacy settings panel' })).toBeVisible()
+    expect(controller.getSnapshot().record.notice.status).toBe('pending')
+    expect(controller.getReceipt()).toBeNull()
+  })
+
+  it('applies Accept all through the local adapter and dismisses the banner', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    renderApp(controller)
+
+    await user.click(screen.getByRole('button', { name: 'Accept all' }))
+
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument())
+    expect(controller.getSnapshot().record.state.processing.recommendations).toBe(true)
+    expect(controller.getReceipt()).toEqual(expect.objectContaining({
+      kind: 'initial_choice',
+      choiceMethod: 'accept_all',
+      changes: expect.arrayContaining([
+        expect.objectContaining({ processingId: 'recommendations', after: true }),
+      ]),
+    }))
+  })
+
   it('opens and closes the privacy Sheet over the travel product', async () => {
     const user = userEvent.setup()
     const controller = await createController()
@@ -94,7 +144,7 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByRole('button', { name: /Apply changes/ }))
 
     expect(await screen.findByRole('heading', { name: 'Verified receipt' })).toBeVisible()
-    expect(controller.getSnapshot().record.state.processing.recommendations).toBe(false)
+    expect(controller.getSnapshot().record.state.processing.recommendations).toBe(true)
 
     await user.click(screen.getByRole('button', { name: 'Reset' }))
     expect(screen.getByRole('alertdialog', { name: 'Reset demo data?' })).toBeVisible()
@@ -102,7 +152,8 @@ describe('privacy settings UI', () => {
 
     await waitFor(() => expect(controller.getSnapshot().workflow).toBe('idle'))
     expect(controller.getReceipt()).toBeNull()
-    expect(Object.values(controller.getSnapshot().record.state.processing).every(Boolean)).toBe(true)
+    expect(controller.getSnapshot().record.state.processing.recommendations).toBe(false)
+    expect(controller.getSnapshot().record.notice.status).toBe('pending')
   })
 
   it('opens automatically when the shared coordinator reports an agent navigation', async () => {
@@ -111,7 +162,7 @@ describe('privacy settings UI', () => {
 
     act(() => {
       const plan = controller.stage({
-        keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+        keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
         avoidUses: [],
       })
       privacyUi.navigate({
@@ -133,7 +184,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     const plan = controller.stage({
-      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+      keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
       avoidUses: [],
     })
     const privacyUi = renderApp(controller, true)
@@ -165,7 +216,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     const plan = controller.stage({
-      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+      keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
       avoidUses: [],
     })
     const privacyUi = renderApp(controller, true)
@@ -222,11 +273,8 @@ describe('privacy settings UI', () => {
           'book_and_manage_trips',
           'protect_account',
           'receive_trip_updates',
-          'personalised_recommendations',
-          'nearby_suggestions',
-          'partner_offers',
         ],
-        avoidUses: [],
+        avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
       })
     })
     expect(privacyUi.getSnapshot().agentActivity?.status).toBe('opened')
@@ -270,11 +318,8 @@ describe('privacy settings UI', () => {
           'book_and_manage_trips',
           'protect_account',
           'receive_trip_updates',
-          'personalised_recommendations',
-          'nearby_suggestions',
-          'partner_offers',
         ],
-        avoidUses: [],
+        avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
       })
       privacyUi.navigate({ view: 'review', origin: 'human' })
     })
@@ -287,12 +332,6 @@ describe('privacy settings UI', () => {
 
   it('explains locked essentials when an already-minimal plan avoids every use', async () => {
     const controller = await createController()
-    const firstPlan = controller.stage({
-      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
-      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
-    })
-    controller.setReviewed(true)
-    await controller.apply(firstPlan.id)
     const privacyUi = renderApp(controller, true)
 
     act(() => {
@@ -326,8 +365,8 @@ describe('privacy settings UI', () => {
     const storage = new MemoryStorage()
     const controller = await createController(storage)
     const plan = controller.stage({
-      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
-      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
+      keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
+      avoidUses: [],
     })
     controller.setReviewed(true)
     const receipt = await controller.apply(plan.id)
@@ -401,7 +440,7 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByRole('button', { name: 'Back' }))
 
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
-    expect(screen.getByLabelText('Recommendations')).not.toBeChecked()
+    expect(screen.getByLabelText('Recommendations')).toBeChecked()
     expect(screen.getByText('1 pending change')).toBeVisible()
   })
 })

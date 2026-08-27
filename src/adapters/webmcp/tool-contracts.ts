@@ -129,7 +129,7 @@ export function createToolDefinitions(
     {
       name: 'get_privacy_receipt',
       title: 'Get privacy receipt',
-      description: 'Read the latest receipt verified by persisted-state readback, if a reviewed plan has been applied.',
+      description: 'Read the latest receipt verified by enforcement-adapter readback, if a human-approved choice has been applied.',
       inputSchema: z.toJSONSchema(revealInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
       execute: (input) => executeValidated(revealInputSchema, schemas.receiptOutput, input, ({ reveal = false }) => {

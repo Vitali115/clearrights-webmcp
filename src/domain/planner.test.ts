@@ -19,8 +19,7 @@ describe('createPrivacyPlan', () => {
     expect(plan.target.location_suggestions).toBe(true)
     expect(plan.target.partner_advertising).toBe(false)
     expect(plan.changes.map(({ processingId }) => processingId)).toEqual([
-      'recommendations',
-      'partner_advertising',
+      'location_suggestions',
     ])
     expect(plan.conflicts).toEqual([])
   })
@@ -75,14 +74,14 @@ describe('createPrivacyPlan', () => {
   it('produces a stable no-op plan and rejects duplicate input', () => {
     const state = createTravelSeed()
     const input = {
-      keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
-      avoidUses: [] as const,
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
     }
     const first = createPrivacyPlan(travelCatalog, state, input)
     const second = createPrivacyPlan(travelCatalog, state, input)
     const reordered = createPrivacyPlan(travelCatalog, state, {
       keepCapabilities: [...input.keepCapabilities].reverse(),
-      avoidUses: [],
+      avoidUses: [...input.avoidUses].reverse(),
     })
 
     expect(first.isNoOp).toBe(true)
