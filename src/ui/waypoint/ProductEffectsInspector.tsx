@@ -25,7 +25,7 @@ export function ProductEffectsInspector({
   pendingPlan: { id: string; status: 'staged' | 'reviewed'; changeCount: number } | null
   onOpenPreview(): void
 }) {
-  const [filter, setFilter] = useState<ProductEffectFilter>('all')
+  const [filter, setFilter] = useState<ProductEffectFilter>('privacy')
   const visibleEffects = filter === 'all'
     ? experience.effects
     : experience.effects.filter(({ source }) => source === filter)

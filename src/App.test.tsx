@@ -115,7 +115,7 @@ describe('privacy settings UI', () => {
 
     await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
 
-    const developerHeading = await screen.findByRole('heading', { name: 'ClearRights developer integration' })
+    const developerHeading = await screen.findByRole('heading', { name: 'ClearRights Privacy' })
     expect(developerHeading).toBeVisible()
     expect(developerHeading).toHaveFocus()
     expect(screen.getByText('8 tools registered')).toBeVisible()
@@ -126,7 +126,7 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('heading', { name: 'Product effects' })).toBeVisible()
     expect(screen.getByText('Showing applied privacy revision 1.')).toBeVisible()
     expect(screen.queryByText('Pending draft is not shown in this product preview')).not.toBeInTheDocument()
-    expect(screen.getAllByTestId('product-effect-row')).toHaveLength(11)
+    expect(screen.getAllByTestId('product-effect-row')).toHaveLength(6)
     expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Accessibility' }))
@@ -146,7 +146,7 @@ describe('privacy settings UI', () => {
     expect(window.location.hash).toBe('#/')
     expect(screen.queryByRole('complementary', { name: 'Developer product effect preview' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     expect(screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })).toBeVisible()
   })
 
@@ -160,12 +160,8 @@ describe('privacy settings UI', () => {
     expect(await screen.findByRole('heading', { name: 'The two-minute demo' })).toBeVisible()
     expect(screen.getByText(/Keep booking and account security/)).toBeVisible()
 
-    await user.click(screen.getByRole('button', { name: 'Open Accessibility' }))
-    expect(screen.getByRole('heading', { name: 'Accessibility preferences' })).toBeVisible()
-    await user.click(screen.getByRole('button', { name: 'Close' }))
-
-    await user.click(screen.getByRole('button', { name: 'Open Site Guide' }))
-    expect(screen.getByRole('heading', { name: 'Site guide' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Open privacy settings' }))
+    expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
   })
 
   it('keeps pending privacy drafts separate from the applied product effects inspector', async () => {
@@ -187,7 +183,7 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller)
 
-    expect(await screen.findByRole('heading', { name: 'ClearRights developer integration' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'ClearRights Privacy' })).toBeVisible()
     expect(screen.getByText('Unavailable · manual fallback active')).toBeVisible()
     expect(window.location.hash).toBe('#/clearrights')
   })
@@ -260,7 +256,7 @@ describe('privacy settings UI', () => {
     renderApp(controller)
 
     expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     const privacyCenter = screen.getByRole('dialog', { name: 'Waypoint Personal Controls' })
     expect(privacyCenter).toBeVisible()
     expect(privacyCenter).toHaveClass(
@@ -280,14 +276,14 @@ describe('privacy settings UI', () => {
     expect(screen.queryByText('Travel demo')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Trips' })).toHaveClass('hidden', 'sm:inline-flex')
     expect(screen.getByRole('navigation', { name: 'Account navigation' })).toHaveClass('shrink-0')
-    expect(screen.getByRole('button', { name: 'Personal controls' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Privacy settings' })).toBeVisible()
   })
 
   it('completes the manual fallback, verifies a receipt, and resets demo data', async () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
 
     await user.click(screen.getByLabelText('Recommendations'))
     await user.click(screen.getByLabelText('Location suggestions'))
@@ -452,7 +448,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     const privacyUi = renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     act(() => {
       controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: ['precise_location'] })
       privacyUi.navigate({ view: 'review', origin: 'human' })
@@ -466,7 +462,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     const privacyUi = renderApp(controller, true)
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     act(() => {
       controller.stage({
         keepCapabilities: [
@@ -528,7 +524,7 @@ describe('privacy settings UI', () => {
     const reloaded = await createController(storage)
 
     renderApp(reloaded, true)
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     await user.click(screen.getByRole('button', { name: /Previous changes/ }))
     await user.click(screen.getByText(new RegExp(`^3 changes · ${receipt.id}$`)))
     await user.click(screen.getByRole('button', { name: /Open receipt/ }))
@@ -543,7 +539,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller, true)
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     await user.click(screen.getByLabelText('Recommendations'))
     await user.click(screen.getByLabelText('Location suggestions'))
     await user.click(screen.getByLabelText('Partner advertising'))
@@ -568,7 +564,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
 
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
     expect(screen.getByText('Essential services')).toBeVisible()
@@ -587,7 +583,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     await user.click(screen.getByLabelText('Recommendations'))
 
     await user.click(screen.getByRole('button', { name: 'Open Recommendations details' }))
@@ -606,7 +602,7 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     const runtime = testRuntimes.get(controller)!
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     await user.click(screen.getByRole('tab', { name: 'accessibility' }))
 
     expect(screen.getByRole('heading', { name: 'Accessibility preferences' })).toBeVisible()
@@ -626,7 +622,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     const accessibilityTab = screen.getByRole('tab', { name: 'accessibility' })
     accessibilityTab.focus()
     await user.keyboard('{ArrowRight}')
@@ -645,7 +641,7 @@ describe('privacy settings UI', () => {
     const user = userEvent.setup()
     const controller = await createController()
     renderApp(controller)
-    await user.click(screen.getByRole('button', { name: 'Personal controls' }))
+    await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     await user.click(screen.getByRole('tab', { name: 'Site guide' }))
     await user.type(screen.getByRole('searchbox', { name: 'Search site destinations' }), 'refund')
 

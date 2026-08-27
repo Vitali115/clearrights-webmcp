@@ -187,7 +187,7 @@ export function TravelProductPage({
       <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-foreground/10 px-5 py-8 text-sm text-muted-foreground sm:px-8">
         <span>Waypoint Travel · fictional product demo</span>
         <nav className="flex flex-wrap gap-5" aria-label="Waypoint footer">
-          <button type="button" aria-label="Open personal controls from footer" className="font-medium text-foreground" onClick={onOpenControls}>Personal controls</button>
+          <button type="button" aria-label="Open privacy settings from footer" className="font-medium text-foreground" onClick={onOpenControls}>Privacy settings</button>
           <button type="button" className="font-medium text-foreground" onClick={onExplainPrivacy}>ClearRights integration</button>
         </nav>
       </footer>

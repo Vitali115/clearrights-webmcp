@@ -124,7 +124,7 @@ export function PersonalControls({
       <AgentActivityIndicator activity={controlsSnapshot.agentActivity} />
       <SheetHeader className="border-b border-foreground/10 px-5 py-4 pr-32 sm:px-8 sm:pr-36">
         <SheetTitle className="text-lg">Waypoint Personal Controls</SheetTitle>
-        <SheetDescription>Privacy · Accessibility · Site guide</SheetDescription>
+        <SheetDescription>Privacy settings, with additional display and navigation controls.</SheetDescription>
         <div role="tablist" aria-label="Personal Controls sections" className="mt-4 flex flex-wrap gap-1" onKeyDown={onTabKeyDown}>
           {primarySections.map((item) => (
             <Button
@@ -133,8 +133,8 @@ export function PersonalControls({
               role="tab"
               aria-selected={section === item}
               aria-controls="personal-controls-panel"
-              variant={section === item ? 'secondary' : 'ghost'}
-              className="rounded-full capitalize"
+              variant={section === item ? (item === 'privacy' ? 'default' : 'secondary') : 'ghost'}
+              className={item === 'privacy' ? 'min-w-32 rounded-full capitalize' : 'rounded-full capitalize text-muted-foreground'}
               onClick={() => openSection(item)}
             >
               {item === 'site_guide' ? 'Site guide' : item}

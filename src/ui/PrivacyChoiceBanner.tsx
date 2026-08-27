@@ -90,7 +90,7 @@ export function PrivacyChoiceBanner({
         <div className="border-t border-foreground/10 pt-5 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
           <p className="text-sm font-medium">Agent-ready · Human-approved</p>
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            Your agent can inspect these settings, explain their effects, and prepare changes. You approve them before they are applied.
+            Your agent can inspect these settings, explain their effects, and prepare an exact change set. It cannot record consent for you: you review before anything is applied.
           </p>
           <p className="mt-3 text-xs font-medium text-muted-foreground">
             {webMcpAvailable

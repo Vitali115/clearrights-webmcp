@@ -154,7 +154,7 @@ export default function App({
 
   const controlsAction = (
     <Button variant="ghost" className="h-9 rounded-full bg-foreground/5 px-5 hover:bg-foreground/10" onClick={openPersonalControls}>
-      Personal controls
+      Privacy settings
     </Button>
   )
   const agentActivityAction = !controlsSnapshot.open

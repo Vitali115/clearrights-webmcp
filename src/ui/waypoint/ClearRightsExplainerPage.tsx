@@ -55,23 +55,23 @@ export function ClearRightsExplainerPage({
 
       <article>
         <section className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-14 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20">
-          <p className="text-sm font-medium text-muted-foreground">ClearRights SDK v0.2 · experimental workspace</p>
+          <p className="text-sm font-medium text-muted-foreground">ClearRights Privacy · WebMCP reference implementation</p>
           <h1
             ref={headingRef}
             tabIndex={-1}
             data-route-focus
             className="mt-4 max-w-5xl font-heading text-[clamp(2.5rem,7vw,5rem)] font-medium leading-[0.98] tracking-[-0.045em] outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            ClearRights developer integration
+            ClearRights Privacy
           </h1>
           <p className="mt-7 max-w-4xl text-3xl font-medium tracking-tight">
-            Declare product controls once. Use them everywhere.
+            Agent-ready privacy changes. Human-approved. Verified by the host.
           </p>
           <p className="mt-5 max-w-3xl text-lg leading-relaxed text-muted-foreground">
-            ClearRights turns developer-authored product facts into headless runtimes that people and compatible agents can inspect through the same structured model. The host applies every effect through an explicit adapter and verifies the result.
+            A developer declares privacy controls once. A compatible agent can inspect them and prepare an exact plan, a person reviews that plan, and the host applies and reads the result back through an explicit adapter.
           </p>
           <p className="mt-5 max-w-3xl font-medium">
-            Waypoint Travel is the fictional host application. The SDK workspace is private and is not currently published to npm.
+            Waypoint Travel is the fictional host that proves the full workflow. Accessibility Preferences and Site Guide remain available as secondary examples of the same agent-ready architecture.
           </p>
         </section>
 
@@ -80,32 +80,32 @@ export function ClearRightsExplainerPage({
             <p className="text-sm font-medium text-muted-foreground">Try the running integration</p>
             <h2 id="two-minute-demo-heading" className="mt-3 text-3xl font-medium tracking-tight">The two-minute demo</h2>
             <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-              Ask a compatible agent to use the prompts below. In an ordinary browser, open the equivalent Personal Controls section and make the same choice manually.
+              Use one privacy journey from inspection to verified receipt. In an ordinary browser, open Privacy settings and complete the same workflow manually.
             </p>
             <div className="mt-9 grid border-t border-foreground/10 lg:grid-cols-3">
               <DemoStep
                 number="1"
-                title="Minimise privacy use"
-                prompt="Keep booking and account security, but disable personalised recommendations, location suggestions and partner offers."
-                note="The agent prepares the exact plan. A person must hold to review before apply becomes available."
-                actionLabel="Open Privacy"
+                title="Inspect the current setup"
+                prompt="Show me what privacy processing is active and which settings are required."
+                note="The agent reads the same developer-declared catalog and applied state used by the visible settings UI."
+                actionLabel="Open privacy settings"
                 onAction={() => onOpenControls('privacy')}
               />
               <DemoStep
                 number="2"
-                title="Adapt the interface"
-                prompt="Make the text larger, reduce motion, and use dark mode."
-                note="The local DOM adapter applies the preferences immediately, reads them back, and keeps one Undo."
-                actionLabel="Open Accessibility"
-                onAction={() => onOpenControls('accessibility')}
+                title="Prepare a precise plan"
+                prompt="Keep booking and account security, but disable personalised recommendations, location suggestions and partner offers."
+                note="The deterministic planner opens the exact review. Apply remains unavailable until the person completes the hold."
+                actionLabel="Review privacy controls"
+                onAction={() => onOpenControls('privacy')}
               />
               <DemoStep
                 number="3"
-                title="Open a declared destination"
-                prompt="Which pages can you open? Take me to the cancellation policy."
-                note="The agent can select only a catalogued destination. The host performs visible same-origin navigation."
-                actionLabel="Open Site Guide"
-                onAction={() => onOpenControls('site_guide')}
+                title="Apply and verify"
+                prompt="Apply the exact plan I approved and show me the verified receipt."
+                note="After the hold, the dynamic apply tool commits only that plan, reads the adapter state back, and returns a scoped receipt."
+                actionLabel="Open receipt history"
+                onAction={() => onOpenControls('privacy')}
               />
             </div>
           </div>
@@ -115,14 +115,14 @@ export function ClearRightsExplainerPage({
           <div className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-14 sm:w-[min(64rem,calc(100%-4rem))] sm:py-16">
             <p className="text-sm font-medium text-muted-foreground">The integration contract</p>
             <h2 id="integration-flow-heading" className="mt-3 max-w-3xl text-3xl font-medium tracking-tight">
-              From declared product facts to a verified product effect.
+              From a declared privacy control to verified product behavior.
             </h2>
             <div className="mt-10 grid border-t border-foreground/10 md:grid-cols-5">
-              <IntegrationStep number="01" title="Declare" body="Describe controls, consequences, preferences, and safe destinations in host-owned catalogs." />
-              <IntegrationStep number="02" title="Create" body="Instantiate the independent Privacy, Accessibility, and Site Guide runtimes." />
-              <IntegrationStep number="03" title="Connect" body="Provide storage, enforcement, DOM, and navigation adapters owned by the host." />
-              <IntegrationStep number="04" title="Expose" body="Use the same controllers from the product UI and the catalog-derived WebMCP tools." />
-              <IntegrationStep number="05" title="Verify" body="Read applied state back, issue scoped receipts, and map snapshots to real product surfaces." />
+              <IntegrationStep number="01" title="Declare" body="Describe each privacy activity, control mode, consequence, dependency, and source in a host-owned catalog." />
+              <IntegrationStep number="02" title="Inspect" body="Let people and agents read the same catalog and the same applied state." />
+              <IntegrationStep number="03" title="Prepare" body="Create a deterministic plan and expose every effect before approval." />
+              <IntegrationStep number="04" title="Approve" body="Keep the apply capability unavailable until a person reviews the exact plan." />
+              <IntegrationStep number="05" title="Verify" body="Apply through the host adapter, read state back, and issue a scoped receipt." />
             </div>
           </div>
         </section>
@@ -154,28 +154,24 @@ export function ClearRightsExplainerPage({
           <div className="mx-auto grid w-[min(64rem,calc(100%-2.5rem))] gap-10 py-16 sm:w-[min(64rem,calc(100%-4rem))] lg:grid-cols-[0.85fr_1.15fr]">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Minimal host integration</p>
-              <h2 id="implementation-heading" className="mt-3 text-2xl font-medium tracking-tight">Six explicit steps. No universal runtime.</h2>
+              <h2 id="implementation-heading" className="mt-3 text-2xl font-medium tracking-tight">A small, explicit host boundary.</h2>
               <ol className="mt-7 space-y-4 text-sm leading-relaxed text-muted-foreground">
-                <li><strong className="text-foreground">1.</strong> Import the required SDK subpaths.</li>
-                <li><strong className="text-foreground">2.</strong> Define one catalog per domain.</li>
-                <li><strong className="text-foreground">3.</strong> Implement the adapter ports for your host.</li>
-                <li><strong className="text-foreground">4.</strong> Create each runtime during bootstrap.</li>
-                <li><strong className="text-foreground">5.</strong> Register tools against those same controllers.</li>
-                <li><strong className="text-foreground">6.</strong> Subscribe to snapshots and derive your product view model.</li>
+                <li><strong className="text-foreground">1.</strong> Define the privacy catalog as developer-authored data.</li>
+                <li><strong className="text-foreground">2.</strong> Implement repository and enforcement ports for the host.</li>
+                <li><strong className="text-foreground">3.</strong> Create one privacy runtime during bootstrap.</li>
+                <li><strong className="text-foreground">4.</strong> Register WebMCP tools against that same controller.</li>
+                <li><strong className="text-foreground">5.</strong> Subscribe to the applied snapshot and derive product effects.</li>
               </ol>
             </div>
-            <pre className="overflow-x-auto border border-foreground/10 bg-foreground/[0.025] p-5 text-[13px] leading-relaxed"><code>{`import { definePrivacyCatalog, createPrivacyRuntime }\n  from "@clearrights/sdk/privacy";\nimport { defineAccessibilityCatalog, createAccessibilityRuntime }\n  from "@clearrights/sdk/accessibility";\nimport { defineSiteGuideCatalog, createSiteGuideRuntime }\n  from "@clearrights/sdk/site-guide";\n\nconst privacy = await createPrivacyRuntime({\n  catalog: privacyCatalog,\n  repository: privacyRepository,\n  enforcement: privacyAdapter,\n  clock,\n  idGenerator,\n});\n\nprivacy.subscribe((snapshot) => {\n  renderProduct(selectExperience(snapshot.record.state));\n});`}</code></pre>
+            <pre className="overflow-x-auto border border-foreground/10 bg-foreground/[0.025] p-5 text-[13px] leading-relaxed"><code>{`import { definePrivacyCatalog, createPrivacyRuntime }\n  from "@clearrights/sdk/privacy";\n\nconst privacy = await createPrivacyRuntime({\n  catalog: privacyCatalog,\n  repository: privacyRepository,\n  enforcement: privacyAdapter,\n  clock,\n  idGenerator,\n});\n\nprivacy.subscribe((snapshot) => {\n  renderProduct(selectExperience(snapshot.record.state));\n});`}</code></pre>
           </div>
         </section>
 
         <section className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-16 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20" aria-labelledby="modules-heading">
-          <h2 id="modules-heading" className="text-2xl font-medium tracking-tight">Three modules, three policies</h2>
-          <div className="mt-8 grid border-t border-foreground/10 lg:grid-cols-3">
-            <Module
-              name="ClearRights Privacy"
-              contract="inspect → stage → human hold → apply → readback → receipt"
-              body="A deterministic planner and a strong approval boundary. Required, opt-in, and opt-out controls are catalog data rather than UI assumptions."
-            />
+          <p className="text-sm font-medium text-muted-foreground">Additional modules</p>
+          <h2 id="modules-heading" className="mt-3 text-2xl font-medium tracking-tight">The architecture extends without weakening the privacy approval policy.</h2>
+          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">These modules remain fully functional, but they are supporting examples rather than the primary submission path.</p>
+          <div className="mt-8 grid border-t border-foreground/10 lg:grid-cols-2">
             <Module
               name="Accessibility Preferences"
               contract="inspect → set → readback → Undo"
