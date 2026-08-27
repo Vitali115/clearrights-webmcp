@@ -1,212 +1,193 @@
-# ClearRights WebMCP
+# ClearRights SDK v0.2 · Waypoint Travel demo
 
-ClearRights is a WebMCP-native privacy-control SDK demonstrated inside the fictional Waypoint Travel product. One developer-defined catalog powers the initial **Privacy choices** banner, the full settings index, structured WebMCP tools, deterministic planning, separate agent and human checks, enforcement-adapter readback, and scoped receipts.
+ClearRights is a headless SDK for product controls that are readable by people and callable by compatible agents. The fictional **Waypoint Travel** application demonstrates three separate modules inside one host-owned **Waypoint Personal Controls** sheet:
 
-The repository is an OpenAI hackathon demo, but its core boundary is real: `@clearrights/sdk/privacy` is a framework-independent workspace module and Waypoint consumes it through repository and enforcement adapters. The included adapter changes visible product behaviour in the browser. No backend, legal-compliance engine, identity proof, CMP, or external data-pipeline integration is claimed.
+- **ClearRights Privacy** — deterministic privacy planning, human approval, adapter enforcement, readback, and versioned receipts.
+- **ClearRights Accessibility Preferences** — immediate, reversible visual and cognitive preferences.
+- **ClearRights Site Guide** — developer-declared, safe destinations that people and agents can open through the same catalog.
+
+ClearRights is the technology. Waypoint Travel is the only demo application. The SDK contains no Waypoint UI or content.
 
 ## Run locally
 
-Requirements:
-
-- Node.js 22.12 or newer
-- npm
-- a current browser
-- a browser exposing page-defined WebMCP tools for agent-tool testing
+Requirements: Node.js 22.12 or newer and npm.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Vite normally serves the app at `http://localhost:5173`.
+Vite normally serves the app at `http://127.0.0.1:5173` or `http://localhost:5173`.
 
 ```bash
-npm run build
-npm test
+npm test -- --run
 npm run lint
+npm run build
 ```
 
-## Human flow
+Manual controls work in an ordinary browser. Page-defined WebMCP tools appear only when the browser provides `document.modelContext`; the Codex in-app browser can exercise them when that capability is enabled.
 
-On a new or reset browser record, required processing starts on and optional processing starts off.
+## Routes
 
-1. The **Privacy choices** banner offers **Essential only**, **Accept all**, and **Manage choices** with equal access.
-2. **Essential only** and **Accept all** are explicit human banner actions. They use the same deterministic planner and adapter as the settings center, then store an `initial_choice` receipt. A matching no-op still records the human choice without making ordinary no-op plans approvable.
-3. **Manage choices** opens the complete grouped settings index without recording anything.
-4. Settings can be opened individually for purpose, data, declared legal basis, dependencies, consequence, and policy reference.
-5. Pending settings are reviewed as an exact before/after plan.
-6. Detailed plans require the separate 1.2-second human hold.
-7. Apply runs through the enforcement adapter, reads the adapter state back, commits the decision record, and exposes a scoped receipt.
-8. **Previous changes** retains the latest ten receipts, newest first.
+| Route | Purpose |
+| --- | --- |
+| `/#/` | Waypoint Travel home. |
+| `/#/clearrights` | Live ClearRights developer integration page. |
+| `/#/info/<destination-id>` | Developer-declared Waypoint information page. |
+| `/#/privacy` | Legacy route; replaced with `/#/clearrights`. |
 
-The banner also exposes transparent agent instructions. The internal `/#/privacy` page explains the live architecture, SDK contract, what is real, and what remains outside the demo.
+The Site Guide also exposes the home `Upcoming trips` anchor and panel destinations for Privacy and Accessibility. It never accepts arbitrary URLs.
 
-## WebMCP agent flow
+## Package boundary
 
-The Codex in-app browser can exercise page-defined WebMCP tools directly when its page capability is available; Chrome is not required in that environment. Other browsers need compatible WebMCP support. See the current [WebMCP documentation](https://developer.chrome.com/docs/ai/webmcp).
-
-The intended sequence is:
-
-1. `get_privacy_overview` or `inspect_processing`; pass `reveal: true` only when the corresponding visible view should open.
-2. `stage_privacy_plan` with capabilities to keep and uses to avoid.
-3. The page opens the exact review and records the plan preparation origin as `webmcp_tool`.
-4. A person reads the effects and completes the independent hold control.
-5. `apply_privacy_plan` becomes available only for the reviewed plan ID.
-6. Apply invokes the SDK adapter, performs readback, and opens the receipt.
-
-Example:
-
-```json
-{
-  "keepCapabilities": [
-    "book_and_manage_trips",
-    "protect_account",
-    "receive_trip_updates",
-    "nearby_suggestions"
-  ],
-  "avoidUses": [
-    "preference_personalisation",
-    "partner_marketing"
-  ]
-}
-```
-
-This keeps location suggestions while avoiding preference personalisation and partner marketing. If a kept capability requires an avoided use, the capability is preserved and the conflict is visible.
-
-## Tools
-
-Five tools are registered initially. The sixth exists only while a non-no-op plan is human-reviewed.
-
-| Tool | Input | Behaviour |
-| --- | --- | --- |
-| `get_privacy_overview` | `{ reveal?: boolean }` | Reads catalog version, notice status, current settings, and planner options. |
-| `inspect_processing` | `{ processingId, reveal?: boolean }` | Reads one declared data use and can reveal its detail. |
-| `stage_privacy_plan` | `{ keepCapabilities, avoidUses }` | Creates the deterministic plan and always reveals review. |
-| `apply_privacy_plan` | `{ planId }` | Exists only after human review; applies and verifies the exact plan. |
-| `get_privacy_receipt` | `{ reveal?: boolean }` | Reads the latest scoped receipt. |
-| `get_privacy_history` | `{ reveal?: boolean }` | Reads the latest ten receipts. |
-
-Tool input and output contracts are generated from the configured catalog and validated with Zod. Results use `{ ok, data }` or `{ ok, error }`. Read-only calls do not navigate unless `reveal` is true.
-
-## SDK
-
-The package lives at `packages/clearrights-sdk` and deliberately has no React, DOM, localStorage, or WebMCP dependency.
+The private workspace package is `@clearrights/sdk@0.2.0`:
 
 ```ts
-const privacy = await createPrivacyRuntime({
-  catalog: definePrivacyCatalog({
-    version: "my-site-1",
-    noticeVersion: "my-notice-1",
-    sections,
-    processing,
-    capabilities,
-    uses,
-  }),
-  repository,
-  enforcement: {
-    id: "my-privacy-stack",
-    scope: "external",
-    apply: applyPrivacyTarget,
-    readCurrentState: readPrivacyTarget,
-  },
-  clock,
-  idGenerator,
-});
+import { definePrivacyCatalog, createPrivacyRuntime } from "@clearrights/sdk/privacy";
+import { defineAccessibilityCatalog, createAccessibilityRuntime } from "@clearrights/sdk/accessibility";
+import { defineSiteGuideCatalog, createSiteGuideRuntime } from "@clearrights/sdk/site-guide";
 ```
 
-The initial SDK version requires exactly one processing provider per capability. Alternative-provider optimisation is intentionally out of scope.
+The package is framework-independent and has no React, DOM, localStorage, sessionStorage, WebMCP, Tailwind, shadcn/ui, or Waypoint dependency. It supplies domain models, validation, runtimes, and adapter ports. The host supplies catalogs, persistence, enforcement, navigation, UI, and product effects.
 
-`PrivacyEnforcementAdapter.apply` receives an operation ID, plan ID, expected revision, complete target, and exact changes. After apply, the runtime calls `readCurrentState`. A receipt marked with `adapter_readback` is created only when every catalog processing value matches the reviewed target.
+There is deliberately no universal control runtime. Privacy, Accessibility Preferences, and Site Guide share host conventions and Activity, but keep distinct state and approval policies.
 
-The runtime also fails closed with `enforcement_drift` when adapter readback does not match the stored decision at startup. The Waypoint-only local adapter explicitly synchronises during browser-schema migration; the generic SDK does not silently overwrite an external adapter.
+## ClearRights Privacy
 
-## Architecture
+Waypoint declares six processing settings using three control modes:
+
+- `required`: enabled and immutable;
+- `opt_in`: mutable and initially disabled;
+- `opt_out`: mutable and initially enabled.
+
+Every processing definition can provide a short summary, full details, on/off consequences, policy context, and bounded developer context. Full developer-authored content is returned by `inspect_processing` and disclosed in the UI as **Additional context from Waypoint** with `contentProvenance: "site_developer"`. It is treated as text data, never rendered as HTML or interpreted as an instruction.
+
+The detailed workflow is:
 
 ```text
-packages/clearrights-sdk
-  catalog, planner, presets, workflow, runtime, repository and enforcement ports
-
-src/demo
-  Waypoint catalog and conservative repeatable seed
-
-src/adapters/storage
-  localStorage decision record, migrations and receipt retention
-
-src/adapters/enforcement
-  isolated Waypoint local-demo enforcement state
-
-src/adapters/webmcp
-  catalog-derived tool schemas and registration lifecycle
-
-src/application
-  compatibility exports and session-only view coordinator
-
-src/ui
-  banner, settings center, agent activity, explainer and product surface
+inspect → stage → review → human hold → apply → readback → receipt
 ```
+
+The initial **Privacy choices** banner offers **Essential only**, **Accept all**, and **Manage choices**. Direct choices use `applyDirectChoice`, the same planner and adapter boundary, and record an explicit receipt even when the state is already identical. Opening Manage choices records no decision.
+
+Changing a staged plan revokes review. Ordinary no-op plans cannot be reviewed or applied. Enforcement drift, stale plans, adapter errors, and readback mismatches fail closed.
+
+### Notice and receipt v4
+
+Notice status is `pending`, `recorded`, or `outdated`. A catalog notice-version change keeps the applied state and receipt history but reopens Privacy choices. The next explicit decision, including a direct no-op, records the current notice version.
+
+A receipt v4 contains the complete decision snapshot, processing labels and control modes, compact policy-context snapshots, catalog and notice versions, entry surface, approval method, preparation origin, before/after revisions, adapter ID and scope, and readback verification. The latest ten receipts are retained newest-first.
+
+## ClearRights Accessibility Preferences
+
+The module exposes four catalogued primitives:
+
+- Text size: `system`, `large` (112.5%), or `extra_large` (125%).
+- Contrast: `system` or `higher`.
+- Motion: `system` or `reduced`.
+- Reading layout: `standard` or `focused`.
+
+The workflow is intentionally lighter than privacy:
 
 ```text
-Privacy banner ───┐
-Settings UI ──────┼──> SDK runtime ──> enforcement adapter ──> readback
-WebMCP tools ─────┘          │
-                             └──> decision repository ──> scoped receipt
+inspect → set → visible effect → readback → Undo available
 ```
 
-The product page visibly consumes the applied state:
+Preferences apply immediately through a Waypoint DOM adapter and are read back in full. A mismatch or adapter error triggers a best-effort rollback. One previous state is retained for a consumable Undo; a successful new change replaces it, while a no-op does not. Accessibility changes never create privacy receipts.
 
-- Recommendations changes personalised suggestions to popular destinations.
-- Location suggestions controls the nearby-Lisbon surface.
-- Partner advertising controls the personalised partner offer.
+Explicit settings override system observations. `system` delegates to `prefers-reduced-motion` and `prefers-contrast`; `forced-colors: active` always remains authoritative. The demo does not infer, label, or persist medical conditions and does not present these preferences as an accessibility overlay or proof of compliance.
+
+## ClearRights Site Guide
+
+Waypoint declares twelve destinations with labels, summaries, categories, and unique keywords. Targets are limited to:
+
+- relative same-origin routes with local hashes;
+- known Waypoint Personal Controls sections.
+
+The catalog rejects absolute URLs, schemes, backslashes, line breaks, unsafe encoded characters, duplicate IDs, and duplicate keywords. There is no crawling and no free-path tool input. The Waypoint adapter owns visible navigation, sheet state, and focus; browser Back remains available.
+
+## WebMCP tools
+
+Eight tools are registered in the normal state. A ninth, `apply_privacy_plan`, exists only while a non-no-op privacy plan is human-reviewed.
+
+| Tool | Behaviour |
+| --- | --- |
+| `get_privacy_overview` | Compact privacy state and planner options; optional reveal. |
+| `inspect_processing` | Complete definition and developer context for one declared processing ID; optional reveal. |
+| `stage_privacy_plan` | Deterministically stages and reveals the exact privacy review. |
+| `get_privacy_receipt` | Latest verified receipt; optional reveal. |
+| `get_privacy_history` | Latest ten receipts; optional reveal. |
+| `get_accessibility_preferences` | Catalog, current state, observed system values, and options; optional reveal. |
+| `set_accessibility_preferences` | Applies a non-empty partial, reads back, opens Accessibility, and reports Undo. |
+| `navigate_to_site_destination` | Opens one catalog-declared route or panel destination. |
+| `apply_privacy_plan` | Dynamic ninth tool; applies only the exact human-reviewed plan ID. |
+
+Privacy `reveal` defaults to `false`; staging always opens review. Accessibility and destination enums are generated from their runtime catalogs. The WebMCP adapter validates and maps calls to the same controllers used by the UI; it contains no domain decision logic.
+
+Example demo requests:
+
+> Keep booking and account security, but disable personalised recommendations, location suggestions and partner offers.
+
+> Make the text larger, reduce motion and take me to the cancellation policy.
+
+## Waypoint Personal Controls
+
+One responsive sheet composes Privacy, Accessibility, Site Guide, and a secondary Activity timeline. Manual access remains complete without WebMCP.
+
+Agent-opened panels and routes show a blue activity dot until the first meaningful click, keyboard action, or content scroll. Engagement removes the dot but never selects the privacy hold or counts as approval. The timeline is separate and records only concise, user-readable outcomes.
+
+`Reset demo data` restores the privacy seed and pending notice, clears receipts, synchronises local privacy enforcement, resets all accessibility preferences and Undo, clears Activity, closes the sheet, and returns to `/#/` without creating a new event after the clear.
 
 ## Storage and migration
 
-The decision key is `clearrights.demo.v3`. A v3 record contains:
+Waypoint chooses the storage keys; the SDK does not.
 
-- aggregate revision and complete processing state;
-- notice version and `pending | recorded` state;
-- initial-choice method when recorded;
-- up to ten adapter-scoped receipts.
+| Record | Storage | Key | Retention |
+| --- | --- | --- | --- |
+| Privacy decision and receipts | `localStorage` | `waypoint.privacy.v4` | Latest 10 receipts |
+| Privacy enforcement readback | `localStorage` | `waypoint.privacy.enforcement.v2` | Current adapter state |
+| Accessibility current/previous | `localStorage` | `waypoint.accessibility.v1` | One Undo state |
+| Activity | `sessionStorage` | `waypoint.activity.v1` | Latest 25 events |
+| Site Guide | none | — | Session runtime state only |
 
-Valid `clearrights.demo.v2` and `clearrights.demo.v1` records migrate automatically. Existing preference state and receipts are preserved, old receipts are labelled as legacy local-storage readback, the new notice remains pending, and the migrated key is removed. Corrupt records fall back to the repeatable conservative seed.
+Valid legacy `clearrights.demo.v3`, `.v2`, and `.v1` privacy records migrate to v4. Existing state and receipt history are preserved and legacy receipts are marked `migrated`. The legacy privacy key is deleted only after the v4 write is read back and validated. `clearrights.demo.enforcement.v1` follows the same verified migration rule to the v2 Waypoint enforcement record. Corrupt records fall back safely to the conservative seed.
 
-The isolated demo-enforcement key is `clearrights.demo.enforcement.v1`.
+## Repository layout
 
-## Trust semantics
+```text
+packages/clearrights-sdk/src/
+  privacy/          headless catalog, planner, runtime, repository and enforcement ports
+  accessibility/    headless catalog, runtime, repository and enforcement ports
+  site-guide/       headless catalog, runtime and navigation port
 
-- **Agent check** means `stage_privacy_plan` produced the exact plan ID currently displayed. It is preparation provenance, not a signature or guarantee.
-- **Human check** means the visible hold control completed. It records deliberate in-page interaction, not person identity.
-- **Banner approval** means a person activated an explicit preset button. It does not use the detailed-review hold.
-- **Adapter verified** means post-apply adapter readback matched the complete target within the receipt's declared scope.
-- **Local demo** means enforcement, decision state, and receipts remain in this browser.
+src/
+  adapters/         Waypoint storage, DOM, navigation, enforcement and WebMCP adapters
+  application/      Waypoint Activity and view coordinators
+  demo/waypoint/    developer-authored catalogs and information content
+  ui/waypoint/      host-owned Personal Controls, pages and product UI
+```
 
-Browser automation can generate pointer or keyboard events. The page does not claim to distinguish it from a person without an out-of-scope identity or telemetry system.
+## Trust boundaries
 
-## Blueprint boundary
+- **Agent prepared** means a tool created the currently displayed plan or opened the destination. It is provenance, not a signature or guarantee.
+- **Human reviewed** means the visible hold completed for the current unchanged plan. It is deliberate UI interaction, not identity proof.
+- **Adapter verified** means readback matched the complete target within the adapter's declared scope.
+- **Developer context** means site-authored descriptive data. It is not trusted agent instruction.
+- **Local demo** means state and product effects remain in this browser unless a host replaces the adapters.
 
-Inside this demo:
+Browser automation can generate native-looking input. The demo does not claim to distinguish it from a person without an out-of-scope identity or telemetry system.
 
-- one shared site and one catalog;
-- visible WebMCP actions;
-- deterministic planning and conflicts;
-- human-gated detailed apply;
-- framework-independent SDK package;
-- local adapter apply and readback;
-- versioned local receipts;
-- transparent architecture page.
+## Explicitly outside scope
 
-Outside this demo:
+- legal advice, compliance determination, signature, identity, or non-repudiation;
+- backend accounts, login, cross-device synchronisation, CMP, CRM, or production pipelines;
+- geography profiles, DSAR workflows, deletion workflows, or regulatory research;
+- atomic transactions across independent external services;
+- accessibility remediation, proprietary screen readers, medical inference, or conformance claims;
+- automatic site crawling or arbitrary navigation.
 
-- legal-compliance determination or legal advice;
-- identity, trusted timestamps, signing, or non-repudiation;
-- backend accounts or cross-device synchronisation;
-- CMP, IAB TCF, tag-manager, or production data-pipeline integration;
-- atomic transactions across independent external systems;
-- formal GDPR requests or regulatory research.
+The credible integration claim is: **a developer declares product controls once, people and compatible agents inspect the same structured catalog, and the host connects verified targets to its real adapters.**
 
-The honest product claim is: **define data uses once, generate human-readable settings and agent-readable controls, then connect each reviewed target to real enforcement in your stack.**
+## Verification
 
-## Tests
-
-The Vitest suite covers catalog validation, deterministic planning, required dependencies, no-op rules, storage migration, receipt retention, initial banner choices, WebMCP lifecycle, agent navigation, human hold, adapter idempotency, drift and mismatch failures, direct routing, prompt copying, product effects, reset, and the complete agent-guided flow.
-
-The interface follows the sparse system-oriented approach in the [OpenAI UI guidelines](https://developers.openai.com/plugins/concepts/ui-guidelines): text hierarchy, native-looking controls, and only universal outline icons where they carry meaning.
+The Vitest suite covers catalog invariants, bounded developer context, deterministic planning, notice and receipt migration, retention, human hold and review revocation, adapter drift/mismatch failures, Accessibility apply/readback/rollback/Undo, Site Guide validation and focus, catalog-derived WebMCP schemas, Activity retention, reset, responsive control composition, and the complete agent-guided flow.
