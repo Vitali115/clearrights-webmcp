@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import type { AccessibilitySnapshot, SiteGuideSnapshot } from '@/domain'
 import type { PersonalControlsSection, PrivacyControllerSnapshot } from '@/application'
 import { Button } from '@/components/ui/button'
@@ -31,9 +31,14 @@ export function ClearRightsExplainerPage({
   onOpenControls(section: PersonalControlsSection): void
   onOpenPreview(): void
 }) {
+  const headingRef = useRef<HTMLHeadingElement>(null)
   const toolCount = snapshot.workflow === 'reviewed' ? 9 : 8
   const optional = travelCatalog.processing.filter(({ control }) => control.mode !== 'required')
   const optionalEnabled = optional.filter(({ id }) => snapshot.record.state.processing[id]).length
+
+  useEffect(() => {
+    headingRef.current?.focus()
+  }, [])
 
   return (
     <main className="min-h-svh bg-background text-foreground">
@@ -52,6 +57,7 @@ export function ClearRightsExplainerPage({
         <section className="mx-auto w-[min(64rem,calc(100%-2.5rem))] py-14 sm:w-[min(64rem,calc(100%-4rem))] sm:py-20">
           <p className="text-sm font-medium text-muted-foreground">ClearRights SDK v0.2 · experimental workspace</p>
           <h1
+            ref={headingRef}
             tabIndex={-1}
             data-route-focus
             className="mt-4 max-w-5xl font-heading text-[clamp(2.5rem,7vw,5rem)] font-medium leading-[0.98] tracking-[-0.045em] outline-none focus-visible:ring-2 focus-visible:ring-ring"

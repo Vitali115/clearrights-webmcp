@@ -115,7 +115,9 @@ describe('privacy settings UI', () => {
 
     await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
 
-    expect(await screen.findByRole('heading', { name: 'ClearRights developer integration' })).toBeVisible()
+    const developerHeading = await screen.findByRole('heading', { name: 'ClearRights developer integration' })
+    expect(developerHeading).toBeVisible()
+    expect(developerHeading).toHaveFocus()
     expect(screen.getByText('8 tools registered')).toBeVisible()
     expect(screen.getByText(/0 of 3 optional on/)).toBeVisible()
     expect(screen.getByText(/definePrivacyCatalog/)).toBeVisible()
