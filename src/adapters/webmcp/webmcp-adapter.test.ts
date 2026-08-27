@@ -1,0 +1,123 @@
+import { describe, expect, it } from 'vitest'
+import { createPrivacyController, type PrivacyController } from '@/application'
+import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
+import { travelCatalog } from '@/demo/travel-catalog'
+import { createTravelSeed } from '@/demo/travel-seed'
+import { startWebMcpAdapter } from './webmcp-adapter'
+
+class MemoryStorage {
+  private readonly values = new Map<string, string>()
+  getItem(key: string) { return this.values.get(key) ?? null }
+  setItem(key: string, value: string) { this.values.set(key, value) }
+}
+
+class FakeModelContext extends EventTarget implements WebMCP.ModelContext {
+  readonly tools = new Map<string, WebMCP.ModelContextTool>()
+  readonly registrations = new Map<string, number>()
+  ontoolchange = null
+
+  async registerTool(tool: WebMCP.ModelContextTool, options?: WebMCP.ModelContextRegisterToolOptions) {
+    this.tools.set(tool.name, tool)
+    this.registrations.set(tool.name, (this.registrations.get(tool.name) ?? 0) + 1)
+    options?.signal?.addEventListener('abort', () => {
+      if (this.tools.get(tool.name) === tool) this.tools.delete(tool.name)
+    }, { once: true })
+  }
+
+  async getTools() { return [] }
+
+  async execute(name: string, input: unknown) {
+    const tool = this.tools.get(name)
+    if (!tool) throw new Error(`Missing tool: ${name}`)
+    return tool.execute(input as Record<string, unknown>, { signal: new AbortController().signal })
+  }
+}
+
+async function setup() {
+  const repository = new LocalStoragePrivacyRepository(new MemoryStorage(), createTravelSeed)
+  let time = 0
+  const controller = await createPrivacyController({
+    catalog: travelCatalog,
+    repository,
+    clock: { now: () => `2026-08-27T11:00:0${time++}.000Z` },
+    idGenerator: { next: () => 'receipt-webmcp' },
+  })
+  return { controller, modelContext: new FakeModelContext() }
+}
+
+describe('WebMCP adapter', () => {
+  it('registers exactly four tools at load with the correct read-only hints', async () => {
+    const { controller, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog)
+
+    expect([...modelContext.tools.keys()].sort()).toEqual([
+      'get_privacy_overview',
+      'get_privacy_receipt',
+      'inspect_processing',
+      'stage_privacy_plan',
+    ])
+    expect(modelContext.tools.get('get_privacy_overview')?.annotations?.readOnlyHint).toBe(true)
+    expect(modelContext.tools.get('inspect_processing')?.annotations?.readOnlyHint).toBe(true)
+    expect(modelContext.tools.get('get_privacy_receipt')?.annotations?.readOnlyHint).toBe(true)
+    expect(modelContext.tools.get('stage_privacy_plan')?.annotations?.readOnlyHint).toBe(false)
+    adapter.dispose()
+  })
+
+  it('adds apply only for reviewed state and removes it after revoke or apply', async () => {
+    const { controller, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog)
+    const plan = controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: [] })
+    controller.setReviewed(true)
+    await adapter.whenSettled()
+
+    expect(modelContext.tools.has('apply_privacy_plan')).toBe(true)
+    expect(modelContext.tools.size).toBe(5)
+
+    controller.setReviewed(false)
+    await adapter.whenSettled()
+    expect(modelContext.tools.has('apply_privacy_plan')).toBe(false)
+
+    controller.setReviewed(true)
+    await adapter.whenSettled()
+    const result = await modelContext.execute('apply_privacy_plan', { planId: plan.id })
+    await adapter.whenSettled()
+
+    expect(result).toEqual(expect.objectContaining({ ok: true }))
+    expect(modelContext.tools.has('apply_privacy_plan')).toBe(false)
+    adapter.dispose()
+  })
+
+  it('validates inputs and outputs and avoids duplicate apply registration', async () => {
+    const { controller, modelContext } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog)
+    controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: [] })
+    controller.setReviewed(true)
+    controller.setReviewed(false)
+    controller.setReviewed(true)
+    await adapter.whenSettled()
+
+    expect(modelContext.registrations.get('apply_privacy_plan')).toBe(1)
+    expect(await modelContext.execute('inspect_processing', { processingId: 'unknown' })).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: 'invalid_input' }),
+    })
+
+    const originalInspect = controller.inspect
+    controller.inspect = (() => ({ invalid: true })) as unknown as PrivacyController['inspect']
+    expect(await modelContext.execute('inspect_processing', { processingId: 'recommendations' })).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: 'output_contract_error' }),
+    })
+    controller.inspect = originalInspect
+    adapter.dispose()
+  })
+
+  it('keeps the app usable when modelContext is unavailable', async () => {
+    const { controller } = await setup()
+    const adapter = await startWebMcpAdapter(undefined, controller, travelCatalog)
+
+    expect(adapter.available).toBe(false)
+    expect(controller.stage({ keepCapabilities: [], avoidUses: [] }).changes).toHaveLength(3)
+    adapter.dispose()
+  })
+})
