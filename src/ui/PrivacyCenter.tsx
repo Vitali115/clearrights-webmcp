@@ -330,7 +330,7 @@ export function PrivacyCenter({
         </p>
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="sm"><RotateCcw data-icon="inline-start" /> <span className="hidden sm:inline">Reset demo data</span></Button>
+            <Button variant="ghost" size="sm" aria-label="Reset demo data"><RotateCcw data-icon="inline-start" /> <span className="hidden sm:inline">Reset demo data</span></Button>
           </AlertDialogTrigger>
           <AlertDialogContent size="sm">
             <AlertDialogHeader>
@@ -731,14 +731,27 @@ function ReviewView({
 
   if (plan.isNoOp) {
     return (
-      <Card className="py-10 text-center">
-        <CardContent>
-          <CheckCircle2 className="mx-auto mb-3 size-8 text-emerald-600" />
-          <h2 className="font-heading text-xl font-semibold">You’re already set</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">Your draft already matches the current privacy setup, so there is nothing to approve or apply.</p>
-          <Button variant="outline" className="mt-5" onClick={onEdit}>Back to choices</Button>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Card className="py-10 text-center">
+          <CardContent>
+            <CheckCircle2 className="mx-auto mb-3 size-8 text-emerald-600" />
+            <h2 className="font-heading text-xl font-semibold">You’re already set</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              {plan.blockedItems.length
+                ? 'Every optional activity is already off. Essential trip services remain on because Waypoint marks them as required.'
+                : 'Your draft already matches the current privacy setup, so there is nothing to approve or apply.'}
+            </p>
+            <Button variant="outline" className="mt-5" onClick={onEdit}>Back to choices</Button>
+          </CardContent>
+        </Card>
+        {plan.blockedItems.map((blocked) => (
+          <Alert key={`${blocked.processingId}-${blocked.useId}`} variant="destructive">
+            <LockKeyhole />
+            <AlertTitle>This required activity cannot be changed</AlertTitle>
+            <AlertDescription>{blocked.message}</AlertDescription>
+          </Alert>
+        ))}
+      </div>
     )
   }
 

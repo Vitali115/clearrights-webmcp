@@ -8,12 +8,12 @@ import type { PrivacyController, PrivacyViewCoordinator } from '@/application'
 import { z } from 'zod'
 
 export const revealInputSchema = z.object({
-  reveal: z.boolean().optional().default(false),
+  reveal: z.boolean().optional(),
 }).strict()
 
 export const inspectInputSchema = z.object({
   processingId: z.enum(PROCESSING_IDS),
-  reveal: z.boolean().optional().default(false),
+  reveal: z.boolean().optional(),
 }).strict()
 
 export const stageInputSchema = z.object({
@@ -179,7 +179,7 @@ export function createToolDefinitions(
       description: 'Read the service-declared privacy activities, current states, planner options, and workflow status.',
       inputSchema: z.toJSONSchema(revealInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: (input) => executeValidated(revealInputSchema, overviewOutputSchema, input, ({ reveal }) => {
+      execute: (input) => executeValidated(revealInputSchema, overviewOutputSchema, input, ({ reveal = false }) => {
         const snapshot = controller.getSnapshot()
         if (reveal) {
           privacyUi.navigate({
@@ -213,7 +213,7 @@ export function createToolDefinitions(
       description: 'Read the service-declared purpose, data, legal basis, controls, dependencies, consequences, and current state for one activity.',
       inputSchema: z.toJSONSchema(inspectInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: (input) => executeValidated(inspectInputSchema, inspectionOutputSchema, input, ({ processingId, reveal }) => {
+      execute: (input) => executeValidated(inspectInputSchema, inspectionOutputSchema, input, ({ processingId, reveal = false }) => {
         const inspection = controller.inspect(processingId)
         if (reveal) {
           privacyUi.navigate({
@@ -248,7 +248,7 @@ export function createToolDefinitions(
       description: 'Read the latest receipt verified by persisted-state readback, if a reviewed plan has been applied.',
       inputSchema: z.toJSONSchema(revealInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: (input) => executeValidated(revealInputSchema, receiptOutputSchema, input, ({ reveal }) => {
+      execute: (input) => executeValidated(revealInputSchema, receiptOutputSchema, input, ({ reveal = false }) => {
         const receipt = controller.getReceipt()
         if (reveal) {
           privacyUi.navigate({
@@ -268,7 +268,7 @@ export function createToolDefinitions(
       description: 'Read up to ten verified privacy receipts in newest-first order.',
       inputSchema: z.toJSONSchema(revealInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
-      execute: (input) => executeValidated(revealInputSchema, historyOutputSchema, input, ({ reveal }) => {
+      execute: (input) => executeValidated(revealInputSchema, historyOutputSchema, input, ({ reveal = false }) => {
         const receipts = controller.getReceiptHistory()
         if (reveal) {
           privacyUi.navigate({

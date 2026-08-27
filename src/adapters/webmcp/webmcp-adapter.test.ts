@@ -71,6 +71,9 @@ describe('WebMCP adapter', () => {
     expect(modelContext.tools.get('get_privacy_receipt')?.annotations?.readOnlyHint).toBe(true)
     expect(modelContext.tools.get('get_privacy_history')?.annotations?.readOnlyHint).toBe(true)
     expect(modelContext.tools.get('stage_privacy_plan')?.annotations?.readOnlyHint).toBe(false)
+    expect(modelContext.tools.get('get_privacy_overview')?.inputSchema).not.toEqual(expect.objectContaining({
+      required: expect.arrayContaining(['reveal']),
+    }))
     adapter.dispose()
   })
 

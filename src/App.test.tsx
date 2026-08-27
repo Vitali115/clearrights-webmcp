@@ -224,6 +224,42 @@ describe('ClearRights UI', () => {
     expect(screen.queryByRole('button', { name: /Apply changes/ })).not.toBeInTheDocument()
   })
 
+  it('explains locked essentials when an already-minimal plan avoids every use', async () => {
+    const controller = await createController()
+    const firstPlan = controller.stage({
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+      avoidUses: ['preference_personalisation', 'precise_location', 'partner_marketing'],
+    })
+    controller.setReviewed(true)
+    await controller.apply(firstPlan.id)
+    const privacyUi = renderApp(controller, true)
+
+    act(() => {
+      controller.stage({
+        keepCapabilities: [],
+        avoidUses: [
+          'booking_operations',
+          'fraud_prevention',
+          'service_communications',
+          'preference_personalisation',
+          'precise_location',
+          'partner_marketing',
+        ],
+      })
+      privacyUi.navigate({
+        view: 'review',
+        origin: 'agent',
+        message: 'The agent prepared the minimum privacy review.',
+      })
+    })
+
+    expect(screen.getByText('You’re already set')).toBeVisible()
+    expect(screen.getByText(/Every optional activity is already off/)).toBeVisible()
+    expect(screen.getAllByText('This required activity cannot be changed')).toHaveLength(3)
+    expect(screen.getByText(/Trip fulfilment is required and locked/)).toBeVisible()
+    expect(screen.queryByLabelText('I reviewed this plan and understand its effects.')).not.toBeInTheDocument()
+  })
+
   it('shows the latest verified receipt after the controller reloads', async () => {
     const user = userEvent.setup()
     const storage = new MemoryStorage()

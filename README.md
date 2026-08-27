@@ -1,6 +1,6 @@
 # ClearRights WebMCP
 
-ClearRights is a WebMCP-native privacy center embedded in the fictional Waypoint Travel product. A person and a browser agent share the same visible state: the agent can inspect service-declared processing, stage a deterministic minimisation plan, and apply it only after a person reviews the plan in the page. The application then rereads persisted state and produces a verified receipt.
+ClearRights is a WebMCP-native, guided privacy center embedded in the fictional Waypoint Travel product. A person and a browser agent share the same visible state: the agent can inspect service-declared processing, open the relevant view, stage a deterministic minimisation plan, and apply it only after a person reviews the consequences in the page. The application then rereads persisted state and produces a verified receipt.
 
 This is a local, single-page demo. It has no backend, login, internal AI, OpenAI API integration, account deletion flow, or formal GDPR request workflow.
 
@@ -9,7 +9,7 @@ This is a local, single-page demo. It has no backend, login, internal AI, OpenAI
 - Node.js 22.12 or newer
 - npm
 - A current browser for the manual experience
-- A browser implementing the WebMCP imperative API for agent-tool testing
+- A browser exposing page-defined WebMCP tools for agent-tool testing
 
 Install and start the project:
 
@@ -35,28 +35,29 @@ npm run lint       # Oxlint
 ### Manual fallback
 
 1. Open Waypoint Travel and select **Privacy Center**.
-2. Inspect Required and Optional activities in the left column.
-3. In **Keep capabilities**, clear optional capabilities you do not need.
-4. Optionally select service uses under **Uses to avoid**.
-5. Select **Stage privacy plan** and inspect before/after changes, consequences, conflicts, and blocked required processing.
-6. Mark the human-review checkbox.
-7. Select **Apply reviewed plan**.
-8. Inspect the verified receipt produced after persisted-state readback.
+2. Open **Current privacy setup** to move from category → activity → detail, or select **Start privacy cleanup**.
+3. Keep or turn off optional experiences. Essential trip services remain visible and locked.
+4. Select **Review changes**.
+5. Inspect **Turning off**, **Turning on**, consequences, conflicts, and required activities that cannot change.
+6. Mark the visible human-confirmation checkbox.
+7. Select **Apply changes**.
+8. Inspect the verified receipt produced after persisted-state readback. **Previous changes** retains the latest ten receipts, newest first.
 
-The complete flow remains available when `document.modelContext` is absent. **Reset demo data** restores all six processing activities, clears workflow state, and removes the latest receipt after an explicit confirmation.
+The complete flow remains available when WebMCP is absent. **Reset demo data** restores all six processing activities, clears workflow state, and deletes the full receipt history after an explicit confirmation.
 
 ### WebMCP agent flow
 
-For local Chrome development, enable `chrome://flags/#enable-webmcp-testing`, restart Chrome, and open the Vite page. Chrome origin-trial requirements may apply outside local development; consult the current [WebMCP documentation](https://developer.chrome.com/docs/ai/webmcp).
+The Codex in-app browser can exercise the page-defined tools directly when its WebMCP page capability is available, so Chrome is not required in that environment. For local Chrome development, enable the browser's WebMCP testing support and open the Vite page; origin-trial requirements may apply outside local development. Consult the current [WebMCP documentation](https://developer.chrome.com/docs/ai/webmcp).
 
 The intended agent sequence is:
 
-1. `get_privacy_overview`
-2. `inspect_processing`
-3. `stage_privacy_plan`
-4. Wait while a person reviews the visible plan and marks the checkbox.
-5. `apply_privacy_plan` using the staged `planId`.
-6. `get_privacy_receipt`
+1. `get_privacy_overview` or `inspect_processing`; pass `reveal: true` only when the relevant view should open.
+2. `stage_privacy_plan`
+3. Wait while a person reviews the visible plan and marks the checkbox.
+4. `apply_privacy_plan` using the staged `planId`.
+5. `get_privacy_receipt` or `get_privacy_history` for later read-only inspection.
+
+Staging always opens **Review your changes** and creates an `opened` agent-activity event. Apply always opens the verified receipt. Clicking the activity popover or closing the sheet does not acknowledge the view: the blue dot clears only after click, keyboard, or scroll engagement in the view. Engagement never checks the human-confirmation checkbox.
 
 Example staging input:
 
@@ -79,15 +80,16 @@ This disables recommendations and partner advertising while retaining nearby sug
 
 ## WebMCP tools
 
-Exactly five tools exist in the implementation:
+Six tool definitions exist. Five are registered initially; the sixth appears only after human review:
 
 | Tool | Input | Lifecycle | Hint |
 | --- | --- | --- | --- |
-| `get_privacy_overview` | `{}` | Registered at load | Read-only |
-| `inspect_processing` | `{ processingId }` | Registered at load | Read-only |
+| `get_privacy_overview` | `{ reveal?: boolean }` | Registered at load | Read-only |
+| `inspect_processing` | `{ processingId, reveal?: boolean }` | Registered at load | Read-only |
 | `stage_privacy_plan` | `{ keepCapabilities, avoidUses }` | Registered at load | Mutating in-memory workflow |
 | `apply_privacy_plan` | `{ planId }` | Registered only while reviewed | Persistent mutation |
-| `get_privacy_receipt` | `{}` | Registered at load | Read-only |
+| `get_privacy_receipt` | `{ reveal?: boolean }` | Registered at load | Read-only |
+| `get_privacy_history` | `{ reveal?: boolean }` | Registered at load | Read-only |
 
 `apply_privacy_plan` is registered through an `AbortController` only after the visible review checkbox is selected. It is removed if review is revoked, a plan is replaced, apply completes, demo data is reset, or the page adapter is disposed. The application controller independently checks review state, plan identity, and storage revision before every commit.
 
@@ -97,7 +99,7 @@ Zod validates all tool inputs and outputs. Input JSON Schemas are included in We
 
 ```text
 src/domain             pure catalog, model, planner, state machine
-src/application        repository port and observable controller
+src/application        controller, repository port, and session UI coordinator
 src/adapters/storage   versioned localStorage repository
 src/adapters/webmcp    tool contracts and registration lifecycle
 src/adapters/browser   browser composition root
@@ -109,12 +111,14 @@ src/components/ui      unmodified shadcn registry primitives
 The data flow is:
 
 ```text
-React UI ─┐
-          ├─> observable PrivacyController ─> PrivacyRepository ─> localStorage
-WebMCP ───┘
+React UI ─────┐
+              ├─> observable PrivacyController ─> PrivacyRepository ─> localStorage
+WebMCP ───────┘
+     │
+     └──────────> PrivacyViewCoordinator <────────── React UI
 ```
 
-`domain` and `application` do not import React or access the DOM. The controller and repository interfaces can be reused from Next.js, Astro, or vanilla JavaScript with different composition and persistence adapters. React never registers tools, and the WebMCP adapter contains mapping and validation rather than privacy business logic.
+`domain` and `application` do not import React or access the DOM. The framework-agnostic `PrivacyViewCoordinator` holds only current-session navigation and the latest agent activity (`opened | engaged`); it is created in the browser composition root and shared by React and WebMCP. React never registers tools, and the WebMCP adapter contains mapping and validation rather than privacy business logic.
 
 ## Planner and commit rules
 
@@ -126,10 +130,11 @@ WebMCP ───┘
 - Avoided uses belonging to required processing appear as blocked items.
 - Semantically equivalent input arrays produce the same plan ID regardless of order.
 - New staging revokes an earlier review.
+- A no-op plan displays **You’re already set** and cannot be approved or applied.
 - Plans and review state are intentionally not persisted.
 - Apply recalculates the reviewed plan, checks its base revision, writes the complete record, rereads it, and only then exposes the receipt.
 
-The localStorage key is `clearrights.demo.v1`. The versioned record contains the current revision, six activity states, and only the latest receipt.
+The localStorage key is `clearrights.demo.v2`. The v2 record contains the current revision, six activity states, and up to ten verified receipts in newest-first order. A valid `clearrights.demo.v1` record is migrated automatically with its state and latest receipt, then the legacy key is removed. Corrupt records fall back to the repeatable seed.
 
 ## Tests
 
@@ -140,11 +145,17 @@ The Vitest suite covers:
 - optional processing restoration and stable no-op plans;
 - `idle → staged → reviewed → applied` transitions;
 - stale-plan and missing-review rejection;
-- receipt persistence, readback, reload, and reset;
-- four tools at load and review-gated apply registration;
+- receipt persistence, v1 migration, newest-first retention, reload, and full-history reset;
+- five tools at load and review-gated sixth-tool registration;
 - WebMCP input/output validation and registration races;
-- the complete manual shadcn flow without WebMCP;
-- automatic Sheet opening after agent staging.
+- reveal navigation that is opt-in for reads and automatic for staging/apply;
+- hierarchical navigation, focus return, desktop/mobile layout, and the complete manual flow;
+- agent activity persistence through popover, rerender, and close, plus click/keyboard/scroll engagement;
+- agent staging → visible human checkbox → agent apply → verified receipt.
+
+## Blueprint boundary
+
+This demo remains one shared page with visible WebMCP actions, a deterministic planner, human review, and verified local receipts. It does not add versioned legal contracts or notices, regulatory research, an account backend, cross-device sync, formal GDPR requests, or persistent agent telemetry. WebMCP-originated navigation is known exactly; native mouse and keyboard events are treated as engagement, but the page cannot prove whether browser automation or a person generated those events without an out-of-scope identity or telemetry system.
 
 ## Safety statement
 
