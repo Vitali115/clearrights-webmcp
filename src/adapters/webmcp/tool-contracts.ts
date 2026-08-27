@@ -169,7 +169,7 @@ export function createToolDefinitions(
   const apply: WebMCP.ModelContextTool = {
     name: 'apply_privacy_plan',
     title: 'Apply reviewed privacy plan',
-    description: 'Apply the exact staged plan after a person has reviewed it in the visible privacy settings, then verify persisted state and return a receipt.',
+    description: 'Apply the exact staged plan after a person has reviewed it in the visible privacy settings, then verify enforcement-adapter readback and return a scoped receipt.',
     inputSchema: z.toJSONSchema(applyInputSchema),
     annotations: { readOnlyHint: false, untrustedContentHint: false },
     execute: (input) => executeValidated(applyInputSchema, schemas.privacyReceipt, input, async ({ planId }) => {
