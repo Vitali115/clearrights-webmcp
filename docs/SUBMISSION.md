@@ -3,12 +3,13 @@
 ## Submission fields
 
 - **Title:** ClearRights Privacy
-- **Live application:** `TBD — Vercel deployment`
-- **Source code:** `TBD — https://github.com/<owner>/clearrights-webmcp`
+- **Tagline:** Privacy changes agents can prepare, people can approve, and hosts can prove.
+- **Live application:** <https://clearrights-webmcp.vercel.app/>
+- **Source code:** <https://github.com/Vitali115/clearrights-webmcp>
 - **Demo video:** `TBD — public YouTube URL under three minutes`
 - **License:** MIT
 
-Replace every `TBD` only after opening the public artifact and verifying it from a signed-out session.
+The live application and public repository were verified on August 27, 2026. Replace the remaining video `TBD` only after opening the public YouTube artifact from a signed-out session.
 
 ## Short description
 
@@ -32,6 +33,14 @@ ClearRights exposes compact page-defined tools generated from the same catalog a
 
 Global Privacy Control is observed and reported separately. Its absence is never treated as consent, and the demo does not automatically map it to a complete privacy configuration.
 
+## What makes it different
+
+- **One shared model:** the visible settings UI and WebMCP tools use the same developer-authored catalog and controller.
+- **Deterministic preparation:** the model translates requested outcomes into a bounded plan; it does not invent privacy controls or decide which required processing may be disabled.
+- **A capability boundary, not a prompt reminder:** `apply_privacy_plan` is absent until a person reviews the exact unchanged plan.
+- **Host verification:** apply is followed by complete adapter readback; mismatches fail closed instead of producing a successful receipt.
+- **Visible product evidence:** Waypoint recommendations, nearby guidance, and partner offers react only to the applied snapshot.
+
 ## Implementation
 
 The private workspace package `@clearrights/sdk@0.2.0` contains a headless privacy catalog, planner, runtime, repository and enforcement ports, workflow invariants, and receipt model. The Waypoint host owns React UI, storage, WebMCP registration, GPC observation, product-effect mapping, and adapters.
@@ -48,9 +57,13 @@ Declared by Waypoint
 
 Display preferences (powered by ClearRights Accessibility Preferences) and Site Guide remain small secondary modules to demonstrate that catalog-driven host controls can reuse architectural conventions while retaining different approval policies.
 
+### Technology
+
+TypeScript, React, Vite, Zod, Vitest, WebMCP's imperative `document.modelContext` API, and Vercel. The repository includes the headless `@clearrights/sdk` workspace package, a minimal independent host, the full Waypoint reference host, deterministic eval cases, and browser testing notes.
+
 ## Public testing instructions
 
-1. Open the live application.
+1. Open <https://clearrights-webmcp.vercel.app/>.
 2. Select **Privacy settings**, then **Reset demo data**.
 3. Confirm that the initial privacy banner is visible.
 4. Run the five prompts in [`DEMO.md`](DEMO.md) in order.
@@ -83,10 +96,10 @@ The repository has no production CMP, backend, authentication, geography engine,
 
 ## Final publishing checklist
 
-- [ ] Public GitHub repository is named `clearrights-webmcp` and opens signed out.
-- [ ] Default branch contains the MIT license and reproducible install instructions.
-- [ ] Vercel deployment builds with `npm ci` and `npm run build` to `dist`.
-- [ ] Public deployment has no secret, login, or required environment variable.
+- [x] Public GitHub repository is named `clearrights-webmcp` and opens signed out.
+- [x] Default branch contains the MIT license and reproducible install instructions.
+- [x] Vercel deployment builds with `npm ci` and `npm run build` to `dist`.
+- [x] Public deployment has no secret, login, or required environment variable.
 - [ ] Tool count is 8 normally and 9 only after unchanged human review.
 - [ ] All five eval prompts have three recorded clean-session runs in ChatGPT.
 - [ ] Chrome 149 and manual fallback observations are recorded in `EVALS.md`.

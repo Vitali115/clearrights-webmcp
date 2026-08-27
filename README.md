@@ -2,6 +2,8 @@
 
 ClearRights Privacy is a WebMCP reference implementation for agent-prepared, human-approved, host-verified privacy changes.
 
+**[Open the live demo](https://clearrights-webmcp.vercel.app/)** · [Developer integration](https://clearrights-webmcp.vercel.app/#/clearrights) · [Public source](https://github.com/Vitali115/clearrights-webmcp)
+
 > **A developer declares privacy controls once. An agent can inspect and prepare an exact plan, a person reviews that plan, and the host applies and reads the result back through an explicit adapter.**
 
 Waypoint Travel is the fictional product that demonstrates the complete workflow. The repository also contains the private workspace package `@clearrights/sdk@0.2.0`, a minimal independent host, and two secondary modules: ClearRights Accessibility Preferences—shown in Waypoint as **Display preferences**—and Site Guide.
@@ -18,6 +20,8 @@ npm run dev
 ```
 
 Open the Vite URL, normally `http://127.0.0.1:5173`. Manual privacy settings work in an ordinary browser. Page-defined tools require `document.modelContext`; use ChatGPT's in-app browser or Chrome 149+ with WebMCP testing enabled.
+
+To inspect the deployed build instead, open [`https://clearrights-webmcp.vercel.app`](https://clearrights-webmcp.vercel.app/).
 
 ## The two-minute privacy path
 

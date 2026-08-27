@@ -2,6 +2,9 @@
 
 This runbook is the shortest repeatable path through the working Waypoint Travel integration. Privacy is the main story. Display preferences and Site Guide are optional closing examples under **Additional agent-ready controls**.
 
+- **Live demo:** <https://clearrights-webmcp.vercel.app/>
+- **Public source:** <https://github.com/Vitali115/clearrights-webmcp>
+
 ## Before presenting
 
 1. Install and start the project:
@@ -11,7 +14,7 @@ This runbook is the shortest repeatable path through the working Waypoint Travel
    npm run dev
    ```
 
-2. Open the Vite URL in a browser with WebMCP support when the agent path is part of the presentation.
+2. Open the Vite URL—or the public deployment—in a browser with WebMCP support when the agent path is part of the presentation.
 3. Open **Privacy settings**, select **Reset demo data**, and confirm that the privacy banner returns.
 4. Confirm that eight WebMCP tools are registered. `apply_privacy_plan` must not be available.
 5. Keep the Waypoint home visible so the privacy-driven product changes are easy to compare.
