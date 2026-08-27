@@ -2,7 +2,8 @@
   "files": [],
   "compilerOptions": {
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@clearrights/privacy-sdk": ["./packages/privacy-control-sdk/src/index.ts"]
     }
   },
   "references": [

@@ -5,7 +5,7 @@ export function createTravelSeed(): UserPrivacyState {
   return {
     revision: 1,
     processing: Object.fromEntries(
-      travelCatalog.processing.map((item) => [item.id, true]),
+      travelCatalog.processing.map((item) => [item.id, item.defaultEnabled]),
     ) as ProcessingState,
   }
 }

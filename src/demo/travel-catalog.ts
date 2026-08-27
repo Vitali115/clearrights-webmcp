@@ -1,13 +1,38 @@
-import { createProcessingCatalog } from '@/domain'
+import { definePrivacyCatalog } from '@/domain'
 
-export const travelCatalog = createProcessingCatalog(
-  'waypoint-travel-2026.1',
-  [
+export const travelCatalog = definePrivacyCatalog({
+  version: 'waypoint-travel-2026.2',
+  noticeVersion: 'waypoint-privacy-choices-2026.2',
+  sections: [
+    {
+      id: 'essential_services',
+      label: 'Essential services',
+      description: 'Needed to provide booked trips and protect your account.',
+    },
+    {
+      id: 'personalisation',
+      label: 'Personalisation',
+      description: 'Controls experiences adapted to your interests.',
+    },
+    {
+      id: 'location',
+      label: 'Location',
+      description: 'Controls features that use your precise location.',
+    },
+    {
+      id: 'partner_offers',
+      label: 'Partner offers',
+      description: 'Controls tailored offers from selected partners.',
+    },
+  ],
+  processing: [
     {
       id: 'trip_fulfilment',
+      sectionId: 'essential_services',
       label: 'Trip fulfilment',
       group: 'required',
       locked: true,
+      defaultEnabled: true,
       purpose: 'Create, manage, and complete the trips you book.',
       data: ['Traveller identity', 'Booking details', 'Payment status'],
       declaredLegalBasis: 'contract',
@@ -20,9 +45,11 @@ export const travelCatalog = createProcessingCatalog(
     },
     {
       id: 'account_security',
+      sectionId: 'essential_services',
       label: 'Account security',
       group: 'required',
       locked: true,
+      defaultEnabled: true,
       purpose: 'Detect suspicious access and protect the demo account.',
       data: ['Sign-in events', 'Device information', 'Security signals'],
       declaredLegalBasis: 'legitimate_interest',
@@ -35,9 +62,11 @@ export const travelCatalog = createProcessingCatalog(
     },
     {
       id: 'transactional_updates',
+      sectionId: 'essential_services',
       label: 'Transactional updates',
       group: 'required',
       locked: true,
+      defaultEnabled: true,
       purpose: 'Send confirmations, schedule changes, and essential trip notices.',
       data: ['Contact details', 'Booking status', 'Journey schedule'],
       declaredLegalBasis: 'contract',
@@ -50,9 +79,11 @@ export const travelCatalog = createProcessingCatalog(
     },
     {
       id: 'recommendations',
+      sectionId: 'personalisation',
       label: 'Recommendations',
       group: 'optional',
       locked: false,
+      defaultEnabled: true,
       purpose: 'Suggest destinations and itineraries based on travel preferences.',
       data: ['Travel preferences', 'Viewed destinations', 'Past trips'],
       declaredLegalBasis: 'consent',
@@ -65,9 +96,11 @@ export const travelCatalog = createProcessingCatalog(
     },
     {
       id: 'location_suggestions',
+      sectionId: 'location',
       label: 'Location suggestions',
       group: 'optional',
       locked: false,
+      defaultEnabled: true,
       purpose: 'Suggest nearby places during a trip.',
       data: ['Precise location', 'Destination context'],
       declaredLegalBasis: 'consent',
@@ -80,9 +113,11 @@ export const travelCatalog = createProcessingCatalog(
     },
     {
       id: 'partner_advertising',
+      sectionId: 'partner_offers',
       label: 'Partner advertising',
       group: 'optional',
       locked: false,
+      defaultEnabled: true,
       purpose: 'Tailor advertising from selected travel partners.',
       data: ['Travel interests', 'Partner engagement'],
       declaredLegalBasis: 'consent',
@@ -94,7 +129,7 @@ export const travelCatalog = createProcessingCatalog(
       uses: ['partner_marketing'],
     },
   ],
-  [
+  capabilities: [
     { id: 'book_and_manage_trips', label: 'Book and manage trips', description: 'Keep booking and trip management available.' },
     { id: 'protect_account', label: 'Protect the account', description: 'Keep account security checks active.' },
     { id: 'receive_trip_updates', label: 'Receive trip updates', description: 'Keep essential booking messages.' },
@@ -102,7 +137,7 @@ export const travelCatalog = createProcessingCatalog(
     { id: 'nearby_suggestions', label: 'Nearby suggestions', description: 'Keep suggestions based on current location.' },
     { id: 'partner_offers', label: 'Partner offers', description: 'Keep tailored offers from travel partners.' },
   ],
-  [
+  uses: [
     { id: 'booking_operations', label: 'Booking operations', description: 'Use data to create and manage trips.' },
     { id: 'fraud_prevention', label: 'Fraud prevention', description: 'Use security signals to protect the account.' },
     { id: 'service_communications', label: 'Service communications', description: 'Use contact details for essential trip updates.' },
@@ -110,4 +145,4 @@ export const travelCatalog = createProcessingCatalog(
     { id: 'precise_location', label: 'Precise location', description: 'Use current location for nearby suggestions.' },
     { id: 'partner_marketing', label: 'Partner marketing', description: 'Use travel interests for partner advertising.' },
   ],
-)
+})

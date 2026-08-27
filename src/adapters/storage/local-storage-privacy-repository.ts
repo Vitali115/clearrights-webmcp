@@ -1,13 +1,11 @@
-import {
-  PROCESSING_IDS,
-  type UserPrivacyState,
-} from '@/domain'
+import type { UserPrivacyState } from '@/domain'
 import {
   PRIVACY_RECEIPT_HISTORY_LIMIT,
   RepositoryConflictError,
   type PrivacyRecord,
   type PrivacyRepository,
 } from '@/application'
+import { travelCatalog } from '@/demo/travel-catalog'
 import { z } from 'zod'
 
 export const PRIVACY_STORAGE_KEY = 'clearrights.demo.v2'
@@ -20,9 +18,9 @@ export interface StorageLike {
 }
 
 const processingStateSchema = z.object(Object.fromEntries(
-  PROCESSING_IDS.map((id) => [id, z.boolean()]),
-) as Record<(typeof PROCESSING_IDS)[number], z.ZodBoolean>).strict().superRefine((state, context) => {
-  for (const id of ['trip_fulfilment', 'account_security', 'transactional_updates'] as const) {
+  travelCatalog.processing.map(({ id }) => [id, z.boolean()]),
+)).strict().superRefine((state, context) => {
+  for (const id of travelCatalog.processing.filter(({ locked }) => locked).map(({ id }) => id)) {
     if (!state[id]) {
       context.addIssue({
         code: 'custom',
@@ -33,8 +31,12 @@ const processingStateSchema = z.object(Object.fromEntries(
   }
 })
 
+const processingIdSchema = z.enum(
+  travelCatalog.processing.map(({ id }) => id) as [string, ...string[]],
+)
+
 const changeSchema = z.object({
-  processingId: z.enum(PROCESSING_IDS),
+  processingId: processingIdSchema,
   label: z.string(),
   before: z.boolean(),
   after: z.boolean(),

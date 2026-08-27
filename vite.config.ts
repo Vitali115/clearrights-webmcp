@@ -8,6 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
+      '@clearrights/privacy-sdk': path.resolve(import.meta.dirname, './packages/privacy-control-sdk/src/index.ts'),
     },
   },
   test: {

@@ -47,33 +47,6 @@ interface PrivacyCenterProps {
   webMcpAvailable: boolean
 }
 
-const SETTING_GROUPS: ReadonlyArray<{
-  title: string
-  description: string
-  ids: readonly ProcessingId[]
-}> = [
-  {
-    title: 'Essential services',
-    description: 'Needed to provide booked trips and protect your account.',
-    ids: ['trip_fulfilment', 'account_security', 'transactional_updates'],
-  },
-  {
-    title: 'Personalisation',
-    description: 'Controls experiences adapted to your interests.',
-    ids: ['recommendations'],
-  },
-  {
-    title: 'Location',
-    description: 'Controls features that use your precise location.',
-    ids: ['location_suggestions'],
-  },
-  {
-    title: 'Partner offers',
-    description: 'Controls tailored offers from selected partners.',
-    ids: ['partner_advertising'],
-  },
-]
-
 const VIEW_COPY: Record<PrivacyView, { title: string; description: string }> = {
   home: {
     title: 'Privacy settings',
@@ -336,10 +309,14 @@ function SettingsView({
       </div>
 
       <div aria-label="Privacy settings list">
-        {SETTING_GROUPS.map(({ title, description, ids }) => (
-          <section key={title} className="mb-9" aria-labelledby={`settings-${ids[0]}`}>
-            <h2 id={`settings-${ids[0]}`} className="text-[13px] font-medium text-muted-foreground">{title}</h2>
-            <p className="mt-1 mb-1 text-[13px] text-muted-foreground">{description}</p>
+        {travelCatalog.sections.map((section) => {
+          const ids = travelCatalog.processing
+            .filter(({ sectionId }) => sectionId === section.id)
+            .map(({ id }) => id)
+          return (
+          <section key={section.id} className="mb-9" aria-labelledby={`settings-${section.id}`}>
+            <h2 id={`settings-${section.id}`} className="text-[13px] font-medium text-muted-foreground">{section.label}</h2>
+            <p className="mt-1 mb-1 text-[13px] text-muted-foreground">{section.description}</p>
             {ids.map((id) => {
               const definition = travelCatalog.getProcessing(id)
               const enabled = draftEnabled(definition, keepCapabilities, avoidUses)
@@ -373,7 +350,8 @@ function SettingsView({
               )
             })}
           </section>
-        ))}
+          )
+        })}
       </div>
 
       <div className="sticky bottom-0 -mx-5 mt-4 flex items-center justify-between gap-3 bg-gradient-to-t from-background from-70% to-transparent px-5 pt-8 pb-1 sm:-mx-8 sm:px-8">
