@@ -166,7 +166,7 @@ The registry is host configuration in `src/demo/waypoint/product-effects.ts`; it
 | Motion | Waypoint motion | System-aware or reduced |
 | Reading layout | Secondary content | Inline or inside a reachable native disclosure |
 
-Every mapped product surface has a `data-clearrights-surface` hook for inspection, but the normal customer experience displays no technical badges. The developer page filters the live mapping by Privacy or Accessibility and exposes the complete current view model. It labels the applied privacy revision separately from any pending draft. A privacy effect is called verified only when the latest receipt matches that exact revision and value; Accessibility reports the DOM readback produced by its adapter.
+Every mapped content surface has a `data-clearrights-surface` hook for inspection, while root accessibility effects use their real `data-text-scale`, `data-contrast`, `data-motion`, and `data-reading-layout` adapter attributes. Unmapped UI such as search is not labelled as a ClearRights effect. The normal customer experience displays no technical badges. The developer page filters the live mapping by Privacy or Accessibility and exposes the complete current view model. It labels the applied privacy revision separately from any pending draft. A privacy effect is called verified only when the latest receipt matches that exact revision and value; Accessibility reports the DOM readback produced by its adapter.
 
 Focused reading layout keeps search, upcoming trips, and essential services primary. Its closed disclosure still states whether travel ideas are generic or based on represented interests, so the current privacy outcome remains understandable without reopening secondary content.
 

@@ -115,7 +115,7 @@ describe('privacy settings UI', () => {
 
     await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
 
-    expect(screen.getByRole('heading', { name: 'ClearRights developer integration' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'ClearRights developer integration' })).toBeVisible()
     expect(screen.getByText('8 tools registered')).toBeVisible()
     expect(screen.getByText(/0 of 3 optional on/)).toBeVisible()
     expect(screen.getByText(/definePrivacyCatalog/)).toBeVisible()
@@ -136,7 +136,8 @@ describe('privacy settings UI', () => {
     expect(window.location.hash).toBe('#/?effects=1')
     expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
     expect(screen.getByRole('complementary', { name: 'Developer product effect preview' })).toBeVisible()
-    expect(screen.getByText(/Hidden surfaces: Nearby guide, Partner rail offer/)).toBeVisible()
+    expect(screen.getByText(/Hidden product surfaces: Nearby guide, Partner rail offer/)).toBeVisible()
+    expect(document.querySelector('[data-clearrights-surface="search"]')).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Exit preview' }))
@@ -156,7 +157,7 @@ describe('privacy settings UI', () => {
     window.history.replaceState(null, '', '#/clearrights')
     renderApp(controller, true)
 
-    expect(screen.getByText('Pending draft is not shown in this product preview')).toBeVisible()
+    expect(await screen.findByText('Pending draft is not shown in this product preview')).toBeVisible()
     expect(screen.getByText(/1 change in plan-1-/)).toBeVisible()
     expect(screen.getByText(/continue to use revision 1 until/)).toBeVisible()
   })
@@ -166,7 +167,7 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller)
 
-    expect(screen.getByRole('heading', { name: 'ClearRights developer integration' })).toBeVisible()
+    expect(await screen.findByRole('heading', { name: 'ClearRights developer integration' })).toBeVisible()
     expect(screen.getByText('Unavailable · manual fallback active')).toBeVisible()
     expect(window.location.hash).toBe('#/clearrights')
   })

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type {
   ActivityCoordinator,
   PersonalControlsCoordinator,
@@ -11,13 +11,17 @@ import { Sheet } from '@/components/ui/sheet'
 import { AgentActivityIndicator } from '@/ui/AgentActivityIndicator'
 import { PrivacyChoiceBanner } from '@/ui/PrivacyChoiceBanner'
 import { TravelProductPage } from '@/ui/TravelProductPage'
-import { ClearRightsExplainerPage } from '@/ui/waypoint/ClearRightsExplainerPage'
 import { PersonalControls } from '@/ui/waypoint/PersonalControls'
 import { WaypointInfoPage } from '@/ui/waypoint/WaypointInfoPage'
 import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
 import { getWaypointInfoPage } from '@/demo/waypoint/info-pages'
 import { selectWaypointExperience } from '@/demo/waypoint/product-effects'
 import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
+
+const ClearRightsExplainerPage = lazy(async () => {
+  const module = await import('@/ui/waypoint/ClearRightsExplainerPage')
+  return { default: module.ClearRightsExplainerPage }
+})
 
 interface AppProps {
   controller: PrivacyController
@@ -196,17 +200,19 @@ export default function App({
           />}
         </>
       ) : route.kind === 'clearrights' ? (
-        <ClearRightsExplainerPage
-          snapshot={snapshot}
-          accessibilitySnapshot={accessibilitySnapshot}
-          siteGuideSnapshot={siteGuideSnapshot}
-          experience={experience}
-          webMcpAvailable={webMcpAvailable}
-          controlsAction={controlsAction}
-          agentActivityAction={agentActivityAction}
-          onBack={() => navigate('#/')}
-          onOpenPreview={() => navigate('#/?effects=1')}
-        />
+        <Suspense fallback={<main className="min-h-svh bg-background p-8 text-sm text-muted-foreground" role="status">Loading ClearRights integration…</main>}>
+          <ClearRightsExplainerPage
+            snapshot={snapshot}
+            accessibilitySnapshot={accessibilitySnapshot}
+            siteGuideSnapshot={siteGuideSnapshot}
+            experience={experience}
+            webMcpAvailable={webMcpAvailable}
+            controlsAction={controlsAction}
+            agentActivityAction={agentActivityAction}
+            onBack={() => navigate('#/')}
+            onOpenPreview={() => navigate('#/?effects=1')}
+          />
+        </Suspense>
       ) : infoPage ? (
         <WaypointInfoPage page={infoPage} controlsAction={controlsAction} agentActivityAction={agentActivityAction} onBack={() => navigate('#/')} />
       ) : (

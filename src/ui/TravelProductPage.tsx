@@ -100,10 +100,7 @@ export function TravelProductPage({
         </div>
       </header>
 
-      <section
-        data-clearrights-surface="search"
-        className="mx-auto w-[min(45rem,calc(100%-2.5rem))] pt-16 pb-16 sm:w-[min(45rem,calc(100%-4rem))] sm:pt-20 sm:pb-16"
-      >
+      <section className="mx-auto w-[min(45rem,calc(100%-2.5rem))] pt-16 pb-16 sm:w-[min(45rem,calc(100%-4rem))] sm:pt-20 sm:pb-16">
         <h1 className="font-heading text-[clamp(2.25rem,5vw,3rem)] font-medium tracking-tight leading-[1.1]">
           Where do you want to go next?
         </h1>
@@ -200,15 +197,14 @@ export function TravelProductPage({
 
 function EffectsPreviewBar({ experience, onExit }: { experience: WaypointExperienceViewModel; onExit(): void }) {
   const hidden = experience.effects.filter(({ result }) => result === 'hidden').map(({ surfaceLabel }) => surfaceLabel)
-  const visibleCount = experience.effects.length - hidden.length
 
   return (
     <aside className="sticky top-0 z-30 border-b border-blue-700/20 bg-blue-50 px-5 py-3 text-blue-950 sm:px-8" aria-label="Developer product effect preview">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium">Developer preview · {visibleCount} mapped effects active</p>
+          <p className="text-sm font-medium">Developer preview · {experience.effects.length} declared mappings</p>
           <p className="mt-1 text-xs text-blue-900/70">
-            Hidden surfaces: {hidden.length > 0 ? hidden.join(', ') : 'None'}
+            Hidden product surfaces: {hidden.length > 0 ? hidden.join(', ') : 'None'}
           </p>
         </div>
         <Button variant="outline" className="rounded-full border-blue-950/20 bg-transparent hover:bg-blue-100" onClick={onExit}>
