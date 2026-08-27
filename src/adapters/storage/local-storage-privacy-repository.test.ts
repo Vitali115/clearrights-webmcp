@@ -27,6 +27,24 @@ describe('LocalStoragePrivacyRepository', () => {
     expect(Object.values(repaired.state.processing).every(Boolean)).toBe(true)
   })
 
+  it('repairs a stored record that disables required processing', async () => {
+    const storage = new MemoryStorage()
+    storage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify({
+      schemaVersion: 1,
+      state: {
+        revision: 9,
+        processing: { ...createTravelSeed().processing, trip_fulfilment: false },
+      },
+      latestReceipt: null,
+    }))
+    const repository = new LocalStoragePrivacyRepository(storage, createTravelSeed)
+
+    const repaired = await repository.load()
+
+    expect(repaired.state.revision).toBe(1)
+    expect(repaired.state.processing.trip_fulfilment).toBe(true)
+  })
+
   it('resets preferences and advances the revision', async () => {
     const storage = new MemoryStorage()
     const repository = new LocalStoragePrivacyRepository(storage, createTravelSeed)

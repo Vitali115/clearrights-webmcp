@@ -18,7 +18,17 @@ export interface StorageLike {
 
 const processingStateSchema = z.object(Object.fromEntries(
   PROCESSING_IDS.map((id) => [id, z.boolean()]),
-) as Record<(typeof PROCESSING_IDS)[number], z.ZodBoolean>).strict()
+) as Record<(typeof PROCESSING_IDS)[number], z.ZodBoolean>).strict().superRefine((state, context) => {
+  for (const id of ['trip_fulfilment', 'account_security', 'transactional_updates'] as const) {
+    if (!state[id]) {
+      context.addIssue({
+        code: 'custom',
+        path: [id],
+        message: 'Required processing must remain enabled.',
+      })
+    }
+  }
+})
 
 const changeSchema = z.object({
   processingId: z.enum(PROCESSING_IDS),

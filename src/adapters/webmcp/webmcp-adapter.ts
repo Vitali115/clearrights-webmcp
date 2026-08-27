@@ -27,8 +27,17 @@ export async function startWebMcpAdapter(
   let disposed = false
   let reconcileQueue = Promise.resolve()
 
-  await Promise.all(tools.common.map((tool) =>
-    modelContext.registerTool(tool, { signal: commonRegistration.signal })))
+  try {
+    await Promise.all(tools.common.map((tool) =>
+      modelContext.registerTool(tool, { signal: commonRegistration.signal })))
+  } catch {
+    commonRegistration.abort()
+    return {
+      available: false,
+      whenSettled: async () => undefined,
+      dispose: () => undefined,
+    }
+  }
 
   const reconcileApply = async () => {
     if (disposed) return
@@ -36,7 +45,13 @@ export async function startWebMcpAdapter(
     if (shouldRegister && !applyRegistration) {
       const registration = new AbortController()
       applyRegistration = registration
-      await modelContext.registerTool(tools.apply, { signal: registration.signal })
+      try {
+        await modelContext.registerTool(tools.apply, { signal: registration.signal })
+      } catch {
+        registration.abort()
+        if (applyRegistration === registration) applyRegistration = null
+        return
+      }
       if (disposed || controller.getSnapshot().workflow !== 'reviewed') {
         registration.abort()
         if (applyRegistration === registration) applyRegistration = null

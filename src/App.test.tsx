@@ -1,11 +1,95 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it } from 'vitest'
+import { createPrivacyController } from '@/application'
+import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
+import { travelCatalog } from '@/demo/travel-catalog'
+import { createTravelSeed } from '@/demo/travel-seed'
 import App from './App'
 
-describe('application foundation', () => {
-  it('renders the ClearRights shell', () => {
-    render(<App />)
+class MemoryStorage {
+  private readonly values = new Map<string, string>()
+  getItem(key: string) { return this.values.get(key) ?? null }
+  setItem(key: string, value: string) { this.values.set(key, value) }
+}
 
-    expect(screen.getByText('ClearRights foundation')).toBeVisible()
+async function createController() {
+  let tick = 0
+  return createPrivacyController({
+    catalog: travelCatalog,
+    repository: new LocalStoragePrivacyRepository(new MemoryStorage(), createTravelSeed),
+    clock: { now: () => `2026-08-27T12:00:0${tick++}.000Z` },
+    idGenerator: { next: () => 'receipt-ui-test' },
+  })
+}
+
+afterEach(cleanup)
+
+describe('ClearRights UI', () => {
+  it('opens and closes the privacy Sheet over the travel product', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    render(<App controller={controller} webMcpAvailable={false} />)
+
+    expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+    expect(screen.getByRole('dialog', { name: 'Privacy Center' })).toBeVisible()
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Privacy Center' })).not.toBeInTheDocument())
+  })
+
+  it('completes the manual fallback, verifies a receipt, and resets demo data', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    render(<App controller={controller} webMcpAvailable={false} />)
+    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+
+    await user.click(screen.getByLabelText('Personalised recommendations'))
+    await user.click(screen.getByLabelText('Nearby suggestions'))
+    await user.click(screen.getByLabelText('Partner offers'))
+    await user.click(screen.getByRole('button', { name: /Stage privacy plan/ }))
+
+    expect(screen.getByText('3 preference changes prepared.')).toBeVisible()
+    await user.click(screen.getByLabelText('I reviewed this plan and understand its effects.'))
+    await user.click(screen.getByRole('button', { name: /Apply reviewed plan/ }))
+
+    expect(await screen.findByText('Verified receipt')).toBeVisible()
+    expect(controller.getSnapshot().record.state.processing.recommendations).toBe(false)
+
+    await user.click(screen.getByRole('button', { name: /Reset demo data/ }))
+    expect(screen.getByRole('alertdialog', { name: 'Reset demo data?' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Reset data' }))
+
+    await waitFor(() => expect(controller.getSnapshot().workflow).toBe('idle'))
+    expect(controller.getReceipt()).toBeNull()
+    expect(Object.values(controller.getSnapshot().record.state.processing).every(Boolean)).toBe(true)
+  })
+
+  it('opens automatically when an agent stages a plan through the shared controller', async () => {
+    const controller = await createController()
+    render(<App controller={controller} webMcpAvailable />)
+
+    act(() => {
+      controller.stage({
+        keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates'],
+        avoidUses: [],
+      })
+    })
+
+    expect(await screen.findByRole('dialog', { name: 'Privacy Center' })).toBeVisible()
+    expect(screen.getByText('3 preference changes prepared.')).toBeVisible()
+    expect(screen.getByText('Agent tools ready')).toBeVisible()
+  })
+
+  it('shows a conflict when a kept capability needs an avoided use', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    render(<App controller={controller} webMcpAvailable={false} />)
+    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+    await user.click(screen.getByLabelText('Precise location'))
+    await user.click(screen.getByRole('button', { name: /Stage privacy plan/ }))
+
+    expect(screen.getByText('Conflict')).toBeVisible()
+    expect(screen.getByText(/Nearby suggestions needs precise location/)).toBeVisible()
   })
 })

@@ -1,18 +1,47 @@
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useEffect, useRef, useState } from 'react'
+import type { PrivacyController } from '@/application'
+import { Button } from '@/components/ui/button'
+import { Sheet, SheetTrigger } from '@/components/ui/sheet'
+import { ShieldCheck } from 'lucide-react'
+import { PrivacyCenter } from '@/ui/PrivacyCenter'
+import { TravelProductPage } from '@/ui/TravelProductPage'
 
-export default function App() {
+interface AppProps {
+  controller: PrivacyController
+  webMcpAvailable: boolean
+}
+
+export default function App({ controller, webMcpAvailable }: AppProps) {
+  const [snapshot, setSnapshot] = useState(() => controller.getSnapshot())
+  const [privacyOpen, setPrivacyOpen] = useState(false)
+  const previousWorkflow = useRef(snapshot.workflow)
+
+  useEffect(() => controller.subscribe(setSnapshot), [controller])
+
+  useEffect(() => {
+    if (snapshot.workflow === 'staged' && previousWorkflow.current !== 'staged') {
+      setPrivacyOpen(true)
+    }
+    previousWorkflow.current = snapshot.workflow
+  }, [snapshot.workflow])
+
   return (
-    <main className="grid min-h-svh place-items-center bg-background text-foreground">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <Badge variant="secondary" className="w-fit">Waypoint Travel</Badge>
-          <CardTitle>ClearRights foundation</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Privacy controls are being prepared.
-        </CardContent>
-      </Card>
-    </main>
+    <Sheet open={privacyOpen} onOpenChange={setPrivacyOpen}>
+      <TravelProductPage
+        privacyAction={(
+          <SheetTrigger asChild>
+            <Button variant="outline">
+              <ShieldCheck data-icon="inline-start" /> Privacy Center
+            </Button>
+          </SheetTrigger>
+        )}
+      />
+      <PrivacyCenter
+        key={snapshot.plan?.id ?? `idle-${snapshot.record.state.revision}`}
+        controller={controller}
+        snapshot={snapshot}
+        webMcpAvailable={webMcpAvailable}
+      />
+    </Sheet>
   )
 }

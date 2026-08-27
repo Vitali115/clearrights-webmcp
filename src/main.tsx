@@ -1,13 +1,21 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { bootstrapBrowserApp } from '@/adapters/browser/bootstrap'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import App from './App'
 import './index.css'
-import App from './App.tsx'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <TooltipProvider>
-      <App />
-    </TooltipProvider>
-  </StrictMode>,
-)
+async function start() {
+  const runtime = await bootstrapBrowserApp()
+  const root = createRoot(document.getElementById('root')!)
+  root.render(
+    <StrictMode>
+      <TooltipProvider>
+        <App controller={runtime.controller} webMcpAvailable={runtime.webMcpAvailable} />
+      </TooltipProvider>
+    </StrictMode>,
+  )
+  window.addEventListener('pagehide', runtime.dispose, { once: true })
+}
+
+void start()
