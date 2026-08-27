@@ -119,7 +119,7 @@ docs/INTEGRATION.md         host contracts and production adapter boundary
 docs/EVALS.md               deterministic and browser-agent evaluation method
 docs/SUBMISSION.md          Devpost copy, testing instructions, and video storyboard
 src/adapters/               Waypoint storage, enforcement, browser, navigation, and WebMCP
-src/demo/waypoint/          host catalogs, trust trace, and product-effect registry
+src/demo/waypoint/          host catalogs, trust trace, registry, and experience selectors
 src/ui/waypoint/            host-owned Waypoint UI
 ```
 

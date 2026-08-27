@@ -37,6 +37,8 @@ describe('Waypoint product effect registry', () => {
     expect(waypointProductEffectRegistry).toHaveLength(11)
     expect(new Set(waypointProductEffectRegistry.map(({ id }) => id)).size).toBe(11)
     expect(new Set(waypointProductEffectRegistry.map(({ surfaceId }) => surfaceId)).size).toBe(11)
+    expect(waypointProductEffectRegistry.every(({ code }) => code.consumerFile.startsWith('src/'))).toBe(true)
+    expect(waypointProductEffectRegistry.every(({ code }) => code.expression.length > 0)).toBe(true)
   })
 
   it.each(Array.from({ length: 8 }, (_, bits) => bits))(

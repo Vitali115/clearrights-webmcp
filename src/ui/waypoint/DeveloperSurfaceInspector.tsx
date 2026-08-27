@@ -1,6 +1,9 @@
 import { Button } from '@/components/ui/button'
 import type { WaypointDeveloperPreviewModel } from '@/demo/waypoint/developer-product-preview'
-import type { WaypointProductEffect } from '@/demo/waypoint/product-effects'
+import {
+  WAYPOINT_PRODUCT_EFFECT_REGISTRY_FILE,
+  type WaypointProductEffect,
+} from '@/demo/waypoint/product-effects'
 
 export function DeveloperSurfaceInspector({
   effect,
@@ -47,6 +50,21 @@ export function DeveloperSurfaceInspector({
             : 'No receipt verifies this preview value'}
         />
       </dl>
+
+      <div className="mt-6 border-t border-foreground/10 pt-4">
+        <p className="text-xs font-medium text-muted-foreground">Code mapping</p>
+        <dl className="mt-3 grid gap-2 font-mono text-[11px] leading-relaxed">
+          <div>
+            <dt className="text-muted-foreground">Registry</dt>
+            <dd>{WAYPOINT_PRODUCT_EFFECT_REGISTRY_FILE}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Consumer</dt>
+            <dd>{effect.code.consumerFile}</dd>
+          </div>
+        </dl>
+        <pre className="mt-3 overflow-auto border border-foreground/10 bg-foreground/[0.035] p-3 text-xs leading-relaxed"><code>{effect.code.expression}</code></pre>
+      </div>
     </aside>
   )
 }

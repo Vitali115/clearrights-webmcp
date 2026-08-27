@@ -206,7 +206,8 @@ export function ClearRightsExplainerPage({
               <FileReference label="Host adapters" value="src/adapters/{storage,enforcement,accessibility,navigation}/" />
               <FileReference label="Bootstrap" value="src/adapters/browser/bootstrap.ts" />
               <FileReference label="WebMCP mapping" value="src/adapters/webmcp/" />
-              <FileReference label="Product effects" value="src/demo/waypoint/product-effects.ts" />
+              <FileReference label="Product effect registry" value="src/demo/waypoint/product-effect-registry.ts" />
+              <FileReference label="Experience selector" value="src/demo/waypoint/product-effects.ts" />
               <FileReference label="Host UI" value="src/ui/waypoint/" />
             </dl>
           </div>

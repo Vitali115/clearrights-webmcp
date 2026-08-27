@@ -176,6 +176,9 @@ describe('privacy settings UI', () => {
     expect(within(surfaceInspector).getByText('Location suggestions · location_suggestions')).toBeVisible()
     expect(within(surfaceInspector).getByText('hidden')).toBeVisible()
     expect(within(surfaceInspector).getByText('No receipt verifies this preview value')).toBeVisible()
+    expect(within(surfaceInspector).getByText('src/demo/waypoint/product-effect-registry.ts')).toBeVisible()
+    expect(within(surfaceInspector).getByText('src/ui/TravelProductPage.tsx')).toBeVisible()
+    expect(within(surfaceInspector).getByText("experience.nearbyGuide === 'visible'")).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: 'Sandbox' }))
     expect(screen.getByText('Temporary overrides · Preview only · Not applied')).toBeVisible()

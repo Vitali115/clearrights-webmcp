@@ -91,7 +91,7 @@ ClearRights snapshots
   → product component props
 ```
 
-Waypoint implements this boundary in `src/demo/waypoint/product-effects.ts`. Its React product surfaces consume `WaypointExperienceViewModel`.
+Waypoint declares the copyable host mapping in `src/demo/waypoint/product-effect-registry.ts` and projects it through `src/demo/waypoint/product-effects.ts`. Its React product surfaces consume `WaypointExperienceViewModel`.
 
 ## 6. Register WebMCP against the same controllers
 

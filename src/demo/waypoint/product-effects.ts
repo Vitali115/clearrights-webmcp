@@ -4,6 +4,12 @@ import type {
   PrivacyReceipt,
   ProcessingState,
 } from '@/domain'
+import { waypointProductEffectRegistry } from './product-effect-registry'
+
+export {
+  WAYPOINT_PRODUCT_EFFECT_REGISTRY_FILE,
+  waypointProductEffectRegistry,
+} from './product-effect-registry'
 
 export type WaypointProductEffectSource = 'privacy' | 'accessibility'
 
@@ -35,6 +41,10 @@ export interface WaypointProductEffectDefinition {
   surfaceId: WaypointProductSurfaceId
   surfaceLabel: string
   technicalCopy: string
+  code: {
+    consumerFile: string
+    expression: string
+  }
 }
 
 export interface WaypointProductEffect extends WaypointProductEffectDefinition {
@@ -70,108 +80,6 @@ export interface WaypointExperienceViewModel {
   effects: readonly WaypointProductEffect[]
   hiddenSurfaceIds: readonly WaypointProductSurfaceId[]
 }
-
-export const waypointProductEffectRegistry: readonly WaypointProductEffectDefinition[] = [
-  {
-    id: 'privacy-trip-summary',
-    source: 'privacy',
-    settingId: 'trip_fulfilment',
-    settingLabel: 'Trip fulfilment',
-    surfaceId: 'trip-summary',
-    surfaceLabel: 'Upcoming trip summary',
-    technicalCopy: 'Keeps the booked-trip summary available because fulfilment is a required service.',
-  },
-  {
-    id: 'privacy-protection-status',
-    source: 'privacy',
-    settingId: 'account_security',
-    settingLabel: 'Account security',
-    surfaceId: 'protection-status',
-    surfaceLabel: 'Account protection status',
-    technicalCopy: 'Keeps the account protection state visible because security processing is required.',
-  },
-  {
-    id: 'privacy-trip-updates',
-    source: 'privacy',
-    settingId: 'transactional_updates',
-    settingLabel: 'Transactional updates',
-    surfaceId: 'trip-updates',
-    surfaceLabel: 'Essential trip updates',
-    technicalCopy: 'Keeps operational booking updates available and separate from marketing.',
-  },
-  {
-    id: 'privacy-discovery',
-    source: 'privacy',
-    settingId: 'recommendations',
-    settingLabel: 'Recommendations',
-    surfaceId: 'travel-discovery',
-    surfaceLabel: 'Travel discovery',
-    technicalCopy: 'Switches the same discovery surface between generic and interest-based content.',
-  },
-  {
-    id: 'privacy-nearby-guide',
-    source: 'privacy',
-    settingId: 'location_suggestions',
-    settingLabel: 'Location suggestions',
-    surfaceId: 'nearby-guide',
-    surfaceLabel: 'Nearby guide',
-    technicalCopy: 'Shows the nearby guide only when the represented location setting is active.',
-  },
-  {
-    id: 'privacy-partner-offer',
-    source: 'privacy',
-    settingId: 'partner_advertising',
-    settingLabel: 'Partner advertising',
-    surfaceId: 'partner-offer',
-    surfaceLabel: 'Partner rail offer',
-    technicalCopy: 'Shows the tailored partner offer only when partner advertising is active.',
-  },
-  {
-    id: 'accessibility-root-scale',
-    source: 'accessibility',
-    settingId: 'textScale',
-    settingLabel: 'Text size',
-    surfaceId: 'root-scale',
-    surfaceLabel: 'Root text scale',
-    technicalCopy: 'Maps the chosen text scale to the Waypoint root element.',
-  },
-  {
-    id: 'accessibility-color-scheme',
-    source: 'accessibility',
-    settingId: 'colorScheme',
-    settingLabel: 'Color scheme',
-    surfaceId: 'waypoint-color-scheme',
-    surfaceLabel: 'Waypoint color scheme',
-    technicalCopy: 'Follows the operating-system theme or applies an explicit light or dark Waypoint token set.',
-  },
-  {
-    id: 'accessibility-tokens',
-    source: 'accessibility',
-    settingId: 'contrast',
-    settingLabel: 'Contrast',
-    surfaceId: 'waypoint-tokens',
-    surfaceLabel: 'Waypoint design tokens',
-    technicalCopy: 'Selects the normal or higher-contrast Waypoint token set while respecting forced colors.',
-  },
-  {
-    id: 'accessibility-motion',
-    source: 'accessibility',
-    settingId: 'motion',
-    settingLabel: 'Motion',
-    surfaceId: 'waypoint-motion',
-    surfaceLabel: 'Waypoint motion',
-    technicalCopy: 'Delegates to the system or removes non-essential Waypoint transitions.',
-  },
-  {
-    id: 'accessibility-secondary-content',
-    source: 'accessibility',
-    settingId: 'readingLayout',
-    settingLabel: 'Reading layout',
-    surfaceId: 'secondary-content',
-    surfaceLabel: 'Secondary travel content',
-    technicalCopy: 'Keeps secondary content inline or moves it into a reachable native disclosure.',
-  },
-]
 
 export function selectWaypointExperience({
   privacyState,
