@@ -185,18 +185,20 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller)
 
-    expect(screen.getByText('Popular destinations')).toBeVisible()
-    expect(screen.queryByText('Near your Lisbon trip')).not.toBeInTheDocument()
-    expect(screen.queryByText('Personalised partner offer')).not.toBeInTheDocument()
-    expect(screen.getByText(/0 of 3 optional data uses active/)).toBeVisible()
+    expect(screen.getByText('Popular places, selected without profile data')).toBeVisible()
+    expect(screen.queryByText('Around your Lisbon stay')).not.toBeInTheDocument()
+    expect(screen.queryByText('A flexible rail pass for your saved city trips')).not.toBeInTheDocument()
+    expect(document.querySelector('[data-clearrights-surface="travel-discovery"]')).toHaveAttribute('data-clearrights-result', 'generic')
     await user.click(screen.getByRole('button', { name: 'Accept all' }))
 
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument())
     expect(controller.getSnapshot().record.state.processing.recommendations).toBe(true)
-    expect(screen.getByText('Suggestions based on your travel interests')).toBeVisible()
-    expect(screen.getByText('Near your Lisbon trip')).toBeVisible()
-    expect(screen.getByText('Personalised partner offer')).toBeVisible()
-    expect(screen.getByText(/3 of 3 optional data uses active/)).toBeVisible()
+    expect(screen.getByText('Ideas shaped by your travel interests')).toBeVisible()
+    expect(screen.getByText('Around your Lisbon stay')).toBeVisible()
+    expect(screen.getByText('A flexible rail pass for your saved city trips')).toBeVisible()
+    expect(document.querySelector('[data-clearrights-surface="travel-discovery"]')).toHaveAttribute('data-clearrights-result', 'personalised')
+    expect(document.querySelector('[data-clearrights-surface="nearby-guide"]')).toBeInTheDocument()
+    expect(document.querySelector('[data-clearrights-surface="partner-offer"]')).toBeInTheDocument()
     expect(controller.getReceipt()).toEqual(expect.objectContaining({
       kind: 'initial_choice',
       choiceMethod: 'allow_all',
@@ -588,7 +590,7 @@ describe('privacy settings UI', () => {
     const disclosure = screen.getByText('More travel ideas and offers').closest('details')
     expect(disclosure).not.toHaveAttribute('open')
     expect(screen.getByRole('heading', { name: 'Upcoming trips' })).toBeVisible()
-    expect(screen.getByText('Popular destinations')).not.toBeVisible()
+    expect(screen.getByText('Popular places, selected without profile data')).not.toBeVisible()
   })
 
   it('searches declared Site Guide destinations and preserves browser navigation', async () => {

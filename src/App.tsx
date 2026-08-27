@@ -162,8 +162,8 @@ export default function App({
         <>
           <TravelProductPage
             onExplainPrivacy={() => navigate('#/clearrights')}
-            privacyState={snapshot.record.state.processing}
-            readingLayout={accessibilitySnapshot.current.readingLayout}
+            onOpenControls={openPersonalControls}
+            experience={experience}
             controlsAction={controlsAction}
             agentActivityAction={agentActivityAction}
           />
@@ -203,8 +203,8 @@ export default function App({
       ) : (
         <TravelProductPage
           onExplainPrivacy={() => navigate('#/clearrights')}
-          privacyState={snapshot.record.state.processing}
-          readingLayout={accessibilitySnapshot.current.readingLayout}
+          onOpenControls={openPersonalControls}
+          experience={experience}
           controlsAction={controlsAction}
           agentActivityAction={agentActivityAction}
         />
