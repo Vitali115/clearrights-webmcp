@@ -142,4 +142,27 @@ describe('ClearRights UI', () => {
     expect(screen.getByText(receipt.id)).toBeVisible()
     expect(screen.getByText('1 → 2')).toBeVisible()
   })
+
+  it('hides a staged preview and revokes review when the intent changes', async () => {
+    const user = userEvent.setup()
+    const controller = await createController()
+    render(<App controller={controller} webMcpAvailable />)
+    await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
+    await user.click(screen.getByLabelText('Personalised recommendations'))
+    await user.click(screen.getByLabelText('Nearby suggestions'))
+    await user.click(screen.getByLabelText('Partner offers'))
+    await user.click(screen.getByRole('button', { name: /Stage privacy plan/ }))
+    await user.click(screen.getByLabelText('I reviewed this plan and understand its effects.'))
+
+    expect(controller.getSnapshot().workflow).toBe('reviewed')
+    expect(screen.getByText('3 preference changes prepared.')).toBeVisible()
+
+    await user.click(screen.getByLabelText('Partner offers'))
+
+    expect(controller.getSnapshot().workflow).toBe('staged')
+    expect(screen.getByText('Plan needs restaging')).toBeVisible()
+    expect(screen.getByText(/Stage the privacy plan again/)).toBeVisible()
+    expect(screen.queryByText('3 preference changes prepared.')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('I reviewed this plan and understand its effects.')).not.toBeInTheDocument()
+  })
 })

@@ -84,6 +84,10 @@ export function PrivacyCenter({
   const [actionError, setActionError] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
   const inspection = controller.inspect(selectedId)
+  const planMatchesIntent = snapshot.plan
+    ? sameSelection(snapshot.plan.input.keepCapabilities, keepCapabilities)
+      && sameSelection(snapshot.plan.input.avoidUses, avoidUses)
+    : false
 
   const revokeReviewForChangedIntent = () => {
     if (snapshot.workflow === 'reviewed') controller.setReviewed(false)
@@ -271,7 +275,17 @@ export function PrivacyCenter({
               </CardContent>
             </Card>
 
-            {snapshot.plan && (
+            {snapshot.plan && !planMatchesIntent && (
+              <Alert>
+                <AlertTriangle />
+                <AlertTitle>Plan needs restaging</AlertTitle>
+                <AlertDescription>
+                  Your selections changed. Stage the privacy plan again to refresh its effects before review.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {snapshot.plan && planMatchesIntent && (
               <>
                 <Card>
                   <CardHeader>
@@ -432,6 +446,10 @@ function Detail({ label, value }: { label: string; value: string }) {
 function toggleValue<T extends string>(current: readonly T[], value: T, checked: boolean): T[] {
   if (checked) return current.includes(value) ? [...current] : [...current, value]
   return current.filter((item) => item !== value)
+}
+
+function sameSelection<T extends string>(left: readonly T[], right: readonly T[]) {
+  return left.length === right.length && left.every((value) => right.includes(value))
 }
 
 function activeCapabilities(snapshot: PrivacyControllerSnapshot): CapabilityId[] {
