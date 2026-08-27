@@ -160,7 +160,7 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByRole('button', { name: 'Open live product preview' }))
     expect(window.location.hash).toBe('#/?effects=1')
     expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
-    expect(screen.getByRole('complementary', { name: 'Developer product effect preview' })).toBeVisible()
+    expect(screen.getByRole('complementary', { name: 'Privacy product effect preview' })).toBeVisible()
     expect(screen.getByText(/Hidden product surfaces: Nearby guide, Partner rail offer/)).toBeVisible()
     expect(screen.getByRole('button', { name: 'Applied' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Pending plan' })).toBeDisabled()
@@ -197,9 +197,9 @@ describe('privacy settings UI', () => {
       partner_advertising: false,
     }))
 
-    await user.click(screen.getByRole('button', { name: 'Exit preview' }))
+    await user.click(screen.getByRole('button', { name: 'Exit effects view' }))
     expect(window.location.hash).toBe('#/')
-    expect(screen.queryByRole('complementary', { name: 'Developer product effect preview' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('complementary', { name: 'Privacy product effect preview' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Privacy settings' }))
     expect(screen.getByRole('dialog', { name: 'Waypoint Privacy Settings' })).toBeVisible()
@@ -292,6 +292,10 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller)
 
+    const initialEffect = screen.getByTestId('privacy-effect-summary')
+    expect(within(initialEffect).getByText('Generic')).toBeVisible()
+    expect(within(initialEffect).getAllByText('Hidden')).toHaveLength(2)
+    expect(within(initialEffect).getByText(/No matching receipt yet/)).toBeVisible()
     expect(screen.getByText('Popular places, selected without profile data')).toBeVisible()
     expect(screen.queryByText('Around your Lisbon stay')).not.toBeInTheDocument()
     expect(screen.queryByText('A flexible rail pass for your saved city trips')).not.toBeInTheDocument()
@@ -308,6 +312,11 @@ describe('privacy settings UI', () => {
     expect(document.querySelector('[data-clearrights-surface="partner-offer"]')).toBeInTheDocument()
     expect(document.querySelector('img[src="/cards/reykjavik.jpg"]')).toBeInTheDocument()
     expect(document.querySelector('img[src="/cards/rail-pass.jpg"]')).toBeInTheDocument()
+    const appliedEffect = screen.getByTestId('privacy-effect-summary')
+    expect(within(appliedEffect).getByText('Personalised')).toBeVisible()
+    expect(within(appliedEffect).getAllByText('Visible')).toHaveLength(2)
+    expect(within(appliedEffect).getByText('Readback matched revision 2')).toBeVisible()
+    expect(within(appliedEffect).getByRole('button', { name: 'Open verified receipt' })).toBeVisible()
     expect(controller.getReceipt()).toEqual(expect.objectContaining({
       kind: 'initial_choice',
       choiceMethod: 'allow_all',
@@ -315,6 +324,20 @@ describe('privacy settings UI', () => {
         expect.objectContaining({ processingId: 'recommendations', after: true }),
       ]),
     }))
+  })
+
+  it('labels a staged privacy plan as pending while the home keeps applied effects', async () => {
+    const controller = await createController()
+    controller.stage({
+      keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates', 'personalised_recommendations'],
+      avoidUses: [],
+    }, 'webmcp_tool')
+    renderApp(controller, true)
+
+    const effect = screen.getByTestId('privacy-effect-summary')
+    expect(within(effect).getByText('Generic')).toBeVisible()
+    expect(within(effect).getByText('1 change prepared · Not applied yet')).toBeVisible()
+    expect(within(effect).getByText('The product still reflects the applied values shown above.')).toBeVisible()
   })
 
   it('opens and closes the privacy Sheet over the travel product', async () => {
@@ -661,8 +684,9 @@ describe('privacy settings UI', () => {
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
     expect(screen.getByLabelText('Recommendations')).toBeChecked()
     expect(screen.getByText('1 pending change')).toBeVisible()
-    expect(screen.getByText('Applied · 0 of 3 optional settings on · Revision 1')).toBeVisible()
-    expect(screen.getByText('Draft · 1 of 3 optional settings on · 1 change not applied')).toBeVisible()
+    expect(screen.getByText('Applied revision 1 · No matching verified receipt yet')).toBeVisible()
+    expect(screen.getByText('1 change prepared · Not applied yet')).toBeVisible()
+    expect(screen.getByText(/Draft: 1 of 3 optional settings on/)).toBeVisible()
   })
 
   it('applies accessibility preferences immediately, exposes one Undo, and records Activity', async () => {

@@ -284,78 +284,88 @@ function SettingsView({
   onReview(): void
 }) {
   const optional = travelCatalog.processing.filter(({ control }) => control.mode !== 'required')
-  const appliedOptionalEnabled = optional.filter(({ id }) => snapshot.record.state.processing[id]).length
+  const required = travelCatalog.processing.filter(({ control }) => control.mode === 'required')
   const draftOptionalEnabled = optional.filter((definition) =>
     draftEnabled(definition, keepCapabilities, avoidUses)).length
   const changedCount = travelCatalog.processing.filter((definition) =>
     snapshot.record.state.processing[definition.id]
       !== draftEnabled(definition, keepCapabilities, avoidUses)).length
+  const matchingReceipt = snapshot.record.receipts.find((receipt) =>
+    receipt.afterRevision === snapshot.record.state.revision
+    && receipt.verification.observedRevision === snapshot.record.state.revision)
 
   return (
     <div>
-      <div className="mb-7 flex flex-wrap items-start justify-between gap-3 text-sm font-medium text-muted-foreground">
-        <div className="space-y-1">
-          <p>
-            Applied · {appliedOptionalEnabled} of {optional.length} optional settings on · Revision {snapshot.record.state.revision}
-          </p>
-          {changedCount > 0 && (
-            <p className="text-foreground">
-              Draft · {draftOptionalEnabled} of {optional.length} optional settings on · {changedCount} {changedCount === 1 ? 'change' : 'changes'} not applied
-            </p>
-          )}
+      <section className="mb-8 border-y border-foreground/10 py-5" aria-labelledby="current-privacy-effect">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-[13px] font-medium text-muted-foreground">Applied privacy effect</p>
+            <h2 id="current-privacy-effect" className="mt-1 text-[1.1rem] font-medium tracking-tight">
+              What Waypoint is using now
+            </h2>
+          </div>
+          <Button variant="ghost" className="h-auto px-0 text-foreground" onClick={onHistory}>
+            Previous changes ({snapshot.record.receipts.length})
+          </Button>
         </div>
-        <Button variant="ghost" className="h-auto px-0 text-foreground" onClick={onHistory}>
-          Previous changes ({snapshot.record.receipts.length})
-        </Button>
-      </div>
+        <dl className="mt-5 grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
+          <Outcome label="Recommendations" value={snapshot.record.state.processing.recommendations ? 'Personalised' : 'Generic'} />
+          <Outcome label="Nearby guide" value={snapshot.record.state.processing.location_suggestions ? 'Visible' : 'Hidden'} />
+          <Outcome label="Partner offer" value={snapshot.record.state.processing.partner_advertising ? 'Visible' : 'Hidden'} />
+        </dl>
+        <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+          {matchingReceipt
+            ? `Readback matched revision ${snapshot.record.state.revision} · Receipt ${matchingReceipt.id}`
+            : `Applied revision ${snapshot.record.state.revision} · No matching verified receipt yet`}
+        </p>
+        {changedCount > 0 && (
+          <div className="mt-4 border-l-2 border-foreground pl-3 text-sm">
+            <p className="font-medium">
+              {changedCount} {changedCount === 1 ? 'change' : 'changes'} prepared · Not applied yet
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Draft: {draftOptionalEnabled} of {optional.length} optional settings on. Waypoint still reflects the applied values above.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <section className="mb-8" aria-labelledby="optional-settings">
+        <h2 id="optional-settings" className="text-[13px] font-medium text-muted-foreground">Optional settings</h2>
+        <p className="mt-1 mb-1 text-[13px] text-muted-foreground">
+          These settings change discovery, nearby suggestions, and partner offers.
+        </p>
+        <SettingRows
+          definitions={optional}
+          snapshot={snapshot}
+          keepCapabilities={keepCapabilities}
+          avoidUses={avoidUses}
+          onChange={onChange}
+          onInspect={onInspect}
+        />
+      </section>
+
+      <details className="group mb-4 border-y border-foreground/10" data-testid="essential-settings">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+          <span>
+            <span className="block font-medium">Essential services</span>
+            <span className="mt-1 block text-sm text-muted-foreground">{required.length} required settings always stay on.</span>
+          </span>
+          <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="pb-2">
+          <SettingRows
+            definitions={required}
+            snapshot={snapshot}
+            keepCapabilities={keepCapabilities}
+            avoidUses={avoidUses}
+            onChange={onChange}
+            onInspect={onInspect}
+          />
+        </div>
+      </details>
 
       <BrowserPrivacySignal signal={observedGlobalPrivacyControl} />
-
-      <div aria-label="Privacy settings list">
-        {travelCatalog.sections.map((section) => {
-          const ids = travelCatalog.processing
-            .filter(({ sectionId }) => sectionId === section.id)
-            .map(({ id }) => id)
-          return (
-          <section key={section.id} className="mb-9" aria-labelledby={`settings-${section.id}`}>
-            <h2 id={`settings-${section.id}`} className="text-[13px] font-medium text-muted-foreground">{section.label}</h2>
-            <p className="mt-1 mb-1 text-[13px] text-muted-foreground">{section.description}</p>
-            {ids.map((id) => {
-              const definition = travelCatalog.getProcessing(id)
-              const enabled = draftEnabled(definition, keepCapabilities, avoidUses)
-              const changed = snapshot.record.state.processing[id] !== enabled
-              return (
-                <div
-                  key={id}
-                  data-testid={`setting-row-${id}`}
-                  className="grid grid-cols-[1fr_auto] items-start gap-x-6 gap-y-2 border-t border-foreground/10 py-[18px]"
-                >
-                  <button
-                    type="button"
-                    className="min-w-0 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-                    aria-label={`Open ${definition.label} details`}
-                    onClick={() => onInspect(id)}
-                  >
-                    <span className="block text-base font-medium tracking-tight">{definition.label}</span>
-                    <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{definition.description.summary}</span>
-                  </button>
-                  <div className="flex flex-col items-end gap-1.5 pt-0.5">
-                    {changed && (
-                      <span className="text-xs font-medium">Will turn {enabled ? 'on' : 'off'}</span>
-                    )}
-                    {!definition.control.mutable ? (
-                      <span className="text-xs font-medium text-muted-foreground">Required</span>
-                    ) : (
-                      <SettingSwitch label={definition.label} checked={enabled} onChange={(checked) => onChange(definition, checked)} />
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </section>
-          )
-        })}
-      </div>
 
       <div className="sticky bottom-0 -mx-5 mt-4 flex items-center justify-between gap-3 bg-gradient-to-t from-background from-70% to-transparent px-5 pt-8 pb-1 sm:-mx-8 sm:px-8">
         <p className="text-sm font-medium">
@@ -367,6 +377,59 @@ function SettingsView({
   )
 }
 
+function Outcome({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-sm bg-foreground/[0.035] px-3 py-3">
+      <dt className="truncate text-[11px] font-medium text-muted-foreground">{label}</dt>
+      <dd className="mt-1 truncate text-sm font-medium">{value}</dd>
+    </div>
+  )
+}
+
+function SettingRows({
+  definitions,
+  snapshot,
+  keepCapabilities,
+  avoidUses,
+  onChange,
+  onInspect,
+}: {
+  definitions: readonly ProcessingDefinition[]
+  snapshot: PrivacyControllerSnapshot
+  keepCapabilities: readonly CapabilityId[]
+  avoidUses: readonly UseId[]
+  onChange(definition: ProcessingDefinition, enabled: boolean): void
+  onInspect(id: ProcessingId): void
+}) {
+  return definitions.map((definition) => {
+    const enabled = draftEnabled(definition, keepCapabilities, avoidUses)
+    const changed = snapshot.record.state.processing[definition.id] !== enabled
+    return (
+      <div
+        key={definition.id}
+        data-testid={`setting-row-${definition.id}`}
+        className="grid grid-cols-[1fr_auto] items-start gap-x-6 gap-y-2 border-t border-foreground/10 py-[18px]"
+      >
+        <button
+          type="button"
+          className="min-w-0 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          aria-label={`Open ${definition.label} details`}
+          onClick={() => onInspect(definition.id)}
+        >
+          <span className="block text-base font-medium tracking-tight">{definition.label}</span>
+          <span className="mt-1 block text-sm leading-relaxed text-muted-foreground">{definition.description.summary}</span>
+        </button>
+        <div className="flex flex-col items-end gap-1.5 pt-0.5">
+          {changed && <span className="text-xs font-medium">Will turn {enabled ? 'on' : 'off'}</span>}
+          {!definition.control.mutable
+            ? <span className="text-xs font-medium text-muted-foreground">Required</span>
+            : <SettingSwitch label={definition.label} checked={enabled} onChange={(checked) => onChange(definition, checked)} />}
+        </div>
+      </div>
+    )
+  })
+}
+
 function BrowserPrivacySignal({ signal }: { signal: ObservedGlobalPrivacyControl }) {
   const value = signal.interpretation === 'opt_out_observed'
     ? 'GPC opt-out signal observed'
@@ -375,13 +438,18 @@ function BrowserPrivacySignal({ signal }: { signal: ObservedGlobalPrivacyControl
       : 'GPC is unavailable in this browser'
 
   return (
-    <aside className="mb-8 border-y border-foreground/10 py-4" aria-label="Observed browser privacy signal">
-      <p className="text-[13px] font-medium text-muted-foreground">Browser signal · informational only</p>
-      <p className="mt-1 font-medium">{value}</p>
-      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+    <details className="group mb-8 border-b border-foreground/10" aria-label="Observed browser privacy signal">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+        <span>
+          <span className="block text-[13px] font-medium text-muted-foreground">Browser signal · informational only</span>
+          <span className="mt-1 block font-medium">{value}</span>
+        </span>
+        <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <p className="pb-5 text-sm leading-relaxed text-muted-foreground">
         Waypoint reports this signal to the agent but does not translate it into a consent choice or apply settings automatically.
       </p>
-    </aside>
+    </details>
   )
 }
 
@@ -592,14 +660,20 @@ function ReviewView({
 
   return (
     <div>
-      <div className="mb-2 flex items-start justify-between gap-4">
+      <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <p className="text-[1.1rem] font-medium tracking-tight">
             {plan.changes.length} {plan.changes.length === 1 ? 'change' : 'changes'} ready
           </p>
           <p className="mt-1 text-sm text-muted-foreground">Only the settings listed below will change.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Exact plan · {plan.id}</p>
         </div>
         <Button variant="ghost" className="h-9 shrink-0 rounded-full px-4" onClick={onEdit}>Edit settings</Button>
+      </div>
+
+      <div className="mb-7">
+        <p className="mb-3 text-[13px] font-medium text-muted-foreground">Approval status · both checks stay tied to this plan</p>
+        <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={snapshot.workflow === 'reviewed'} approvalNeeded />
       </div>
 
       <ul>
@@ -631,8 +705,6 @@ function ReviewView({
       )}
 
       <div className="mt-8">
-        <p className="mb-4 text-[13px] font-medium text-muted-foreground">Two stamps. Both stay on this review.</p>
-        <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={snapshot.workflow === 'reviewed'} approvalNeeded />
         <HoldToConfirm
           confirmed={snapshot.workflow === 'reviewed'}
           onConfirm={onReviewed}
@@ -660,7 +732,7 @@ function ApprovalStatus({
   approvalNeeded: boolean
 }) {
   return (
-    <div className="grid gap-4 overflow-visible sm:grid-cols-2" aria-label="Approval status">
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-4" aria-label="Approval status">
       <Stamp
         title="Agent check"
         complete={preparedByAgent}
@@ -697,15 +769,17 @@ function Stamp({
   children: string
 }) {
   return (
-    <div className={`flex min-h-48 flex-col justify-between rounded-sm border p-4 ${complete ? 'border-foreground' : 'border-foreground/20'}`}>
-      <p className="text-sm font-medium">{title}</p>
+    <div className={`grid min-h-36 grid-cols-[auto_1fr] content-start gap-x-3 rounded-sm border p-4 ${complete ? 'border-foreground' : 'border-foreground/20'}`}>
       <span
-        className={`mx-auto size-14 rounded-full ${complete ? 'bg-foreground' : 'border-2 border-foreground/25'}`}
+        className={`mt-0.5 grid size-7 place-items-center rounded-full text-sm font-semibold ${complete ? 'bg-foreground text-background' : 'border border-foreground/25 text-muted-foreground'}`}
         aria-hidden="true"
-      />
-      <div>
+      >
+        {complete ? '✓' : '·'}
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-medium">{title}</p>
         <p className={`text-sm font-medium ${complete ? 'text-foreground' : 'text-muted-foreground'}`}>{status}</p>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{children}</p>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{children}</p>
       </div>
     </div>
   )
@@ -748,14 +822,32 @@ function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHo
   }
   return (
     <div>
-      <p className="text-sm font-medium">Verified</p>
+      <p className="text-sm font-medium">Readback verified</p>
       <p className="mt-2 text-[1.35rem] font-medium tracking-tight">Privacy settings applied</p>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         The {receipt.verification.adapterId} adapter was read after apply and matched the exact human-approved target.
       </p>
-      <div className="mt-8">
-        <ReceiptDetails receipt={receipt} />
-      </div>
+      <dl className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-3">
+        <ProofStep
+          label={receipt.approvalMethod === 'review_hold' ? 'Reviewed plan' : 'Direct choice'}
+          value={receipt.approvalMethod === 'review_hold' ? 'Exact approved target recorded' : 'Explicit human action recorded'}
+        />
+        <ProofStep label="Adapter applied" value={`${receipt.beforeRevision} → ${receipt.afterRevision}`} />
+        <ProofStep label="Readback matched" value={`${receipt.decisions.length} of ${receipt.decisions.length} settings`} />
+        <ProofStep label="Product source" value={`Applied snapshot · ${receipt.verification.scope.replaceAll('_', ' ')}`} />
+      </dl>
+      <p className="mt-4 text-xs text-muted-foreground">
+        Receipt · <span className="break-all">{receipt.id}</span>
+      </p>
+      <details className="group mt-7 border-y border-foreground/10">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 font-medium outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+          Verification details
+          <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="pb-5">
+          <ReceiptDetails receipt={receipt} />
+        </div>
+      </details>
       <div className="mt-8 border-t border-foreground/10 pt-5 text-sm">
         <p className="font-medium">What verified means</p>
         <p className="mt-1 text-muted-foreground">
@@ -767,14 +859,24 @@ function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHo
   )
 }
 
+function ProofStep({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-sm border border-foreground/10 p-4">
+      <dt className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+        <span className="grid size-5 place-items-center rounded-full bg-foreground text-[11px] text-background" aria-hidden="true">✓</span>
+        {label}
+      </dt>
+      <dd className="mt-2 text-sm font-medium">{value}</dd>
+    </div>
+  )
+}
+
 function ReceiptDetails({ receipt }: { receipt: PrivacyReceipt }) {
   return (
     <div className="space-y-4 text-sm">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Detail label="Receipt" value={receipt.id} />
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-3">
         <Detail label="Event" value={receipt.kind === 'initial_choice' ? 'Initial privacy choice' : 'Settings change'} />
         <Detail label="Plan" value={receipt.planId} />
-        <Detail label="Revision" value={`${receipt.beforeRevision} → ${receipt.afterRevision}`} />
         <Detail label="Applied" value={formatDate(receipt.issuedAt)} />
         <Detail label="Human review recorded" value={formatDate(receipt.reviewedAt)} />
         <Detail label="Approval" value={receipt.approvalMethod === 'explicit_action' ? 'Explicit action' : 'Review hold'} />

@@ -19,8 +19,14 @@ interface TravelProductPageProps {
   experience: WaypointExperienceViewModel
   effectsPreview: boolean
   developerPreview: WaypointDeveloperPreviewModel | null
+  privacyEffectStatus: {
+    revision: number
+    verifiedReceiptId: string | null
+    pendingChanges: number
+  }
   onExplainPrivacy(): void
   onOpenControls(): void
+  onOpenReceipt(): void
   onExitEffectsPreview(): void
   onDeveloperPreviewModeChange(mode: WaypointDeveloperPreviewMode): void
   onDeveloperSandboxChange(setting: keyof WaypointPrivacySandboxState, enabled: boolean): void
@@ -94,8 +100,10 @@ export function TravelProductPage({
   experience,
   effectsPreview,
   developerPreview,
+  privacyEffectStatus,
   onExplainPrivacy,
   onOpenControls,
+  onOpenReceipt,
   onExitEffectsPreview,
   onDeveloperPreviewModeChange,
   onDeveloperSandboxChange,
@@ -159,6 +167,15 @@ export function TravelProductPage({
           <Button type="submit" className="h-9 rounded-full px-5">Search</Button>
         </form>
       </section>
+
+      {!effectsPreview && (
+        <PrivacyEffectSummary
+          experience={experience}
+          status={privacyEffectStatus}
+          onOpenSettings={onOpenControls}
+          onOpenReceipt={onOpenReceipt}
+        />
+      )}
 
       <section className="px-5 pb-16 sm:px-8 sm:pb-20" aria-labelledby="upcoming-trips">
         <h2 id="upcoming-trips" tabIndex={-1} className="mb-7 text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -240,6 +257,67 @@ export function TravelProductPage({
   )
 }
 
+function PrivacyEffectSummary({
+  experience,
+  status,
+  onOpenSettings,
+  onOpenReceipt,
+}: {
+  experience: WaypointExperienceViewModel
+  status: TravelProductPageProps['privacyEffectStatus']
+  onOpenSettings(): void
+  onOpenReceipt(): void
+}) {
+  return (
+    <section
+      data-testid="privacy-effect-summary"
+      className="border-y border-foreground/10 bg-foreground/[0.02] px-5 py-6 sm:px-8"
+      aria-labelledby="waypoint-privacy-effect"
+    >
+      <div className="grid gap-6 lg:grid-cols-[0.8fr_1.4fr_auto] lg:items-center">
+        <div>
+          <p className="text-[13px] font-medium text-muted-foreground">Applied privacy effect</p>
+          <h2 id="waypoint-privacy-effect" className="mt-1 text-xl font-medium tracking-tight">What Waypoint is using now</h2>
+        </div>
+        <dl className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
+          <EffectValue label="Recommendations" value={experience.discovery === 'personalised' ? 'Personalised' : 'Generic'} />
+          <EffectValue label="Nearby guide" value={experience.nearbyGuide === 'visible' ? 'Visible' : 'Hidden'} />
+          <EffectValue label="Partner offer" value={experience.partnerOffer === 'visible' ? 'Visible' : 'Hidden'} />
+        </dl>
+        <div className="flex flex-col items-start gap-1 lg:items-end">
+          <p className="text-sm font-medium">
+            {status.verifiedReceiptId ? `Readback matched revision ${status.revision}` : `Applied revision ${status.revision}`}
+          </p>
+          {status.verifiedReceiptId ? (
+            <button type="button" className="text-xs font-medium text-muted-foreground underline underline-offset-4" onClick={onOpenReceipt}>
+              Open verified receipt
+            </button>
+          ) : (
+            <button type="button" className="text-xs font-medium text-muted-foreground underline underline-offset-4" onClick={onOpenSettings}>
+              No matching receipt yet · Open settings
+            </button>
+          )}
+        </div>
+      </div>
+      {status.pendingChanges > 0 && (
+        <div className="mt-5 border-l-2 border-foreground pl-3 text-sm">
+          <p className="font-medium">{status.pendingChanges} {status.pendingChanges === 1 ? 'change' : 'changes'} prepared · Not applied yet</p>
+          <p className="mt-1 text-muted-foreground">The product still reflects the applied values shown above.</p>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function EffectValue({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 rounded-sm bg-background px-3 py-3">
+      <dt className="truncate text-[11px] font-medium text-muted-foreground">{label}</dt>
+      <dd className="mt-1 truncate text-sm font-medium">{value}</dd>
+    </div>
+  )
+}
+
 function EffectsPreviewBar({
   preview,
   onExit,
@@ -264,17 +342,17 @@ function EffectsPreviewBar({
       : 'Temporary overrides · Preview only · Not applied'
 
   return (
-    <aside className="sticky top-0 z-30 border-b border-blue-700/20 bg-blue-50 px-5 py-3 text-blue-950 sm:px-8" aria-label="Developer product effect preview">
+    <aside className="sticky top-0 z-30 border-b border-blue-700/20 bg-blue-50 px-5 py-3 text-blue-950 sm:px-8" aria-label="Privacy product effect preview">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium">Developer preview · {experience.effects.length} declared mappings</p>
+          <p className="text-sm font-medium">Privacy effects · {experience.effects.length} declared mappings</p>
           <p className="mt-1 text-xs text-blue-900/70">
             Hidden product surfaces: {hidden.length > 0 ? hidden.join(', ') : 'None'}
           </p>
           <p className="mt-1 text-xs font-medium">{evidence}</p>
         </div>
         <Button variant="outline" className="rounded-full border-blue-950/20 bg-transparent hover:bg-blue-100" onClick={onExit}>
-          Exit preview
+          Exit effects view
         </Button>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2" aria-label="Developer preview source">

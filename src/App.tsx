@@ -134,6 +134,11 @@ export default function App({
     openControlsSection('privacy')
   }
 
+  const openLatestReceipt = () => {
+    privacyUi.navigate({ view: 'receipt', origin: 'human' })
+    controlsUi.openPanel('privacy', { origin: 'human', targetId: 'privacy-receipt' })
+  }
+
   const openControlsSection = (section: PersonalControlsSection) => {
     if (section === 'privacy') {
       privacyUi.navigate({ view: 'home', origin: 'human' })
@@ -188,6 +193,16 @@ export default function App({
     privacyReceipt: snapshot.record.receipts[0] ?? null,
     accessibility: accessibilitySnapshot,
   })
+  const matchingPrivacyReceipt = snapshot.record.receipts.find((receipt) =>
+    receipt.afterRevision === snapshot.record.state.revision
+    && receipt.verification.observedRevision === snapshot.record.state.revision) ?? null
+  const privacyEffectStatus = {
+    revision: snapshot.record.state.revision,
+    verifiedReceiptId: matchingPrivacyReceipt?.id ?? null,
+    pendingChanges: snapshot.plan && (snapshot.workflow === 'staged' || snapshot.workflow === 'reviewed')
+      ? snapshot.plan.changes.length
+      : 0,
+  }
   const privacyTrustTrace = selectPrivacyTrustTrace({
     snapshot,
     catalogVersion: travelCatalog.version,
@@ -222,11 +237,13 @@ export default function App({
             experience={route.effects ? developerPreview.experience : experience}
             effectsPreview={route.effects}
             developerPreview={route.effects ? developerPreview : null}
+            privacyEffectStatus={privacyEffectStatus}
             onDeveloperPreviewModeChange={setDeveloperPreviewMode}
             onDeveloperSandboxChange={(setting, enabled) => {
               setDeveloperSandbox((current) => ({ ...current, [setting]: enabled }))
             }}
             onExitEffectsPreview={exitEffectsPreview}
+            onOpenReceipt={openLatestReceipt}
             controlsAction={controlsAction}
             agentActivityAction={agentActivityAction}
           />
@@ -275,11 +292,13 @@ export default function App({
           experience={experience}
           effectsPreview={false}
           developerPreview={null}
+          privacyEffectStatus={privacyEffectStatus}
           onDeveloperPreviewModeChange={setDeveloperPreviewMode}
           onDeveloperSandboxChange={(setting, enabled) => {
             setDeveloperSandbox((current) => ({ ...current, [setting]: enabled }))
           }}
           onExitEffectsPreview={exitEffectsPreview}
+          onOpenReceipt={openLatestReceipt}
           controlsAction={controlsAction}
           agentActivityAction={agentActivityAction}
         />
