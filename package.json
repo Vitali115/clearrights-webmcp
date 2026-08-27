@@ -12,6 +12,7 @@
     "lint": "oxlint",
     "test": "vitest run",
     "test:example": "vitest run examples/minimal-host",
+    "test:webmcp-evals": "vitest run src/adapters/webmcp/privacy-eval-pack.test.ts",
     "test:watch": "vitest",
     "preview": "vite preview"
   },
