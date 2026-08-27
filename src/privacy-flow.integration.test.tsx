@@ -2,10 +2,24 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
 import { LocalDemoEnforcementAdapter } from '@/adapters/enforcement/local-demo-enforcement-adapter'
+import { LocalStorageAccessibilityRepository } from '@/adapters/accessibility/local-storage-accessibility-repository'
+import {
+  readSystemAccessibilityPreferences,
+  WaypointDomAccessibilityAdapter,
+} from '@/adapters/accessibility/waypoint-dom-accessibility-adapter'
+import { WaypointNavigationAdapter } from '@/adapters/navigation/waypoint-navigation-adapter'
 import { startWebMcpAdapter } from '@/adapters/webmcp/webmcp-adapter'
-import { createPrivacyController, createPrivacyViewCoordinator } from '@/application'
+import {
+  createActivityCoordinator,
+  createPersonalControlsCoordinator,
+  createPrivacyController,
+  createPrivacyViewCoordinator,
+} from '@/application'
+import { createAccessibilityRuntime, createSiteGuideRuntime } from '@/domain'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
+import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
+import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
 import { HOLD_TO_CONFIRM_MS } from '@/ui/HoldToConfirm'
 import App from './App'
 
@@ -50,8 +64,40 @@ describe('agent-guided privacy flow', () => {
       idGenerator: { next: () => 'receipt-integration' },
     })
     const privacyUi = createPrivacyViewCoordinator()
+    const controlsUi = createPersonalControlsCoordinator()
+    const accessibility = await createAccessibilityRuntime({
+      catalog: waypointAccessibilityCatalog,
+      repository: new LocalStorageAccessibilityRepository(storage),
+      enforcement: new WaypointDomAccessibilityAdapter(document.createElement('html')),
+      idGenerator: { next: () => 'accessibility-integration' },
+    })
+    let location = '/#/'
+    const siteGuide = createSiteGuideRuntime({
+      catalog: waypointSiteGuideCatalog,
+      navigator: new WaypointNavigationAdapter({
+        openRoute(path, hash) { location = `${path}${hash ?? ''}` },
+        openPanel() {},
+        getLocation: () => location,
+      }),
+    })
+    const activity = createActivityCoordinator({
+      storage,
+      clock: { now: () => `2026-08-27T14:30:0${tick++}.000Z` },
+      idGenerator: { next: () => `activity-${tick}` },
+    })
     const modelContext = new FakeModelContext()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+    const adapter = await startWebMcpAdapter(modelContext, {
+      privacyController: controller,
+      privacyCatalog: travelCatalog,
+      privacyUi,
+      controlsUi,
+      accessibilityRuntime: accessibility,
+      accessibilityCatalog: waypointAccessibilityCatalog,
+      readSystemPreferences: () => readSystemAccessibilityPreferences(window),
+      siteGuideRuntime: siteGuide,
+      siteGuideCatalog: waypointSiteGuideCatalog,
+      activity,
+    })
     render(<App controller={controller} privacyUi={privacyUi} webMcpAvailable />)
 
     await act(async () => {

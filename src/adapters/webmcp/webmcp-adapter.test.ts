@@ -1,13 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import {
+  createActivityCoordinator,
+  createPersonalControlsCoordinator,
   createPrivacyController,
   createPrivacyViewCoordinator,
   type PrivacyController,
 } from '@/application'
+import { createAccessibilityRuntime, createSiteGuideRuntime } from '@/domain'
+import { LocalStorageAccessibilityRepository } from '@/adapters/accessibility/local-storage-accessibility-repository'
+import { WaypointDomAccessibilityAdapter } from '@/adapters/accessibility/waypoint-dom-accessibility-adapter'
 import { LocalStoragePrivacyRepository } from '@/adapters/storage/local-storage-privacy-repository'
 import { LocalDemoEnforcementAdapter } from '@/adapters/enforcement/local-demo-enforcement-adapter'
+import { WaypointNavigationAdapter } from '@/adapters/navigation/waypoint-navigation-adapter'
 import { travelCatalog } from '@/demo/travel-catalog'
 import { createTravelSeed } from '@/demo/travel-seed'
+import { waypointAccessibilityCatalog } from '@/demo/waypoint/accessibility-catalog'
+import { waypointSiteGuideCatalog } from '@/demo/waypoint/site-guide-catalog'
 import { startWebMcpAdapter } from './webmcp-adapter'
 
 class MemoryStorage {
@@ -50,23 +58,84 @@ async function setup() {
     clock: { now: () => `2026-08-27T11:00:0${time++}.000Z` },
     idGenerator: { next: () => 'receipt-webmcp' },
   })
+  const privacyUi = createPrivacyViewCoordinator()
+  const controlsUi = createPersonalControlsCoordinator()
+  const accessibilityRepository = new LocalStorageAccessibilityRepository(storage)
+  const accessibilityEnforcement = new WaypointDomAccessibilityAdapter(document.createElement('html'))
+  const accessibility = await createAccessibilityRuntime({
+    catalog: waypointAccessibilityCatalog,
+    repository: accessibilityRepository,
+    enforcement: accessibilityEnforcement,
+    idGenerator: { next: () => 'accessibility-webmcp' },
+  })
+  let location = '/#/'
+  const siteGuide = createSiteGuideRuntime({
+    catalog: waypointSiteGuideCatalog,
+    navigator: new WaypointNavigationAdapter({
+      openRoute(path, hash, context) {
+        location = `${path}${hash ?? ''}`
+        controlsUi.reportRoute({
+          origin: context.origin,
+          targetId: context.destinationId,
+          message: context.origin === 'agent' ? `The agent opened ${context.label}.` : undefined,
+        })
+      },
+      openPanel(section, context) {
+        controlsUi.openPanel(section, {
+          origin: context.origin,
+          targetId: context.destinationId,
+          message: context.origin === 'agent' ? `The agent opened ${context.label}.` : undefined,
+        })
+      },
+      getLocation: () => location,
+    }),
+  })
+  const activity = createActivityCoordinator({
+    storage,
+    clock: { now: () => `2026-08-27T11:30:0${time++}.000Z` },
+    idGenerator: { next: () => `activity-${time}` },
+  })
+  const dependencies = {
+    privacyController: controller,
+    privacyCatalog: travelCatalog,
+    privacyUi,
+    controlsUi,
+    accessibilityRuntime: accessibility,
+    accessibilityCatalog: waypointAccessibilityCatalog,
+    readSystemPreferences: () => ({
+      prefersReducedMotion: false,
+      prefersHigherContrast: false,
+      forcedColorsActive: false,
+    }),
+    siteGuideRuntime: siteGuide,
+    siteGuideCatalog: waypointSiteGuideCatalog,
+    activity,
+  }
   return {
     controller,
-    privacyUi: createPrivacyViewCoordinator(),
+    privacyUi,
+    controlsUi,
+    accessibility,
+    siteGuide,
+    activity,
+    dependencies,
     modelContext: new FakeModelContext(),
   }
 }
 
 describe('WebMCP adapter', () => {
-  it('registers exactly five tools at load with the correct read-only hints', async () => {
-    const { controller, privacyUi, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+  it('registers exactly eight tools at load with the correct read-only hints', async () => {
+    const { modelContext, dependencies } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, dependencies)
 
     expect([...modelContext.tools.keys()].sort()).toEqual([
+      'get_accessibility_preferences',
       'get_privacy_history',
       'get_privacy_overview',
       'get_privacy_receipt',
       'inspect_processing',
+      'navigate_to_site_destination',
+      'set_accessibility_preferences',
       'stage_privacy_plan',
     ])
     expect(modelContext.tools.get('get_privacy_overview')?.annotations?.readOnlyHint).toBe(true)
@@ -81,14 +150,14 @@ describe('WebMCP adapter', () => {
   })
 
   it('adds apply only for reviewed state and removes it after revoke or apply', async () => {
-    const { controller, privacyUi, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+    const { controller, privacyUi, modelContext, dependencies } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, dependencies)
     const plan = controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: [] })
     controller.setReviewed(true)
     await adapter.whenSettled()
 
     expect(modelContext.tools.has('apply_privacy_plan')).toBe(true)
-    expect(modelContext.tools.size).toBe(6)
+    expect(modelContext.tools.size).toBe(9)
 
     controller.setReviewed(false)
     await adapter.whenSettled()
@@ -109,8 +178,8 @@ describe('WebMCP adapter', () => {
   })
 
   it('never registers apply for a no-op plan', async () => {
-    const { controller, privacyUi, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+    const { controller, modelContext, dependencies } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, dependencies)
     controller.stage({
       keepCapabilities: [
         'book_and_manage_trips',
@@ -127,8 +196,8 @@ describe('WebMCP adapter', () => {
   })
 
   it('validates inputs and outputs and avoids duplicate apply registration', async () => {
-    const { controller, privacyUi, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+    const { controller, modelContext, dependencies } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, dependencies)
     controller.stage({ keepCapabilities: ['nearby_suggestions'], avoidUses: [] })
     controller.setReviewed(true)
     controller.setReviewed(false)
@@ -152,8 +221,8 @@ describe('WebMCP adapter', () => {
   })
 
   it('keeps read-only calls hidden by default and reveals their requested view on demand', async () => {
-    const { controller, privacyUi, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+    const { privacyUi, modelContext, dependencies } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, dependencies)
 
     expect(await modelContext.execute('get_privacy_overview', {})).toEqual(expect.objectContaining({ ok: true }))
     expect(privacyUi.getSnapshot().agentActivity).toBeNull()
@@ -178,8 +247,8 @@ describe('WebMCP adapter', () => {
   })
 
   it('keeps the overview compact and exposes full developer-authored context only on inspect', async () => {
-    const { controller, privacyUi, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+    const { modelContext, dependencies } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, dependencies)
 
     const overview = await modelContext.execute('get_privacy_overview', {})
     expect(overview).toEqual(expect.objectContaining({
@@ -219,8 +288,8 @@ describe('WebMCP adapter', () => {
   })
 
   it('opens review whenever a plan is staged and returns receipt history newest-first', async () => {
-    const { controller, privacyUi, modelContext } = await setup()
-    const adapter = await startWebMcpAdapter(modelContext, controller, travelCatalog, privacyUi)
+    const { controller, privacyUi, modelContext, dependencies } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, dependencies)
 
     const staged = await modelContext.execute('stage_privacy_plan', {
       keepCapabilities: travelCatalog.capabilities.map(({ id }) => id),
@@ -245,9 +314,77 @@ describe('WebMCP adapter', () => {
     adapter.dispose()
   })
 
+  it('applies accessibility preferences, exposes catalog-derived schemas, and navigates only to declared destinations', async () => {
+    const { modelContext, dependencies, accessibility, controlsUi, activity } = await setup()
+    const adapter = await startWebMcpAdapter(modelContext, dependencies)
+
+    expect(modelContext.tools.get('navigate_to_site_destination')?.inputSchema).toEqual(expect.objectContaining({
+      properties: expect.objectContaining({
+        destinationId: expect.objectContaining({
+          oneOf: expect.arrayContaining([
+            expect.objectContaining({
+              const: 'cancellation-policy',
+              title: 'Cancellation policy',
+              description: expect.any(String),
+            }),
+          ]),
+        }),
+      }),
+    }))
+    expect(await modelContext.execute('get_accessibility_preferences', {})).toEqual(expect.objectContaining({
+      ok: true,
+      data: expect.objectContaining({
+        primitives: expect.arrayContaining([expect.objectContaining({ id: 'textScale' })]),
+        current: expect.objectContaining({ textScale: 'system' }),
+        system: expect.objectContaining({ forcedColorsActive: expect.any(Boolean) }),
+      }),
+    }))
+    expect(controlsUi.getSnapshot().agentActivity).toBeNull()
+    expect(await modelContext.execute('set_accessibility_preferences', {})).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: 'invalid_input' }),
+    })
+
+    const changed = await modelContext.execute('set_accessibility_preferences', {
+      textScale: 'large',
+      motion: 'reduced',
+    })
+    expect(changed).toEqual(expect.objectContaining({
+      ok: true,
+      data: expect.objectContaining({ changed: true, undoAvailable: true }),
+    }))
+    expect(accessibility.getSnapshot().current).toEqual(expect.objectContaining({
+      textScale: 'large',
+      motion: 'reduced',
+    }))
+    expect(controlsUi.getSnapshot()).toEqual(expect.objectContaining({
+      open: true,
+      section: 'accessibility',
+      agentActivity: expect.objectContaining({ status: 'opened' }),
+    }))
+
+    const navigated = await modelContext.execute('navigate_to_site_destination', {
+      destinationId: 'cancellation-policy',
+    })
+    expect(navigated).toEqual(expect.objectContaining({
+      ok: true,
+      data: expect.objectContaining({ location: '/#/info/cancellation-policy' }),
+    }))
+    expect(controlsUi.getSnapshot()).toEqual(expect.objectContaining({
+      open: false,
+      agentActivity: expect.objectContaining({ targetId: 'cancellation-policy', status: 'opened' }),
+    }))
+    expect(activity.getSnapshot().events.slice(-3).map(({ action, outcome }) => ({ action, outcome }))).toEqual([
+      { action: 'set_accessibility_preferences', outcome: 'blocked' },
+      { action: 'set_accessibility_preferences', outcome: 'succeeded' },
+      { action: 'navigate_to_site_destination', outcome: 'succeeded' },
+    ])
+    adapter.dispose()
+  })
+
   it('keeps the app usable when modelContext is unavailable', async () => {
-    const { controller, privacyUi } = await setup()
-    const adapter = await startWebMcpAdapter(undefined, controller, travelCatalog, privacyUi)
+    const { controller, dependencies } = await setup()
+    const adapter = await startWebMcpAdapter(undefined, dependencies)
 
     expect(adapter.available).toBe(false)
     expect(controller.stage({

@@ -15,7 +15,10 @@ describe('Site Guide runtime', () => {
     runtime.subscribe((snapshot) => snapshots.push(snapshot.currentDestinationId ?? 'none'))
 
     const result = await runtime.navigate('cancellation-policy', 'agent')
-    expect(openRoute).toHaveBeenCalledWith('/', '#/info/cancellation-policy')
+    expect(openRoute).toHaveBeenCalledWith('/', '#/info/cancellation-policy', expect.objectContaining({
+      destinationId: 'cancellation-policy',
+      origin: 'agent',
+    }))
     expect(result).toEqual(expect.objectContaining({
       destinationId: 'cancellation-policy',
       origin: 'agent',
@@ -33,7 +36,10 @@ describe('Site Guide runtime', () => {
     })
 
     await runtime.navigate('accessibility-preferences', 'human')
-    expect(openPanel).toHaveBeenCalledWith('accessibility')
+    expect(openPanel).toHaveBeenCalledWith('accessibility', expect.objectContaining({
+      destinationId: 'accessibility-preferences',
+      origin: 'human',
+    }))
   })
 
   it('rejects undeclared destination IDs before invoking the host', async () => {

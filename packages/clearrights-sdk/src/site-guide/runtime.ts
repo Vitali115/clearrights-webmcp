@@ -41,7 +41,12 @@ export function createSiteGuideRuntime({
     },
     async navigate(destinationId, origin) {
       const destination = catalog.getDestination(destinationId)
-      const opened = await navigator.navigate({ destinationId, target: clone(destination.target) })
+      const opened = await navigator.navigate({
+        destinationId,
+        label: destination.label,
+        target: clone(destination.target),
+        origin,
+      })
       const result: SiteNavigationResult = {
         destinationId,
         label: destination.label,

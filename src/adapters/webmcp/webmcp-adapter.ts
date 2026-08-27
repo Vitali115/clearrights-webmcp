@@ -1,6 +1,5 @@
-import type { PrivacyController, PrivacyViewCoordinator } from '@/application'
-import type { ProcessingCatalog } from '@/domain'
-import { createToolDefinitions } from './tool-contracts'
+import type { ActivityCoordinator, ActivityModule } from '@/application'
+import { createToolDefinitions, type ClearRightsToolDependencies } from './tool-contracts'
 
 export interface WebMcpAdapter {
   available: boolean
@@ -8,11 +7,13 @@ export interface WebMcpAdapter {
   dispose(): void
 }
 
+export interface WebMcpAdapterDependencies extends ClearRightsToolDependencies {
+  activity: ActivityCoordinator
+}
+
 export async function startWebMcpAdapter(
   modelContext: WebMCP.ModelContext | undefined,
-  controller: PrivacyController,
-  catalog: ProcessingCatalog,
-  privacyUi: PrivacyViewCoordinator,
+  dependencies: WebMcpAdapterDependencies,
 ): Promise<WebMcpAdapter> {
   if (!modelContext) {
     return {
@@ -22,7 +23,11 @@ export async function startWebMcpAdapter(
     }
   }
 
-  const tools = createToolDefinitions(controller, catalog, privacyUi)
+  const definitions = createToolDefinitions(dependencies)
+  const tools = {
+    common: definitions.common.map((tool) => trackTool(tool, dependencies.activity)),
+    apply: trackTool(definitions.apply, dependencies.activity),
+  }
   const commonRegistration = new AbortController()
   let applyRegistration: AbortController | null = null
   let disposed = false
@@ -42,7 +47,7 @@ export async function startWebMcpAdapter(
 
   const reconcileApply = async () => {
     if (disposed) return
-    const shouldRegister = controller.getSnapshot().workflow === 'reviewed'
+    const shouldRegister = dependencies.privacyController.getSnapshot().workflow === 'reviewed'
     if (shouldRegister && !applyRegistration) {
       const registration = new AbortController()
       applyRegistration = registration
@@ -53,7 +58,7 @@ export async function startWebMcpAdapter(
         if (applyRegistration === registration) applyRegistration = null
         return
       }
-      if (disposed || controller.getSnapshot().workflow !== 'reviewed') {
+      if (disposed || dependencies.privacyController.getSnapshot().workflow !== 'reviewed') {
         registration.abort()
         if (applyRegistration === registration) applyRegistration = null
       }
@@ -70,7 +75,7 @@ export async function startWebMcpAdapter(
     return reconcileQueue
   }
 
-  const unsubscribe = controller.subscribe(() => {
+  const unsubscribe = dependencies.privacyController.subscribe(() => {
     void enqueueReconcile()
   })
   await enqueueReconcile()
@@ -87,4 +92,33 @@ export async function startWebMcpAdapter(
       applyRegistration = null
     },
   }
+}
+
+function trackTool(tool: WebMCP.ModelContextTool, activity: ActivityCoordinator): WebMCP.ModelContextTool {
+  const execute = tool.execute
+  return {
+    ...tool,
+    async execute(input, context) {
+      const result = await execute(input, context)
+      const envelope = result as { ok?: boolean; error?: { code?: string } }
+      const succeeded = envelope.ok === true
+      const blocked = !succeeded && envelope.error?.code === 'invalid_input'
+      activity.record({
+        source: 'agent',
+        module: moduleFor(tool.name),
+        action: tool.name,
+        outcome: succeeded ? 'succeeded' : blocked ? 'blocked' : 'failed',
+        summary: succeeded
+          ? `The agent completed ${tool.title ?? tool.name}.`
+          : `The agent call ${tool.title ?? tool.name} ${blocked ? 'was blocked by input validation' : 'failed safely'}.`,
+      })
+      return result
+    },
+  }
+}
+
+function moduleFor(toolName: string): ActivityModule {
+  if (toolName.includes('accessibility')) return 'accessibility'
+  if (toolName === 'navigate_to_site_destination') return 'site_guide'
+  return 'privacy'
 }

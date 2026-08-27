@@ -1,5 +1,17 @@
-import type { PrivacyController, PrivacyViewCoordinator } from '@/application'
-import type { ProcessingCatalog } from '@/domain'
+import type {
+  PersonalControlsCoordinator,
+  PrivacyController,
+  PrivacyViewCoordinator,
+} from '@/application'
+import type {
+  AccessibilityCatalog,
+  AccessibilityRuntime,
+  AccessibilityState,
+  ProcessingCatalog,
+  SiteGuideCatalog,
+  SiteGuideRuntime,
+  SystemAccessibilityPreferences,
+} from '@/domain'
 import { z } from 'zod'
 
 const revealInputSchema = z.object({
@@ -45,12 +57,33 @@ export async function executeValidated<I, O>(
   }
 }
 
-export function createToolDefinitions(
-  controller: PrivacyController,
-  catalog: ProcessingCatalog,
-  privacyUi: PrivacyViewCoordinator,
-) {
+export interface ClearRightsToolDependencies {
+  privacyController: PrivacyController
+  privacyCatalog: ProcessingCatalog
+  privacyUi: PrivacyViewCoordinator
+  controlsUi: PersonalControlsCoordinator
+  accessibilityRuntime: AccessibilityRuntime
+  accessibilityCatalog: AccessibilityCatalog
+  readSystemPreferences(): SystemAccessibilityPreferences
+  siteGuideRuntime: SiteGuideRuntime
+  siteGuideCatalog: SiteGuideCatalog
+}
+
+export function createToolDefinitions(dependencies: ClearRightsToolDependencies) {
+  const {
+    privacyController: controller,
+    privacyCatalog: catalog,
+    privacyUi,
+    controlsUi,
+    accessibilityRuntime,
+    accessibilityCatalog,
+    readSystemPreferences,
+    siteGuideRuntime,
+    siteGuideCatalog,
+  } = dependencies
   const schemas = createCatalogSchemas(catalog)
+  const accessibilitySchemas = createAccessibilitySchemas(accessibilityCatalog)
+  const siteGuideSchemas = createSiteGuideSchemas(siteGuideCatalog)
   const common: WebMCP.ModelContextTool[] = [
     {
       name: 'get_privacy_overview',
@@ -65,6 +98,11 @@ export function createToolDefinitions(
             view: 'home',
             origin: 'agent',
             message: 'The agent opened the privacy settings index so you can inspect the current setup.',
+          })
+          controlsUi.openPanel('privacy', {
+            origin: 'agent',
+            targetId: 'privacy-overview',
+            message: 'The agent opened Privacy so you can inspect the current setup.',
           })
         }
         return {
@@ -106,6 +144,11 @@ export function createToolDefinitions(
             origin: 'agent',
             message: `The agent opened ${inspection.definition.label} so you can review its purpose, data, dependencies, and consequences.`,
           })
+          controlsUi.openPanel('privacy', {
+            origin: 'agent',
+            targetId: processingId,
+            message: `The agent opened ${inspection.definition.label} for detailed review.`,
+          })
         }
         return { ...inspection, contentProvenance: 'site_developer' as const }
       }),
@@ -123,6 +166,11 @@ export function createToolDefinitions(
           origin: 'agent',
           preparedPlanId: plan.id,
           message: 'The agent prepared the final review of your requested changes. Read the consequences and approve them manually.',
+        })
+        controlsUi.openPanel('privacy', {
+          origin: 'agent',
+          targetId: 'privacy-review',
+          message: 'The agent prepared privacy changes. Review the consequences and approve them manually.',
         })
         return plan
       }),
@@ -143,6 +191,11 @@ export function createToolDefinitions(
               ? 'The agent opened the latest verified receipt so you can inspect what was applied.'
               : 'The agent opened the receipt view. No verified receipt is available yet.',
           })
+          controlsUi.openPanel('privacy', {
+            origin: 'agent',
+            targetId: 'privacy-receipt',
+            message: 'The agent opened the latest verified privacy receipt.',
+          })
         }
         return { receipt }
       }),
@@ -161,9 +214,84 @@ export function createToolDefinitions(
             origin: 'agent',
             message: 'The agent opened Previous changes so you can inspect the verified receipt history.',
           })
+          controlsUi.openPanel('privacy', {
+            origin: 'agent',
+            targetId: 'privacy-history',
+            message: 'The agent opened the privacy change history.',
+          })
         }
         return { receipts }
       }),
+    },
+    {
+      name: 'get_accessibility_preferences',
+      title: 'Get accessibility preferences',
+      description: 'Read the developer-declared accessibility preference catalog, current local values, observed system preferences, and undo availability.',
+      inputSchema: z.toJSONSchema(revealInputSchema),
+      annotations: { readOnlyHint: true, untrustedContentHint: false },
+      execute: (input) => executeValidated(
+        revealInputSchema,
+        accessibilitySchemas.overviewOutput,
+        input,
+        ({ reveal = false }) => {
+          const snapshot = accessibilityRuntime.getSnapshot()
+          if (reveal) {
+            controlsUi.openPanel('accessibility', {
+              origin: 'agent',
+              targetId: 'accessibility-preferences',
+              message: 'The agent opened Accessibility so you can inspect the current preferences.',
+            })
+          }
+          return {
+            catalogVersion: accessibilityCatalog.version,
+            primitives: accessibilityCatalog.primitives.map((primitive) => ({
+              ...primitive,
+              options: primitive.options.map((option) => ({ ...option })),
+            })),
+            current: snapshot.current,
+            system: readSystemPreferences(),
+            undoAvailable: snapshot.undoAvailable,
+            adapterId: snapshot.adapterId,
+            scope: snapshot.scope,
+          }
+        },
+      ),
+    },
+    {
+      name: 'set_accessibility_preferences',
+      title: 'Set accessibility preferences',
+      description: 'Apply one or more available local accessibility preferences, verify DOM readback, and keep one visible undo.',
+      inputSchema: z.toJSONSchema(accessibilitySchemas.setInput),
+      annotations: { readOnlyHint: false, untrustedContentHint: false },
+      execute: (input) => executeValidated(
+        accessibilitySchemas.setInput,
+        accessibilitySchemas.changeOutput,
+        input,
+        async (partial) => {
+          const changed = await accessibilityRuntime.setPreferences(partial as Partial<AccessibilityState>, 'agent')
+          controlsUi.openPanel('accessibility', {
+            origin: 'agent',
+            targetId: 'accessibility-preferences',
+            message: changed.changed
+              ? 'The agent applied accessibility preferences and verified the visible result. Undo remains available.'
+              : 'The agent checked accessibility preferences; the requested values were already active.',
+          })
+          return changed
+        },
+      ),
+    },
+    {
+      name: 'navigate_to_site_destination',
+      title: 'Navigate to site destination',
+      description: 'Open one developer-declared Waypoint route or Personal Controls destination. Arbitrary paths are not accepted.',
+      inputSchema: siteGuideSchemas.inputJsonSchema,
+      annotations: { readOnlyHint: false, untrustedContentHint: false },
+      execute: (input) => executeValidated(
+        siteGuideSchemas.input,
+        siteGuideSchemas.output,
+        input,
+        ({ destinationId }) => siteGuideRuntime.navigate(destinationId, 'agent'),
+      ),
     },
   ]
 
@@ -180,6 +308,11 @@ export function createToolDefinitions(
         view: 'receipt',
         origin: 'agent',
         message: 'The agent applied the human-approved plan and opened its verified receipt for your confirmation.',
+      })
+      controlsUi.openPanel('privacy', {
+        origin: 'agent',
+        targetId: 'privacy-receipt',
+        message: 'The agent applied the human-approved privacy plan and opened its verified receipt.',
       })
       return receipt
     }),
@@ -365,6 +498,102 @@ function policyContextSchema() {
     userAction: z.string().optional(),
     references: z.array(contextReferenceSchema()).max(8),
   }).strict()
+}
+
+function createAccessibilitySchemas(catalog: AccessibilityCatalog) {
+  const option = (id: 'textScale' | 'contrast' | 'motion' | 'readingLayout') => stringEnum(
+    catalog.getPrimitive(id).options.map(({ value }) => value),
+    `accessibility ${id}`,
+  )
+  const state = z.object({
+    textScale: option('textScale'),
+    contrast: option('contrast'),
+    motion: option('motion'),
+    readingLayout: option('readingLayout'),
+  }).strict()
+  const setInput = z.object({
+    textScale: option('textScale').optional(),
+    contrast: option('contrast').optional(),
+    motion: option('motion').optional(),
+    readingLayout: option('readingLayout').optional(),
+  }).strict().refine((input) => Object.keys(input).length > 0, {
+    message: 'At least one accessibility preference is required.',
+  })
+  const primitive = z.object({
+    id: z.enum(['textScale', 'contrast', 'motion', 'readingLayout']),
+    label: z.string(),
+    summary: z.string().max(240),
+    details: z.string().max(2_000),
+    options: z.array(z.object({
+      value: z.string(),
+      label: z.string(),
+      summary: z.string().max(240),
+    }).strict()),
+  }).strict()
+  const changeOutput = z.object({
+    before: state,
+    after: state,
+    readback: state,
+    changed: z.boolean(),
+    origin: z.enum(['human', 'agent', 'system']),
+    adapterId: z.string(),
+    scope: z.enum(['local_demo', 'external']),
+    undoAvailable: z.boolean(),
+  }).strict()
+  return {
+    setInput,
+    changeOutput,
+    overviewOutput: z.object({
+      catalogVersion: z.string(),
+      primitives: z.array(primitive).length(4),
+      current: state,
+      system: z.object({
+        prefersReducedMotion: z.boolean(),
+        prefersHigherContrast: z.boolean(),
+        forcedColorsActive: z.boolean(),
+      }).strict(),
+      undoAvailable: z.boolean(),
+      adapterId: z.string(),
+      scope: z.enum(['local_demo', 'external']),
+    }).strict(),
+  }
+}
+
+function createSiteGuideSchemas(catalog: SiteGuideCatalog) {
+  const destinationId = stringEnum(catalog.destinations.map(({ id }) => id), 'site destination')
+  const input = z.object({ destinationId }).strict()
+  const target = z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('route'), path: z.string(), hash: z.string().optional() }).strict(),
+    z.object({
+      kind: z.literal('panel'),
+      panel: z.literal('personal_controls'),
+      section: z.enum(['privacy', 'accessibility', 'activity']),
+    }).strict(),
+  ])
+  return {
+    input,
+    inputJsonSchema: {
+      type: 'object',
+      properties: {
+        destinationId: {
+          oneOf: catalog.destinations.map((destination) => ({
+            const: destination.id,
+            title: destination.label,
+            description: destination.summary,
+          })),
+        },
+      },
+      required: ['destinationId'],
+      additionalProperties: false,
+    },
+    output: z.object({
+      destinationId,
+      label: z.string(),
+      target,
+      origin: z.enum(['human', 'agent']),
+      location: z.string(),
+    }).strict(),
+  }
 }
 
 function stringEnum(values: readonly string[], kind: string) {
