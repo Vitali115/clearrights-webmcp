@@ -122,7 +122,7 @@ export function PersonalControls({
   return (
     <SheetContent className="gap-0 bg-background p-0 data-[side=right]:w-full data-[side=right]:max-w-none data-[side=right]:sm:w-[min(80vw,920px)] data-[side=right]:sm:max-w-none">
       <AgentActivityIndicator activity={controlsSnapshot.agentActivity} />
-      <SheetHeader className="border-b border-foreground/10 px-5 py-4 pr-14 sm:px-8 sm:pr-36">
+      <SheetHeader className="border-b border-foreground/10 px-5 py-4 pr-32 sm:px-8 sm:pr-36">
         <SheetTitle className="text-lg">Waypoint Personal Controls</SheetTitle>
         <SheetDescription>Privacy · Accessibility · Site guide</SheetDescription>
         <div role="tablist" aria-label="Personal Controls sections" className="mt-4 flex flex-wrap gap-1" onKeyDown={onTabKeyDown}>
