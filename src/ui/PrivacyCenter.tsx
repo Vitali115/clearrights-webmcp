@@ -131,7 +131,7 @@ export function PrivacyCenter({
   }
 
   return (
-    <SheetContent className="w-[min(80vw,1120px)] gap-0 p-0 sm:max-w-none">
+    <SheetContent className="gap-0 p-0 data-[side=right]:w-full data-[side=right]:sm:w-[min(80vw,1120px)] data-[side=right]:sm:max-w-none">
       <SheetHeader className="border-b px-6 py-5">
         <div className="flex items-center gap-2 pr-8">
           <Badge variant="secondary"><ShieldCheck data-icon="inline-start" /> ClearRights</Badge>

@@ -33,7 +33,13 @@ describe('ClearRights UI', () => {
 
     expect(screen.getByRole('heading', { name: 'Where do you want to go next?' })).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Privacy Center' }))
-    expect(screen.getByRole('dialog', { name: 'Privacy Center' })).toBeVisible()
+    const privacyCenter = screen.getByRole('dialog', { name: 'Privacy Center' })
+    expect(privacyCenter).toBeVisible()
+    expect(privacyCenter).toHaveClass(
+      'data-[side=right]:w-full',
+      'data-[side=right]:sm:w-[min(80vw,1120px)]',
+      'data-[side=right]:sm:max-w-none',
+    )
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Privacy Center' })).not.toBeInTheDocument())
   })
