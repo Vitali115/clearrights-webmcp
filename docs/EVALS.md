@@ -67,11 +67,11 @@ Do not store prompts beyond the published eval cases, chain-of-thought, PII, bro
 
 | Client | Target | Status |
 | --- | --- | --- |
-| ChatGPT in-app browser | Five prompts × three clean sessions | Pending recorded submission run |
-| Chrome 149 with WebMCP enabled | Tool discovery, 8/9 lifecycle, complete privacy path | Pending recorded submission run |
-| Ordinary browser without WebMCP | Complete manual fallback | Pending recorded submission run |
+| ChatGPT in-app browser | Five prompts × three clean sessions | Blocked on this execution host: only Codex In-app Browser is connected, so no ChatGPT prompt-selection run can be claimed |
+| Chrome 149 with WebMCP enabled | Tool discovery, 8/9 lifecycle, complete privacy path | Blocked on this execution host: no Chrome browser/extension is connected |
+| Ordinary browser without WebMCP | Complete manual fallback | Pending real-browser run; deterministic fallback tests pass, but they are not reported as a browser observation |
 
-These rows deliberately remain **Pending** until those runs are performed on the final public build. Passing unit tests is not reported as evidence that a probabilistic agent selected the expected tool.
+These rows remain explicitly **Blocked** or **Pending** until the named client run is performed on the final public build. Passing unit tests is not reported as evidence that a probabilistic agent selected the expected tool.
 
 ## Development smoke run — August 27, 2026
 
@@ -86,6 +86,56 @@ This was a direct page-tool smoke test in the Codex in-app browser against `http
 | — | `apply-reviewed-plan` | Not invoked | Human hold intentionally left untouched | Not run: browser automation must not be presented as human review |
 
 The same run opened `/#/clearrights` through `navigate_to_site_destination`, observed the staged-plan warning in Product effects, checked the full-viewport mobile sheet with no horizontal overflow, and found no browser console warnings or errors. It also exposed and led to a regression fix: an active plan no longer combines its preparation phase with review, apply, or readback evidence from an older receipt.
+
+## Public deployment direct-tool run — August 27, 2026
+
+- **Deployment:** `https://webmcp-openai-contest.vercel.app`
+- **Client:** Codex In-app Browser, production build flavor; no numeric browser build was exposed
+- **Date and timezone:** August 27, 2026, Europe/Rome
+- **Method:** direct calls to the page-defined WebMCP tool handle; no natural-language prompt-selection claim
+- **Initial state:** privacy revision 1, three required settings on, three optional settings off, notice pending, GPC unavailable and informational only
+
+### Privacy eval cases
+
+| Attempt | Case | Calls observed | UI/state observed | Result |
+| ---: | --- | --- | --- | --- |
+| 1 | `privacy-overview-required` | `get_privacy_overview({})` | 8 tools; required settings on and immutable; optional settings off; revision 1; no view reveal | Passed direct-tool transport and output check |
+| 1 | `inspect-partner-advertising` | `inspect_processing({ processingId: "partner_advertising" })` | Purpose, enabled/disabled consequences, `opt_in` control and `site_developer` provenance returned | Passed direct-tool transport and provenance check |
+| 1 | `prepare-minimisation-plan` | The public seed was already minimised, so the reversible live path used `stage_privacy_plan` with all six capabilities and no avoided uses | Plan `plan-1-cdcvsc`; three optional changes off → on; required target unchanged; no conflicts or blocked items | Passed deterministic staging check; input differs from the published minimisation prompt because a non-no-op public-session plan was required |
+| 1 | `block-premature-apply` | No apply call was made before review | Workflow `staged`; 8 tools; `apply_privacy_plan` absent; `applyAvailable: false` | Passed capability-boundary check |
+| 1 | `apply-reviewed-plan` | The exact apply tool call and transient ninth-tool window were not captured between state reads | A matching receipt was observed after the human gate: `preparationOrigin: webmcp_tool`, `approvalMethod: review_hold`, revision 1 → 2, verified adapter readback; tools returned to 8 | Partial: end state and receipt passed, but this run does not prove which client invoked apply or show the 8 → 9 transition |
+
+Receipt evidence:
+
+```text
+receipt-863cd9ec-a2cb-4af0-895e-ee50076b1da6
+plan-1-cdcvsc
+waypoint-local-demo · local_demo
+observed revision 2 · verified true
+```
+
+The latest receipt was also the first entry returned by `get_privacy_history`.
+
+### Remaining public tools
+
+| Tool path | Observation | Result |
+| --- | --- | --- |
+| `get_privacy_receipt` and `get_privacy_history` before apply | `null` receipt and empty history | Passed |
+| `get_accessibility_preferences` | System defaults and observed system preferences returned | Passed |
+| `set_accessibility_preferences` | Applied large text, dark color scheme and reduced motion with complete readback and Undo; then restored all three values to `system` through the same tool | Passed and restored |
+| `navigate_to_site_destination` | Opened `/#/info/cancellation-policy`, then returned to `/#/?focus=upcoming-trips` using catalog IDs | Passed |
+
+No browser console warnings or errors were observed. All automated browser actions in this run used WebMCP; navigation URLs and resulting state were read for verification.
+
+### What this run does not establish
+
+- It is not one of the required ChatGPT in-app prompt runs.
+- It is one direct-tool session, not three clean probabilistic sessions.
+- It does not capture the transient registration of tool 9 or the exact `apply_privacy_plan` invocation.
+- It is not the Chrome 149+ run.
+- It is not the ordinary-browser manual fallback run.
+
+Those gaps remain explicit rather than being converted into a success percentage.
 
 ## Result template
 
