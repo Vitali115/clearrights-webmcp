@@ -68,8 +68,8 @@ Do not store prompts beyond the published eval cases, chain-of-thought, PII, bro
 | Client | Target | Status |
 | --- | --- | --- |
 | ChatGPT in-app browser | Five prompts × three clean sessions | Blocked on this execution host: only Codex In-app Browser is connected, so no ChatGPT prompt-selection run can be claimed |
-| Chrome 149 with WebMCP enabled | Tool discovery, 8/9 lifecycle, complete privacy path | Blocked on this execution host: no Chrome browser/extension is connected |
-| Ordinary browser without WebMCP | Complete manual fallback | Pending real-browser run; deterministic fallback tests pass, but they are not reported as a browser observation |
+| Chrome 149+ with WebMCP enabled | Tool discovery, 8/9 lifecycle, complete privacy path | Chrome 152.0.7977.65 loaded the public app after WebMCP was enabled and ClearRights detected native structured-agent access. The Codex browser-control bridge did not expose its separate callable `webmcp` capability, so the 8/9 lifecycle could not be invoked from this particular harness. |
+| Ordinary browser without WebMCP | Complete manual fallback | Chrome 152 displayed the complete manual privacy banner and correctly reported structured agent access as unavailable. The full manual choice/review path remains pending. |
 
 These rows remain explicitly **Blocked** or **Pending** until the named client run is performed on the final public build. Passing unit tests is not reported as evidence that a probabilistic agent selected the expected tool.
 
@@ -136,6 +136,77 @@ No browser console warnings or errors were observed. All automated browser actio
 - It is not the ordinary-browser manual fallback run.
 
 Those gaps remain explicit rather than being converted into a success percentage.
+
+## Public deployment complete direct-tool run — August 27, 2026
+
+This second public run was performed after the privacy-settings hierarchy deploy. It preserves the earlier observations above rather than rewriting them retroactively.
+
+- **Deployment:** `https://webmcp-openai-contest.vercel.app`
+- **Client:** Codex In-app Browser; no numeric browser build was exposed
+- **Date and timezone:** August 27, 2026, Europe/Rome
+- **Method:** direct page-defined WebMCP calls plus two deliberate 1.2-second human holds; no natural-language tool-selection claim
+- **Clean start:** the user ran `Reset demo data`; overview then returned no receipt, notice `pending`, three required controls on and three optional controls off at revision 4
+- **Rule followed:** the human never selected the visible `Apply changes` button; both applies were invoked through the dynamically registered WebMCP tool
+
+### Reversible precondition setup
+
+The published minimisation prompt requires optional processing to start enabled. The clean demo seed starts minimised, so the run first prepared an explicit reversible setup plan:
+
+```text
+plan-4-1q3ha3z
+keep all six capabilities · avoid no uses
+revision 4 → 5
+receipt-47e68761-0fe1-4573-8a34-5704d4b0a62c
+```
+
+Before the first hold, eight tools were present and `apply_privacy_plan` was absent. After the user held for 1.2 seconds, nine tools were present. The agent called `apply_privacy_plan({ planId: "plan-4-1q3ha3z" })`; adapter readback matched all six enabled controls, the receipt was verified, and the catalog returned to eight tools.
+
+### Five privacy cases
+
+| Attempt | Case | Calls observed | UI/state observed | Result |
+| ---: | --- | --- | --- | --- |
+| 2 | `privacy-overview-required` | `get_privacy_overview({})` | 8 tools; required controls enabled and immutable; optional controls disabled; GPC unavailable and informational only; no pending plan | Passed direct-tool transport and output check |
+| 2 | `inspect-partner-advertising` | `inspect_processing({ processingId: "partner_advertising" })` | Full declared purpose, on/off consequences, developer context and `contentProvenance: site_developer`; control disabled in the clean state | Passed direct-tool provenance and detail check |
+| 2 | `prepare-minimisation-plan` | `stage_privacy_plan` with the three required capabilities and `preference_personalisation`, `precise_location`, and `partner_marketing` avoided | Plan `plan-5-18qr7cv`; three exact changes on → off; no conflict or blocked item; Agent check prepared; Human check waiting | Passed with the canonical minimisation input |
+| 2 | `block-premature-apply` | No apply call before review; tool catalog fetched again | 8 tools; `apply_privacy_plan` absent; visible Apply disabled; human hold waiting | Passed capability-boundary check |
+| 2 | `apply-reviewed-plan` | After the user's 1.2-second hold, `apply_privacy_plan({ planId: "plan-5-18qr7cv" })`, followed by `get_privacy_overview({})` and `get_privacy_receipt({ reveal: true })` | Tool count changed 8 → 9 → 8; receipt view opened; revision 5 → 6; all required controls remained on; all optional controls became off; adapter readback matched | Passed complete direct-tool lifecycle |
+
+Final receipt evidence:
+
+```text
+receipt-da867b7f-0366-4caa-b167-4bf31f2335a6
+plan-5-18qr7cv
+preparationOrigin: webmcp_tool
+approvalMethod: review_hold
+waypoint-local-demo · local_demo · adapter_readback
+observed revision 6 · verified true
+```
+
+The applied snapshot produced four visible product surfaces: three required surfaces and generic travel discovery. The nearby guide and partner offer were absent. Navigation to Bookings used the declared Site Guide destination and closed the sheet.
+
+### Additional-module regression
+
+| Path | Observation | Result |
+| --- | --- | --- |
+| Display preferences | `set_accessibility_preferences` applied `extra_large`, `dark`, and `reduced`; the three `<html>` data attributes and adapter readback matched. A second tool call restored all three to `system`. | Passed and restored; privacy remained unchanged |
+| Site Guide | `navigate_to_site_destination({ destinationId: "cancellation-policy" })` opened `/#/info/cancellation-policy`, focused the level-one heading, exposed a Back control and displayed a new agent-opened-view indicator. Browser Back restored `/#/?focus=upcoming-trips`. | Passed |
+
+### Chrome 152 observation
+
+Chrome `152.0.7977.65` loaded the same public deployment after WebMCP was enabled. ClearRights changed its live banner state to `Structured agent access detected in this browser.`, which verifies that the page received the native WebMCP surface. The Codex browser-control bridge attached to that Chrome tab exposed only its page-assets capability and did not forward a callable `webmcp` tool handle. The Chrome 8/9 lifecycle was therefore not invoked or scored as a pass from this harness.
+
+This is a test-client boundary, not a requirement to open ChatGPT inside Chrome. The official rules allow judges to open the live project either in ChatGPT's WebMCP-capable in-app browser or directly in Chrome 149+ with WebMCP enabled. A compatible agent client can then use the tools registered by the ClearRights page through `document.modelContext`.
+
+### Interpretation
+
+- Direct WebMCP execution: all five canonical privacy cases passed in this complete run.
+- Dynamic trust boundary: the 8 → 9 → 8 lifecycle and exact tool invocation were observed.
+- Natural-language agent selection: not evaluated by these direct calls.
+- Required three clean ChatGPT sessions: still pending.
+- Chrome WebMCP: native page exposure observed; direct calls remain untested because the attached Codex browser-control bridge did not forward the WebMCP tool handle.
+- Ordinary-browser manual fallback: banner and fallback messaging observed; complete manual flow still pending.
+
+No aggregate success percentage is reported because these are different evaluation layers, not interchangeable attempts.
 
 ## Result template
 
