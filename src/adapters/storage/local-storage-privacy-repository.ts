@@ -3,17 +3,20 @@ import {
   type UserPrivacyState,
 } from '@/domain'
 import {
+  PRIVACY_RECEIPT_HISTORY_LIMIT,
   RepositoryConflictError,
   type PrivacyRecord,
   type PrivacyRepository,
 } from '@/application'
 import { z } from 'zod'
 
-export const PRIVACY_STORAGE_KEY = 'clearrights.demo.v1'
+export const PRIVACY_STORAGE_KEY = 'clearrights.demo.v2'
+export const LEGACY_PRIVACY_STORAGE_KEY = 'clearrights.demo.v1'
 
 export interface StorageLike {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
+  removeItem(key: string): void
 }
 
 const processingStateSchema = z.object(Object.fromEntries(
@@ -55,13 +58,22 @@ const receiptSchema = z.object({
   }).strict(),
 }).strict()
 
-const recordSchema = z.object({
+const legacyRecordSchema = z.object({
   schemaVersion: z.literal(1),
   state: z.object({
     revision: z.number().int().positive(),
     processing: processingStateSchema,
   }).strict(),
   latestReceipt: receiptSchema.nullable(),
+}).strict()
+
+const recordSchema = z.object({
+  schemaVersion: z.literal(2),
+  state: z.object({
+    revision: z.number().int().positive(),
+    processing: processingStateSchema,
+  }).strict(),
+  receipts: z.array(receiptSchema).max(PRIVACY_RECEIPT_HISTORY_LIMIT),
 }).strict()
 
 export class LocalStoragePrivacyRepository implements PrivacyRepository {
@@ -85,6 +97,23 @@ export class LocalStoragePrivacyRepository implements PrivacyRepository {
         return this.writeSeed()
       }
     }
+    const legacy = this.storage.getItem(LEGACY_PRIVACY_STORAGE_KEY)
+    if (legacy) {
+      try {
+        const parsed = legacyRecordSchema.parse(JSON.parse(legacy))
+        const migrated = recordSchema.parse({
+          schemaVersion: 2,
+          state: parsed.state,
+          receipts: parsed.latestReceipt ? [parsed.latestReceipt] : [],
+        })
+        this.storage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(migrated))
+        this.storage.removeItem(LEGACY_PRIVACY_STORAGE_KEY)
+        return migrated
+      } catch {
+        this.storage.removeItem(LEGACY_PRIVACY_STORAGE_KEY)
+        return this.writeSeed()
+      }
+    }
     return this.writeSeed()
   }
 
@@ -103,12 +132,12 @@ export class LocalStoragePrivacyRepository implements PrivacyRepository {
     if (current.state.revision !== expectedRevision) throw new RepositoryConflictError()
     const seed = this.createSeed()
     const resetRecord: PrivacyRecord = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       state: {
         ...seed,
         revision: expectedRevision + 1,
       },
-      latestReceipt: null,
+      receipts: [],
     }
     const validated = recordSchema.parse(resetRecord)
     this.storage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(validated))
@@ -117,9 +146,9 @@ export class LocalStoragePrivacyRepository implements PrivacyRepository {
 
   private writeSeed(): PrivacyRecord {
     const record: PrivacyRecord = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       state: this.createSeed(),
-      latestReceipt: null,
+      receipts: [],
     }
     const validated = recordSchema.parse(record)
     this.storage.setItem(PRIVACY_STORAGE_KEY, JSON.stringify(validated))

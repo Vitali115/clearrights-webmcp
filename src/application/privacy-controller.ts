@@ -9,7 +9,11 @@ import {
   transitionWorkflow,
   type WorkflowStatus,
 } from '@/domain'
-import type { PrivacyRecord, PrivacyRepository } from './privacy-repository'
+import {
+  PRIVACY_RECEIPT_HISTORY_LIMIT,
+  type PrivacyRecord,
+  type PrivacyRepository,
+} from './privacy-repository'
 
 export interface Clock {
   now(): string
@@ -39,6 +43,7 @@ export interface PrivacyController {
   setReviewed(reviewed: boolean): void
   apply(planId: string): Promise<PrivacyReceipt>
   getReceipt(): PrivacyReceipt | null
+  getReceiptHistory(): PrivacyReceipt[]
   resetDemo(confirmed: boolean): Promise<void>
 }
 
@@ -162,12 +167,12 @@ export async function createPrivacyController({
         },
       }
       const nextRecord: PrivacyRecord = {
-        schemaVersion: 1,
+        schemaVersion: 2,
         state: {
           revision: afterRevision,
           processing: clone(checkedPlan.target),
         },
-        latestReceipt: receipt,
+        receipts: [receipt, ...persisted.receipts].slice(0, PRIVACY_RECEIPT_HISTORY_LIMIT),
       }
 
       // A receipt is exposed as verified only after this exact aggregate is read back.
@@ -176,7 +181,7 @@ export async function createPrivacyController({
       if (
         observed.state.revision !== afterRevision
         || !sameState(observed.state.processing, checkedPlan.target)
-        || observed.latestReceipt?.id !== receipt.id
+        || observed.receipts[0]?.id !== receipt.id
       ) {
         throw new ApplicationError('verification_failed', 'The persisted state did not match the reviewed plan.')
       }
@@ -190,7 +195,10 @@ export async function createPrivacyController({
       return clone(receipt)
     },
     getReceipt() {
-      return clone(snapshot.record.latestReceipt)
+      return clone(snapshot.record.receipts[0] ?? null)
+    },
+    getReceiptHistory() {
+      return clone(snapshot.record.receipts)
     },
     async resetDemo(confirmed) {
       if (!confirmed) {

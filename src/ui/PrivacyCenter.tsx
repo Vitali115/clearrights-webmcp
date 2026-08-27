@@ -84,6 +84,7 @@ export function PrivacyCenter({
   const [actionError, setActionError] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
   const inspection = controller.inspect(selectedId)
+  const latestReceipt = snapshot.record.receipts[0] ?? null
   const planMatchesIntent = snapshot.plan
     ? sameSelection(snapshot.plan.input.keepCapabilities, keepCapabilities)
       && sameSelection(snapshot.plan.input.avoidUses, avoidUses)
@@ -377,7 +378,7 @@ export function PrivacyCenter({
               </>
             )}
 
-            {snapshot.record.latestReceipt && (
+            {latestReceipt && (
               <Card className="ring-2 ring-primary/15">
                 <CardHeader>
                   <Badge variant="secondary" className="mb-2 w-fit"><CheckCircle2 data-icon="inline-start" /> Verified receipt</Badge>
@@ -385,10 +386,10 @@ export function PrivacyCenter({
                   <CardDescription>Persisted state was reread and matched the reviewed target.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
-                  <Detail label="Receipt" value={snapshot.record.latestReceipt.id} />
-                  <Detail label="Plan" value={snapshot.record.latestReceipt.planId} />
-                  <Detail label="Revision" value={`${snapshot.record.latestReceipt.beforeRevision} → ${snapshot.record.latestReceipt.afterRevision}`} />
-                  <Detail label="Issued" value={new Date(snapshot.record.latestReceipt.issuedAt).toLocaleString('en-GB')} />
+                  <Detail label="Receipt" value={latestReceipt.id} />
+                  <Detail label="Plan" value={latestReceipt.planId} />
+                  <Detail label="Revision" value={`${latestReceipt.beforeRevision} → ${latestReceipt.afterRevision}`} />
+                  <Detail label="Issued" value={new Date(latestReceipt.issuedAt).toLocaleString('en-GB')} />
                   <Separator />
                   <p className="text-xs text-muted-foreground">
                     Verified means application readback matched the target. It is not a signature or legal proof.

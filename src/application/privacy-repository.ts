@@ -1,9 +1,11 @@
 import type { PrivacyReceipt, UserPrivacyState } from '@/domain'
 
+export const PRIVACY_RECEIPT_HISTORY_LIMIT = 10
+
 export interface PrivacyRecord {
-  schemaVersion: 1
+  schemaVersion: 2
   state: UserPrivacyState
-  latestReceipt: PrivacyReceipt | null
+  receipts: PrivacyReceipt[]
 }
 
 export interface PrivacyRepository {

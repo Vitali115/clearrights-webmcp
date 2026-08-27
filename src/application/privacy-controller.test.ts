@@ -14,6 +14,10 @@ class MemoryStorage {
   setItem(key: string, value: string) {
     this.values.set(key, value)
   }
+
+  removeItem(key: string) {
+    this.values.delete(key)
+  }
 }
 
 function dependencies(storage = new MemoryStorage()) {
@@ -49,6 +53,7 @@ describe('PrivacyController', () => {
     const reloaded = await createPrivacyController({ catalog: travelCatalog, ...deps })
     expect(reloaded.getSnapshot().workflow).toBe('idle')
     expect(reloaded.getReceipt()?.id).toBe(receipt.id)
+    expect(reloaded.getReceiptHistory()).toHaveLength(1)
     expect(reloaded.getSnapshot().record.state.processing.recommendations).toBe(false)
   })
 
@@ -102,6 +107,37 @@ describe('PrivacyController', () => {
     await expect(controller.apply(plan.id)).rejects.toMatchObject({ code: 'review_required' })
     expect(controller.getSnapshot().record.state.revision).toBe(1)
     expect(controller.getReceipt()).toBeNull()
+    expect(controller.getReceiptHistory()).toEqual([])
+  })
+
+  it('keeps the ten most recent verified receipts in newest-first order', async () => {
+    const deps = dependencies()
+    const controller = await createPrivacyController({ catalog: travelCatalog, ...deps })
+
+    for (let index = 0; index < 12; index += 1) {
+      const disableOptional = index % 2 === 0
+      const plan = controller.stage({
+        keepCapabilities: disableOptional
+          ? ['book_and_manage_trips', 'protect_account', 'receive_trip_updates']
+          : [
+              'book_and_manage_trips',
+              'protect_account',
+              'receive_trip_updates',
+              'personalised_recommendations',
+              'nearby_suggestions',
+              'partner_offers',
+            ],
+        avoidUses: disableOptional
+          ? ['preference_personalisation', 'precise_location', 'partner_marketing']
+          : [],
+      })
+      controller.setReviewed(true)
+      await controller.apply(plan.id)
+    }
+
+    expect(controller.getReceiptHistory()).toHaveLength(10)
+    expect(controller.getReceiptHistory()[0]?.id).toBe('receipt-12')
+    expect(controller.getReceiptHistory()[9]?.id).toBe('receipt-3')
   })
 
   it('requires confirmation and resets demo state and receipt', async () => {
@@ -116,6 +152,7 @@ describe('PrivacyController', () => {
 
     expect(controller.getSnapshot().workflow).toBe('idle')
     expect(controller.getReceipt()).toBeNull()
+    expect(controller.getReceiptHistory()).toEqual([])
     expect(Object.values(controller.getSnapshot().record.state.processing).every(Boolean)).toBe(true)
   })
 })
