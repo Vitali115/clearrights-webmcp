@@ -80,6 +80,7 @@ Hold the visible human-review control for 1.2 seconds. Confirm that the apply to
 
 Expected evidence:
 
+- a refreshed overview reports `workflow: reviewed`, `applyAvailable: true`, and a `nextAction` bound to the exact plan ID;
 - `apply_privacy_plan` receives the reviewed plan ID;
 - the host adapter applies the complete target and reads it back;
 - the receipt matches the plan, revision, adapter, scope, and readback;

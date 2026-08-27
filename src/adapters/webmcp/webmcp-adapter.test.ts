@@ -150,8 +150,10 @@ describe('WebMCP adapter', () => {
     expect(modelContext.tools.get('get_privacy_overview')?.annotations?.readOnlyHint).toBe(true)
     expect(modelContext.tools.get('inspect_processing')?.annotations?.readOnlyHint).toBe(true)
     expect(modelContext.tools.get('get_privacy_receipt')?.annotations?.readOnlyHint).toBe(true)
+    expect(modelContext.tools.get('get_privacy_receipt')?.description).toContain('never applies a pending plan')
     expect(modelContext.tools.get('get_privacy_history')?.annotations?.readOnlyHint).toBe(true)
     expect(modelContext.tools.get('stage_privacy_plan')?.annotations?.readOnlyHint).toBe(false)
+    expect(modelContext.tools.get('stage_privacy_plan')?.description).toContain('refresh available tools')
     expect(modelContext.tools.get('get_privacy_overview')?.inputSchema).not.toEqual(expect.objectContaining({
       required: expect.arrayContaining(['reveal']),
     }))
@@ -167,6 +169,7 @@ describe('WebMCP adapter', () => {
 
     expect(modelContext.tools.has('apply_privacy_plan')).toBe(true)
     expect(modelContext.tools.size).toBe(9)
+    expect(modelContext.tools.get('apply_privacy_plan')?.description).toContain('only tool that applies')
 
     controller.setReviewed(false)
     await adapter.whenSettled()
@@ -265,6 +268,7 @@ describe('WebMCP adapter', () => {
       ok: true,
       data: expect.objectContaining({
         pendingPlan: null,
+        nextAction: null,
         observedSignals: {
           globalPrivacyControl: {
             support: 'supported',
@@ -287,7 +291,7 @@ describe('WebMCP adapter', () => {
     expect(JSON.stringify(overview)).not.toContain('decisionFactors')
     expect(dependencies.privacyController.getSnapshot().record).toEqual(beforeOverview)
 
-    dependencies.privacyController.stage({
+    const stagedPlan = dependencies.privacyController.stage({
       keepCapabilities: ['book_and_manage_trips', 'protect_account', 'receive_trip_updates', 'personalised_recommendations'],
       avoidUses: [],
     }, 'webmcp_tool')
@@ -295,6 +299,7 @@ describe('WebMCP adapter', () => {
     expect(stagedOverview).toEqual(expect.objectContaining({
       ok: true,
       data: expect.objectContaining({
+        nextAction: null,
         pendingPlan: expect.objectContaining({
           status: 'staged',
           baseRevision: 1,
@@ -302,6 +307,34 @@ describe('WebMCP adapter', () => {
             expect.objectContaining({ processingId: 'recommendations', before: false, after: true }),
           ]),
         }),
+      }),
+    }))
+
+    dependencies.privacyController.setReviewed(true)
+    await adapter.whenSettled()
+    const reviewedOverview = await modelContext.execute('get_privacy_overview', {})
+    expect(reviewedOverview).toEqual(expect.objectContaining({
+      ok: true,
+      data: expect.objectContaining({
+        workflow: 'reviewed',
+        applyAvailable: true,
+        nextAction: {
+          kind: 'call_tool',
+          toolName: 'apply_privacy_plan',
+          input: { planId: stagedPlan.id },
+          humanReviewComplete: true,
+        },
+      }),
+    }))
+
+    dependencies.privacyController.setReviewed(false)
+    await adapter.whenSettled()
+    expect(await modelContext.execute('get_privacy_overview', {})).toEqual(expect.objectContaining({
+      ok: true,
+      data: expect.objectContaining({
+        workflow: 'staged',
+        applyAvailable: false,
+        nextAction: null,
       }),
     }))
 

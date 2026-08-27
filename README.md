@@ -35,6 +35,8 @@ Reset the demo from **Privacy settings**, then ask a compatible agent:
 
 Before the hold, `apply_privacy_plan` is not registered. After the hold, it becomes the dynamic ninth tool for only the unchanged reviewed plan. Successful apply performs complete adapter readback, issues a scoped receipt, and changes the real Waypoint product surfaces.
 
+When review is complete, the overview also exposes a machine-readable `nextAction` containing `apply_privacy_plan`, the exact reviewed `planId`, and `humanReviewComplete: true`. The read-only receipt tool explicitly does not apply pending plans and may return an older receipt.
+
 The repeatable script is in [`docs/DEMO.md`](docs/DEMO.md). The five-case eval dataset is in [`evals/privacy-prompt-cases.json`](evals/privacy-prompt-cases.json).
 
 ## What is real in the demo
@@ -81,7 +83,7 @@ Eight tools are registered normally. `apply_privacy_plan` becomes the ninth only
 
 | Tool | Purpose |
 | --- | --- |
-| `get_privacy_overview` | Read applied state, pending plan, planner options, workflow, and observed browser signals. |
+| `get_privacy_overview` | Read applied state, pending plan, planner options, workflow, observed browser signals, and the exact next tool action after human review. |
 | `inspect_processing` | Inspect one complete developer-declared processing definition. |
 | `stage_privacy_plan` | Prepare and reveal a deterministic privacy plan. |
 | `get_privacy_receipt` | Read the latest adapter-verified receipt. |

@@ -115,6 +115,14 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
           workflow: snapshot.workflow,
           revision: snapshot.record.state.revision,
           applyAvailable: snapshot.workflow === 'reviewed',
+          nextAction: snapshot.workflow === 'reviewed' && snapshot.plan
+            ? {
+                kind: 'call_tool' as const,
+                toolName: 'apply_privacy_plan' as const,
+                input: { planId: snapshot.plan.id },
+                humanReviewComplete: true as const,
+              }
+            : null,
           observedSignals: readObservedPrivacySignals(),
           pendingPlan: snapshot.plan && (snapshot.workflow === 'staged' || snapshot.workflow === 'reviewed')
             ? {
@@ -173,7 +181,7 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
     {
       name: 'stage_privacy_plan',
       title: 'Stage privacy plan',
-      description: 'Prepare and display a deterministic minimisation plan from capabilities to keep and data uses to avoid.',
+      description: 'Prepare and display a deterministic minimisation plan from capabilities to keep and data uses to avoid. This never applies changes. After visible human review, refresh available tools and call apply_privacy_plan with the returned plan ID.',
       inputSchema: z.toJSONSchema(schemas.stageInput),
       annotations: { readOnlyHint: false, untrustedContentHint: false },
       execute: (input) => executeValidated(schemas.stageInput, schemas.privacyPlan, input, (parsed) => {
@@ -194,8 +202,8 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
     },
     {
       name: 'get_privacy_receipt',
-      title: 'Get privacy receipt',
-      description: 'Read the latest receipt verified by enforcement-adapter readback, if a human-approved choice has been applied.',
+      title: 'Read latest applied privacy receipt',
+      description: 'Read-only: return the latest already-applied receipt. This never applies a pending plan, and the receipt may predate a currently reviewed plan. Use apply_privacy_plan to apply that reviewed plan and obtain its new verified receipt.',
       inputSchema: z.toJSONSchema(revealInputSchema),
       annotations: { readOnlyHint: true, untrustedContentHint: false },
       execute: (input) => executeValidated(revealInputSchema, schemas.receiptOutput, input, ({ reveal = false }) => {
@@ -314,8 +322,8 @@ export function createToolDefinitions(dependencies: ClearRightsToolDependencies)
 
   const apply: WebMCP.ModelContextTool = {
     name: 'apply_privacy_plan',
-    title: 'Apply reviewed privacy plan',
-    description: 'Apply the exact staged plan after a person has reviewed it in the visible privacy settings, then verify enforcement-adapter readback and return a scoped receipt.',
+    title: 'Apply human-reviewed privacy plan',
+    description: 'Apply the exact currently human-reviewed plan identified by planId and return its new adapter-verified receipt. This is the only tool that applies a reviewed privacy plan and is available only after visible human review.',
     inputSchema: z.toJSONSchema(applyInputSchema),
     annotations: { readOnlyHint: false, untrustedContentHint: false },
     execute: (input) => executeValidated(applyInputSchema, schemas.privacyReceipt, input, async ({ planId }) => {
@@ -465,6 +473,14 @@ function createCatalogSchemas(catalog: ProcessingCatalog) {
     workflow: z.enum(['idle', 'staged', 'reviewed', 'applied']),
     revision: z.number().int().positive(),
     applyAvailable: z.boolean(),
+    nextAction: z.object({
+      kind: z.literal('call_tool'),
+      toolName: z.literal('apply_privacy_plan'),
+      input: z.object({
+        planId: z.string(),
+      }).strict(),
+      humanReviewComplete: z.literal(true),
+    }).strict().nullable(),
     observedSignals: z.object({
       globalPrivacyControl: z.discriminatedUnion('support', [
         z.object({

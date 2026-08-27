@@ -23,6 +23,8 @@ Privacy settings are usually fragmented across banners, account pages, and polic
 
 ClearRights exposes compact page-defined tools generated from the same catalog and controller used by the human UI. Read and planning operations are available normally. `apply_privacy_plan` is registered dynamically only while an exact, non-no-op plan remains human-reviewed. This makes the boundary inspectable in the tool surface rather than relying on prompt instructions alone.
 
+In that reviewed state, the overview exposes a machine-readable `nextAction` bound to the exact plan ID. The read-only receipt tool is explicitly distinguished from apply so an older verified receipt cannot be mistaken for execution of the currently reviewed plan.
+
 ## What a person and agent can do together
 
 1. Inspect active processing and identify required settings.
