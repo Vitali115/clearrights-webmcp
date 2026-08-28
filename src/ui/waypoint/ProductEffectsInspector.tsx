@@ -81,7 +81,7 @@ export function ProductEffectsInspector({
               className="grid gap-4 border-b border-foreground/10 py-6 md:grid-cols-[1.05fr_1fr_0.75fr]"
             >
               <div>
-                <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">{effect.source}</p>
+                <p className="text-xs font-medium text-muted-foreground">{effect.source}</p>
                 <h3 className="mt-2 font-medium">{effect.settingLabel}</h3>
                 <p className="mt-1 font-mono text-xs text-muted-foreground">{effect.settingId} = {effect.runtimeValue}</p>
               </div>

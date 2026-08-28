@@ -133,9 +133,14 @@ export function TravelProductPage({
         />
       )}
       <header className="border-b border-foreground/8">
-        <div className="grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-5 py-2 sm:px-8">
-          <span className="text-base font-medium tracking-tight">Waypoint</span>
-          <div className="flex min-w-0 justify-center">
+        <div className="grid min-h-16 grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-2 sm:px-8">
+          <span className="justify-self-start leading-tight">
+            <span className="block text-base font-medium tracking-tight">Waypoint</span>
+            <span className="mt-0.5 block text-[10px] font-medium text-muted-foreground">
+              Fictional travel demo
+            </span>
+          </span>
+          <div className="min-w-0 justify-self-center">
             <PrivacyNavbarStatus
               experience={experience}
               status={privacyEffectStatus}
@@ -143,10 +148,7 @@ export function TravelProductPage({
               preview={effectsPreview}
             />
           </div>
-          <nav className="flex shrink-0 items-center gap-1" aria-label="Account navigation">
-            <Button variant="ghost" className="hidden h-9 rounded-full px-3.5 lg:inline-flex" onClick={onExplainPrivacy}>
-              How privacy works
-            </Button>
+          <nav className="flex shrink-0 items-center gap-1 justify-self-end" aria-label="Account navigation">
             {agentActivityAction}
             {controlsAction}
           </nav>
@@ -246,7 +248,7 @@ export function TravelProductPage({
         <span>Waypoint Travel · fictional product demo</span>
         <nav className="flex flex-wrap gap-5" aria-label="Waypoint footer">
           <button type="button" aria-label="Open privacy settings from footer" className="font-medium text-foreground" onClick={onOpenControls}>Privacy settings</button>
-          <button type="button" className="font-medium text-foreground" onClick={onExplainPrivacy}>ClearRights integration</button>
+          <button type="button" className="font-medium text-foreground" onClick={onExplainPrivacy}>How ClearRights works</button>
         </nav>
       </footer>
     </main>
@@ -290,7 +292,7 @@ function PrivacyNavbarStatus({
       aria-label={description}
     >
       <span className="min-w-0 text-center leading-tight">
-        <span className="block text-[9px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        <span className="block text-[10px] font-medium text-muted-foreground">
           {preview ? 'Privacy preview' : 'Privacy status'}
         </span>
         <span className="mt-1 flex min-w-0 items-center justify-center gap-2 text-xs font-medium">
@@ -416,7 +418,7 @@ function EssentialStatus({
   return (
     <article data-clearrights-surface={surface} data-clearrights-result="required" className="relative border-t border-foreground/15 pt-4">
       {effectsPreview && <SurfaceInspectButton label={title} onClick={() => onInspect(surface)} />}
-      <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Required service</p>
+      <p className="text-xs font-medium text-muted-foreground">Required service</p>
       <h3 className="mt-3 font-medium">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
     </article>

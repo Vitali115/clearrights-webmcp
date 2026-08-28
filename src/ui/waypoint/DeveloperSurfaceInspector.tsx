@@ -27,7 +27,7 @@ export function DeveloperSurfaceInspector({
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Waypoint surface</p>
+          <p className="text-xs font-medium text-muted-foreground">Waypoint surface</p>
           <h2 className="mt-2 text-xl font-medium tracking-tight">{effect.surfaceLabel}</h2>
           <p className="mt-1 font-mono text-xs text-muted-foreground">{effect.surfaceId}</p>
         </div>

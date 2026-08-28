@@ -128,7 +128,7 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller, true)
 
-    await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
+    await user.click(screen.getByRole('button', { name: 'How ClearRights works' }))
 
     const developerHeading = await screen.findByRole('heading', { name: 'ClearRights Privacy' })
     expect(developerHeading).toBeVisible()
@@ -210,7 +210,7 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller, true)
 
-    await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
+    await user.click(screen.getByRole('button', { name: 'How ClearRights works' }))
 
     expect(await screen.findByRole('heading', { name: 'The two-minute demo' })).toBeVisible()
     expect(screen.getByText(/Keep booking and account security/)).toBeVisible()
@@ -266,7 +266,7 @@ describe('privacy settings UI', () => {
       status: 'recorded',
       method: 'reject_optional',
     }))
-    await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
+    await user.click(screen.getByRole('button', { name: 'How ClearRights works' }))
     expect(await screen.findByText('Direct human choice')).toBeVisible()
     expect(screen.getByText('Direct action · hold not required')).toBeVisible()
     expect(controller.getReceipt()).toEqual(expect.objectContaining({
@@ -367,7 +367,7 @@ describe('privacy settings UI', () => {
     renderApp(controller)
 
     expect(screen.getByText('Waypoint')).toBeVisible()
-    expect(screen.queryByText('Travel demo')).not.toBeInTheDocument()
+    expect(screen.getByText('Fictional travel demo')).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Trips' })).not.toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Account navigation' })).toHaveClass('shrink-0')
     expect(screen.getByRole('button', { name: 'Privacy settings' })).toBeVisible()
@@ -811,7 +811,7 @@ describe('privacy settings UI', () => {
     expect(window.location.hash).toBe('#/?focus=upcoming-trips')
     expect(screen.getByRole('heading', { name: 'Upcoming trips' })).toHaveFocus()
 
-    await user.click(screen.getAllByRole('button', { name: 'How privacy works' })[0]!)
+    await user.click(screen.getByRole('button', { name: 'How ClearRights works' }))
     expect(window.location.hash).toBe('#/clearrights')
     act(() => window.history.back())
     await waitFor(() => expect(window.location.hash).toBe('#/?focus=upcoming-trips'))
