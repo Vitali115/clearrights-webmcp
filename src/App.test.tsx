@@ -148,7 +148,7 @@ describe('privacy settings UI', () => {
     expect(screen.getByText('Waiting for a plan')).toBeVisible()
     expect(screen.getByText('No matching receipt yet')).toBeVisible()
     expect(screen.getByText('Showing applied privacy revision 1.')).toBeVisible()
-    expect(screen.queryByText('Pending draft is not shown in this product preview')).not.toBeInTheDocument()
+    expect(screen.queryByText('Waiting changes are not shown here')).not.toBeInTheDocument()
     expect(screen.getAllByTestId('product-effect-row')).toHaveLength(6)
     expect(screen.queryByRole('region', { name: 'Privacy choices' })).not.toBeInTheDocument()
 
@@ -228,9 +228,9 @@ describe('privacy settings UI', () => {
     window.history.replaceState(null, '', '#/clearrights')
     renderApp(controller, true)
 
-    expect(await screen.findByText('Pending draft is not shown in this product preview')).toBeVisible()
-    expect(screen.getByText(/1 change in plan-1-/)).toBeVisible()
-    expect(screen.getByText(/continue to use revision 1 until/)).toBeVisible()
+    expect(await screen.findByText('Waiting changes are not shown here')).toBeVisible()
+    expect(screen.getByText(/1 waiting in plan-1-/)).toBeVisible()
+    expect(screen.getByText(/still shows revision 1/)).toBeVisible()
 
     const user = userEvent.setup()
     await user.click(screen.getByRole('button', { name: 'Open live product preview' }))
@@ -326,7 +326,7 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByRole('button', { name: /Previous changes/ }))
     await user.click(screen.getByText(`Initial choice · ${directReceipt.id}`))
     await user.click(screen.getByRole('button', { name: 'Open receipt' }))
-    expect(screen.getByText(/matched the settings recorded by your direct choice/)).toBeVisible()
+    expect(screen.getByText(/matched your direct choice/)).toBeVisible()
     expect(screen.queryByText(/matched the reviewed changes/)).not.toBeInTheDocument()
   })
 
@@ -340,8 +340,7 @@ describe('privacy settings UI', () => {
 
     const effect = screen.getByTestId('privacy-effect-summary')
     expect(within(effect).getByText('Generic')).toBeVisible()
-    expect(within(effect).getByText('1 change prepared · Not applied yet')).toBeVisible()
-    expect(within(effect).getByText('The product still reflects the applied values shown above.')).toBeVisible()
+    expect(within(effect).getByText('1 change waiting to apply · product unchanged')).toBeVisible()
   })
 
   it('opens and closes the privacy Sheet over the travel product', async () => {
@@ -383,7 +382,7 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByLabelText('Recommendations'))
     await user.click(screen.getByLabelText('Location suggestions'))
     await user.click(screen.getByLabelText('Partner advertising'))
-    await user.click(screen.getByRole('button', { name: /Review changes/ }))
+    await user.click(screen.getByRole('button', { name: 'Review 3 changes' }))
 
     expect(screen.getByText('3 changes ready')).toBeVisible()
     await holdToConfirm()
@@ -421,10 +420,10 @@ describe('privacy settings UI', () => {
 
     expect(await screen.findByRole('dialog', { name: 'Waypoint Privacy Settings' })).toBeVisible()
     expect(screen.getByText('3 changes ready')).toBeVisible()
-    expect(screen.getByText(/Agent tools available/)).toBeVisible()
     expect(screen.getByText('Agent check')).toBeVisible()
     expect(screen.getByText('Change set prepared')).toBeVisible()
-    expect(screen.queryByText('Additional agent-ready controls')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Display preferences' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Site guide' })).not.toBeInTheDocument()
   })
 
   it('keeps the agent check when returning to an unchanged plan and revokes it after an edit', async () => {
@@ -447,14 +446,14 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByRole('button', { name: 'Back' }))
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
     expect(privacyUi.getSnapshot().agentPreparation).toEqual({ planId: plan.id })
-    await user.click(screen.getByRole('button', { name: 'Review changes' }))
+    await user.click(screen.getByRole('button', { name: 'Review 3 changes' }))
     expect(screen.getByText('Change set prepared')).toBeVisible()
     expect(controller.getSnapshot().plan?.id).toBe(plan.id)
 
     await user.click(screen.getByRole('button', { name: 'Back' }))
     await user.click(screen.getByRole('switch', { name: 'Partner advertising' }))
     expect(privacyUi.getSnapshot().agentPreparation).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Review changes' }))
+    await user.click(screen.getByRole('button', { name: 'Review 2 changes' }))
     expect(screen.getByText('Manual change set')).toBeVisible()
     expect(screen.queryByText('Change set prepared')).not.toBeInTheDocument()
   })
@@ -639,19 +638,25 @@ describe('privacy settings UI', () => {
     await user.click(screen.getByLabelText('Recommendations'))
     await user.click(screen.getByLabelText('Location suggestions'))
     await user.click(screen.getByLabelText('Partner advertising'))
-    await user.click(screen.getByRole('button', { name: /Review changes/ }))
+    await user.click(screen.getByRole('button', { name: 'Review 3 changes' }))
     await holdToConfirm()
 
     expect(controller.getSnapshot().workflow).toBe('reviewed')
     expect(screen.getByText('3 changes ready')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Remove confirmation' })).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Remove confirmation' }))
+    expect(controller.getSnapshot().workflow).toBe('staged')
+    expect(screen.getByRole('button', { name: 'Hold to confirm review' })).toHaveAttribute('aria-pressed', 'false')
+    await holdToConfirm()
+    expect(controller.getSnapshot().workflow).toBe('reviewed')
 
     await user.click(screen.getByRole('button', { name: 'Edit settings' }))
     await user.click(screen.getByLabelText('Partner advertising'))
 
     expect(controller.getSnapshot().workflow).toBe('staged')
-    expect(screen.getByText('2 pending changes')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Review 2 changes' })).toBeVisible()
     expect(screen.queryByRole('button', { name: 'Hold to confirm review' })).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /Review changes/ }))
+    await user.click(screen.getByRole('button', { name: 'Review 2 changes' }))
     expect(screen.getByText('2 changes ready')).toBeVisible()
     expect(screen.getByRole('button', { name: 'Hold to confirm review' })).toHaveAttribute('aria-pressed', 'false')
   })
@@ -688,10 +693,9 @@ describe('privacy settings UI', () => {
 
     expect(screen.getByRole('heading', { name: 'Privacy settings' })).toBeVisible()
     expect(screen.getByLabelText('Recommendations')).toBeChecked()
-    expect(screen.getByText('1 pending change')).toBeVisible()
-    expect(screen.getByText('Applied · 0 of 3 optional settings on')).toBeVisible()
-    expect(screen.getByText('Draft · 1 change not applied')).toBeVisible()
-    expect(screen.getByText('1 of 3 optional settings will be on after approval.')).toBeVisible()
+    expect(screen.getByText('Will turn on')).toBeVisible()
+    expect(screen.getByText('Now on · 0 of 3 optional')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Review 1 change' })).toBeVisible()
   })
 
   it('applies accessibility preferences immediately, exposes one Undo, and records Activity', async () => {
@@ -714,7 +718,7 @@ describe('privacy settings UI', () => {
 
     await user.click(screen.getByRole('button', { name: 'Back to Privacy' }))
     expect(screen.getByLabelText('Recommendations')).toBeChecked()
-    expect(screen.getByText('1 pending change')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Review 1 change' })).toBeVisible()
     await user.click(screen.getByRole('tab', { name: /Activity/ }))
     expect(screen.getByText('Text size was updated.')).toBeVisible()
     await user.click(screen.getByRole('button', { name: 'Display preferences' }))

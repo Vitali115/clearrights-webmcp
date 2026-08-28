@@ -295,7 +295,6 @@ export default function App({
       )}
       </div>
       <PersonalControls
-        key={`controls-${snapshot.plan?.id ?? snapshot.record.state.revision}`}
         controller={controller}
         privacyUi={privacyUi}
         privacyView={privacyView}
@@ -311,7 +310,6 @@ export default function App({
         activity={activity}
         activitySnapshot={activitySnapshot}
         observedPrivacySignals={observedPrivacySignals}
-        webMcpAvailable={webMcpAvailable}
         onReset={resetDemo}
       />
     </Sheet>

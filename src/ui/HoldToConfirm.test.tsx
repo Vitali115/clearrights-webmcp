@@ -12,7 +12,7 @@ describe('HoldToConfirm', () => {
   it('confirms only after the full pointer hold', () => {
     vi.useFakeTimers()
     const onConfirm = vi.fn()
-    render(<HoldToConfirm confirmed={false} onConfirm={onConfirm} onRevoke={vi.fn()} />)
+    render(<HoldToConfirm confirmed={false} onConfirm={onConfirm} />)
     const control = screen.getByRole('button', { name: 'Hold to confirm review' })
 
     fireEvent.pointerDown(control, { button: 0, pointerId: 1 })
@@ -25,7 +25,7 @@ describe('HoldToConfirm', () => {
   it('cancels a short hold', () => {
     vi.useFakeTimers()
     const onConfirm = vi.fn()
-    render(<HoldToConfirm confirmed={false} onConfirm={onConfirm} onRevoke={vi.fn()} />)
+    render(<HoldToConfirm confirmed={false} onConfirm={onConfirm} />)
     const control = screen.getByRole('button', { name: 'Hold to confirm review' })
 
     fireEvent.pointerDown(control, { button: 0, pointerId: 1 })
@@ -35,20 +35,24 @@ describe('HoldToConfirm', () => {
     expect(onConfirm).not.toHaveBeenCalled()
   })
 
-  it('supports a keyboard hold and explicit revocation', async () => {
+  it('supports a keyboard hold', () => {
     vi.useFakeTimers()
     const onConfirm = vi.fn()
-    const onRevoke = vi.fn()
-    const { rerender } = render(<HoldToConfirm confirmed={false} onConfirm={onConfirm} onRevoke={onRevoke} />)
+    render(<HoldToConfirm confirmed={false} onConfirm={onConfirm} />)
     const control = screen.getByRole('button', { name: 'Hold to confirm review' })
 
     fireEvent.keyDown(control, { key: 'Enter' })
     act(() => vi.advanceTimersByTime(HOLD_TO_CONFIRM_MS))
     expect(onConfirm).toHaveBeenCalledOnce()
+  })
 
-    rerender(<HoldToConfirm confirmed onConfirm={onConfirm} onRevoke={onRevoke} />)
-    vi.useRealTimers()
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Remove confirmation' }))
-    expect(onRevoke).toHaveBeenCalledOnce()
+  it('exposes a confirmed seal and does not accept further holds', async () => {
+    const onConfirm = vi.fn()
+    render(<HoldToConfirm confirmed onConfirm={onConfirm} />)
+    const control = screen.getByRole('button', { name: 'Human confirmation recorded' })
+    expect(control).toHaveAttribute('aria-pressed', 'true')
+    expect(control).toBeDisabled()
+    await userEvent.setup().click(control)
+    expect(onConfirm).not.toHaveBeenCalled()
   })
 })

@@ -8,6 +8,7 @@ import type {
   PersonalControlsSnapshot,
   PrivacyController,
   PrivacyControllerSnapshot,
+  PrivacyView,
   PrivacyViewCoordinator,
   PrivacyViewSnapshot,
 } from '@/application'
@@ -32,12 +33,14 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import {
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { ArrowLeft, XIcon } from 'lucide-react'
 import { AgentActivityIndicator } from '@/ui/AgentActivityIndicator'
 import { PrivacyCenter } from '@/ui/PrivacyCenter'
 import { waypointRelatedPrivacyDestinationIds } from '@/demo/waypoint/site-guide-catalog'
@@ -51,6 +54,22 @@ const sectionTitleIds: Record<PersonalControlsSection, string> = {
   accessibility: 'display-preferences-title',
   site_guide: 'related-privacy-pages-title',
   activity: 'activity-section-title',
+}
+
+const PRIVACY_VIEW_TITLE: Record<PrivacyView, string> = {
+  home: 'Privacy settings',
+  current_setup: 'Privacy settings',
+  cleanup: 'Privacy settings',
+  activity: 'Setting details',
+  review: 'Review changes',
+  history: 'Previous changes',
+  receipt: 'Verified receipt',
+}
+
+const SECTION_TITLE: Record<Exclude<PersonalControlsSection, 'privacy'>, string> = {
+  accessibility: 'Display preferences',
+  site_guide: 'Related privacy pages',
+  activity: 'Activity',
 }
 
 export function PersonalControls({
@@ -69,7 +88,6 @@ export function PersonalControls({
   activity,
   activitySnapshot,
   observedPrivacySignals,
-  webMcpAvailable,
   onReset,
 }: {
   controller: PrivacyController
@@ -87,7 +105,6 @@ export function PersonalControls({
   activity: ActivityCoordinator
   activitySnapshot: ActivitySnapshot
   observedPrivacySignals: ObservedPrivacySignals
-  webMcpAvailable: boolean
   onReset(): Promise<void>
 }) {
   const [resetting, setResetting] = useState(false)
@@ -99,6 +116,9 @@ export function PersonalControls({
     || privacyView.navigation.view === 'current_setup'
     || privacyView.navigation.view === 'cleanup'
   const showAdditionalModules = section !== 'privacy' || privacySettingsView
+  const privacyViewKind = privacyView.navigation.view
+  const headerTitle = section === 'privacy' ? PRIVACY_VIEW_TITLE[privacyViewKind] : SECTION_TITLE[section]
+  const showBack = section === 'privacy' ? !privacySettingsView : secondarySection
 
   useEffect(() => {
     if (!controlsSnapshot.open) return
@@ -111,6 +131,10 @@ export function PersonalControls({
     })
     return () => window.cancelAnimationFrame(frame)
   }, [controlsSnapshot.agentActivity, controlsSnapshot.focusRequest, controlsSnapshot.open, section])
+
+  useEffect(() => {
+    document.getElementById(sectionTitleIds.privacy)?.focus({ preventScroll: true })
+  }, [privacyViewKind])
 
   const openSection = (next: PersonalControlsSection, focusContent = false) => {
     focusContentRequest.current = focusContent ? next : null
@@ -130,6 +154,18 @@ export function PersonalControls({
     document.getElementById(`controls-tab-${next}`)?.focus()
   }
 
+  const onHeaderBack = () => {
+    if (secondarySection) {
+      openSection('privacy', true)
+      return
+    }
+    privacyUi.acknowledge()
+    privacyUi.navigate({
+      view: privacyViewKind === 'receipt' ? 'history' : 'home',
+      origin: 'human',
+    })
+  }
+
   const reset = async () => {
     setResetting(true)
     setResetError(null)
@@ -143,21 +179,59 @@ export function PersonalControls({
   }
 
   return (
-    <SheetContent className="gap-0 bg-background p-0 data-[side=right]:w-full data-[side=right]:max-w-none data-[side=right]:sm:w-[min(80vw,920px)] data-[side=right]:sm:max-w-none">
-      <AgentActivityIndicator activity={controlsSnapshot.agentActivity} />
-      <SheetHeader className="border-b border-foreground/10 px-5 py-4 pr-32 sm:px-8 sm:pr-36">
-        <SheetTitle className="text-lg">Waypoint Privacy Settings</SheetTitle>
-        <SheetDescription>Review Waypoint data use, approve exact changes, and inspect verified activity.</SheetDescription>
-        {secondarySection ? (
+    <SheetContent
+      showCloseButton={false}
+      className="gap-0 bg-background p-0 data-[side=right]:w-full data-[side=right]:max-w-none data-[side=right]:sm:w-[min(80vw,920px)] data-[side=right]:sm:max-w-none"
+    >
+      <div
+        className="flex min-h-0 flex-1 flex-col"
+        onClickCapture={(event) => {
+          if (isAgentIndicatorEvent(event)) return
+          controlsUi.acknowledge()
+          if (section === 'privacy') privacyUi.acknowledge()
+        }}
+        onKeyDownCapture={(event) => {
+          if (isAgentIndicatorEvent(event)) return
+          controlsUi.acknowledge()
+          if (section === 'privacy') privacyUi.acknowledge()
+        }}
+        onWheelCapture={(event) => {
+          if (isAgentIndicatorEvent(event)) return
+          controlsUi.acknowledge()
+          if (section === 'privacy') privacyUi.acknowledge()
+        }}
+        onTouchMoveCapture={(event) => {
+          if (isAgentIndicatorEvent(event)) return
+          controlsUi.acknowledge()
+          if (section === 'privacy') privacyUi.acknowledge()
+        }}
+      >
+      <SheetHeader className="flex-row items-center gap-2 space-y-0 border-b border-foreground/10 p-0 px-4 h-12 sm:px-5">
+        {showBack ? (
           <Button
             variant="ghost"
-            className="mt-4 h-auto w-fit rounded-full px-3 py-1.5 text-muted-foreground"
-            onClick={() => openSection('privacy', true)}
+            size="icon-sm"
+            className="rounded-full"
+            aria-label={secondarySection ? 'Back to Privacy' : 'Back'}
+            onClick={onHeaderBack}
           >
-            Back to Privacy
+            <ArrowLeft />
           </Button>
-        ) : (
-          <div role="tablist" aria-label="Privacy settings sections" className="mt-4 flex gap-1" onKeyDown={onTabKeyDown}>
+        ) : null}
+        <SheetTitle className="sr-only">Waypoint Privacy Settings</SheetTitle>
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <h1
+            id={sectionTitleIds[section]}
+            tabIndex={-1}
+            className="min-w-0 truncate font-heading text-base font-medium tracking-tight text-foreground outline-none"
+          >
+            {headerTitle}
+          </h1>
+          <AgentActivityIndicator activity={controlsSnapshot.agentActivity} />
+        </div>
+        <SheetDescription className="sr-only">Review data use, then apply the exact plan.</SheetDescription>
+        {!secondarySection && (
+          <div role="tablist" aria-label="Privacy settings sections" className="flex shrink-0 items-center gap-1" onKeyDown={onTabKeyDown}>
             {primarySections.map((item) => (
               <Button
                 key={item}
@@ -166,7 +240,7 @@ export function PersonalControls({
                 aria-selected={section === item}
                 aria-controls="personal-controls-panel"
                 variant={section === item ? (item === 'privacy' ? 'default' : 'secondary') : 'ghost'}
-                className={item === 'privacy' ? 'min-w-32 rounded-full' : 'ml-auto rounded-full text-muted-foreground'}
+                className="h-7 rounded-full px-3"
                 onClick={() => openSection(item)}
               >
                 {item === 'activity' && activitySnapshot.events.length
@@ -176,6 +250,11 @@ export function PersonalControls({
             ))}
           </div>
         )}
+        <SheetClose asChild>
+          <Button variant="ghost" size="icon-sm" className="rounded-full" aria-label="Close">
+            <XIcon />
+          </Button>
+        </SheetClose>
       </SheetHeader>
 
       <div
@@ -183,25 +262,10 @@ export function PersonalControls({
         role={secondarySection ? undefined : 'tabpanel'}
         aria-labelledby={secondarySection ? undefined : `controls-tab-${section}`}
         className="flex min-h-0 flex-1 flex-col overflow-y-auto"
-        onClickCapture={() => {
-          controlsUi.acknowledge()
-          if (section === 'privacy') privacyUi.acknowledge()
-        }}
-        onKeyDownCapture={() => {
-          controlsUi.acknowledge()
-          if (section === 'privacy') privacyUi.acknowledge()
-        }}
-        onWheelCapture={() => {
-          controlsUi.acknowledge()
-          if (section === 'privacy') privacyUi.acknowledge()
-        }}
-        onTouchMoveCapture={() => {
-          controlsUi.acknowledge()
-          if (section === 'privacy') privacyUi.acknowledge()
-        }}
       >
         <div className={section === 'privacy' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'} aria-hidden={section === 'privacy' ? undefined : true}>
           <PrivacyCenter
+            key={privacySnapshot.plan?.id ?? `revision-${privacySnapshot.record.state.revision}`}
             controller={controller}
             privacyUi={privacyUi}
             privacyView={privacyView}
@@ -231,41 +295,32 @@ export function PersonalControls({
       </div>
 
       <SheetFooter className="block gap-0 border-t border-foreground/10 bg-background p-0">
-        {showAdditionalModules && (
-          <div className="flex flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-            <div>
-              <p className="text-xs font-medium text-foreground">Additional agent-ready controls</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Optional ClearRights modules demonstrated by Waypoint.</p>
-            </div>
-            <nav aria-label="Additional agent-ready controls" className="flex flex-wrap gap-1">
+        <div className="flex items-center gap-1 px-4 py-2 sm:px-5">
+          {showAdditionalModules && (
+            <nav aria-label="Additional controls" className="flex min-w-0 items-center gap-1">
               <Button
-                variant={section === 'accessibility' ? 'secondary' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                className="rounded-full"
+                className="h-8 rounded-full px-3 text-sm font-medium text-muted-foreground aria-current:text-foreground"
                 aria-current={section === 'accessibility' ? 'page' : undefined}
                 onClick={() => openSection('accessibility', true)}
               >
                 Display preferences
               </Button>
               <Button
-                variant={section === 'site_guide' ? 'secondary' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                className="rounded-full"
+                className="h-8 rounded-full px-3 text-sm font-medium text-muted-foreground aria-current:text-foreground"
                 aria-current={section === 'site_guide' ? 'page' : undefined}
                 onClick={() => openSection('site_guide', true)}
               >
                 Site guide
               </Button>
             </nav>
-          </div>
-        )}
-        <div className="flex items-center justify-between gap-3 border-t border-foreground/10 px-5 py-2.5 sm:px-8">
-          <p className="text-xs font-medium text-muted-foreground">
-            Built with ClearRights · {webMcpAvailable ? 'Agent tools available' : 'Manual controls'}
-          </p>
+          )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-muted-foreground">Reset</Button>
+              <Button variant="ghost" size="sm" className="ml-auto h-8 shrink-0 rounded-full px-3 text-sm font-medium text-muted-foreground">Reset</Button>
             </AlertDialogTrigger>
             <AlertDialogContent size="sm">
               <AlertDialogHeader>
@@ -285,6 +340,11 @@ export function PersonalControls({
           </AlertDialog>
         </div>
       </SheetFooter>
+      </div>
     </SheetContent>
   )
+}
+
+function isAgentIndicatorEvent(event: { target: EventTarget | null }) {
+  return event.target instanceof Element && Boolean(event.target.closest('[data-agent-indicator]'))
 }

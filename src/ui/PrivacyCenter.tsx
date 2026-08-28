@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import type {
   ActivityCoordinator,
   ObservedGlobalPrivacyControl,
@@ -20,8 +20,8 @@ import { travelCatalog } from '@/demo/travel-catalog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { AlertTriangle, ArrowLeft, ChevronDown } from 'lucide-react'
-import { HoldToConfirm } from './HoldToConfirm'
+import { AlertTriangle, ChevronDown } from 'lucide-react'
+import { ApprovalSeal, HoldToConfirm } from './HoldToConfirm'
 
 interface PrivacyCenterProps {
   controller: PrivacyController
@@ -30,37 +30,6 @@ interface PrivacyCenterProps {
   snapshot: PrivacyControllerSnapshot
   observedPrivacySignals: ObservedPrivacySignals
   activity: ActivityCoordinator
-}
-
-const VIEW_COPY: Record<PrivacyView, { title: string; description: string }> = {
-  home: {
-    title: 'Privacy settings',
-    description: 'All data-use settings available for this site.',
-  },
-  current_setup: {
-    title: 'Privacy settings',
-    description: 'All data-use settings available for this site.',
-  },
-  activity: {
-    title: 'Setting details',
-    description: 'Purpose, data, dependencies, and effect of this setting.',
-  },
-  cleanup: {
-    title: 'Privacy settings',
-    description: 'All data-use settings available for this site.',
-  },
-  review: {
-    title: 'Review changes',
-    description: 'Review every listed effect, confirm deliberately, then apply.',
-  },
-  history: {
-    title: 'Previous changes',
-    description: 'Verified changes stored in this browser, newest first.',
-  },
-  receipt: {
-    title: 'Verified receipt',
-    description: 'Adapter readback matched the decision recorded in this receipt.',
-  },
 }
 
 export function PrivacyCenter({
@@ -77,26 +46,14 @@ export function PrivacyCenter({
     snapshot.plan ? [...snapshot.plan.input.avoidUses] : inactiveUses(snapshot))
   const [actionError, setActionError] = useState<string | null>(null)
   const [applying, setApplying] = useState(false)
-  const viewHeadingRef = useRef<HTMLHeadingElement>(null)
   const view = privacyView.navigation.view
-  const copy = VIEW_COPY[view]
   const planMatchesIntent = snapshot.plan
     ? sameSelection(snapshot.plan.input.keepCapabilities, keepCapabilities)
       && sameSelection(snapshot.plan.input.avoidUses, avoidUses)
     : false
 
-  useEffect(() => {
-    viewHeadingRef.current?.focus({ preventScroll: true })
-  }, [view])
-
   const navigate = (next: PrivacyView, processingId?: ProcessingId) => {
     privacyUi.navigate({ view: next, processingId, origin: 'human' })
-  }
-
-  const goBack = () => {
-    privacyUi.acknowledge()
-    if (view === 'receipt') navigate('history')
-    else navigate('home')
   }
 
   const updateProcessing = (definition: ProcessingDefinition, enabled: boolean) => {
@@ -178,20 +135,6 @@ export function PrivacyCenter({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <header className="border-b border-foreground/10 px-5 py-4 sm:px-8">
-        <div className="flex items-start gap-3">
-          {!settingsView && (
-            <Button variant="ghost" size="icon-sm" className="mt-0.5 rounded-full" aria-label="Back" onClick={goBack}>
-              <ArrowLeft />
-            </Button>
-          )}
-          <div className="min-w-0">
-            <h1 id="privacy-section-title" ref={viewHeadingRef} tabIndex={-1} className="font-heading text-[22px] font-medium tracking-tight text-foreground outline-none">{copy.title}</h1>
-            <p className="mt-1.5 text-sm font-medium text-muted-foreground">{copy.description}</p>
-          </div>
-        </div>
-      </header>
-
       <ScrollArea
         data-testid="privacy-view-content"
         className="min-h-0 flex-1"
@@ -285,8 +228,6 @@ function SettingsView({
 }) {
   const optional = travelCatalog.processing.filter(({ control }) => control.mode !== 'required')
   const required = travelCatalog.processing.filter(({ control }) => control.mode === 'required')
-  const draftOptionalEnabled = optional.filter((definition) =>
-    draftEnabled(definition, keepCapabilities, avoidUses)).length
   const changedCount = travelCatalog.processing.filter((definition) =>
     snapshot.record.state.processing[definition.id]
       !== draftEnabled(definition, keepCapabilities, avoidUses)).length
@@ -296,23 +237,17 @@ function SettingsView({
     <div>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 text-sm">
         <p className="font-medium text-muted-foreground">
-          Applied · {appliedOptionalEnabled} of {optional.length} optional settings on
+          Now on · {appliedOptionalEnabled} of {optional.length} optional
         </p>
-        <Button variant="ghost" className="h-auto px-0 text-foreground" onClick={onHistory}>
+        <Button variant="ghost" className="h-8 rounded-full px-3" onClick={onHistory}>
           Previous changes ({snapshot.record.receipts.length})
         </Button>
       </div>
-      {changedCount > 0 && (
-        <div className="mb-5 border-l-2 border-foreground pl-3 text-sm">
-          <p className="font-medium">Draft · {changedCount} {changedCount === 1 ? 'change' : 'changes'} not applied</p>
-          <p className="mt-1 text-muted-foreground">{draftOptionalEnabled} of {optional.length} optional settings will be on after approval.</p>
-        </div>
-      )}
 
       <section className="mb-8" aria-labelledby="optional-settings">
         <h2 id="optional-settings" className="text-[13px] font-medium text-muted-foreground">Optional settings</h2>
         <p className="mt-1 mb-1 text-[13px] text-muted-foreground">
-          These settings change discovery, nearby suggestions, and partner offers.
+          These change discovery, nearby suggestions, and partner offers.
         </p>
         <SettingRows
           definitions={optional}
@@ -346,11 +281,13 @@ function SettingsView({
 
       <BrowserPrivacySignal signal={observedGlobalPrivacyControl} />
 
-      <div className="sticky bottom-0 -mx-5 mt-4 flex items-center justify-between gap-3 bg-gradient-to-t from-background from-70% to-transparent px-5 pt-8 pb-1 sm:-mx-8 sm:px-8">
-        <p className="text-sm font-medium">
-          {changedCount ? `${changedCount} pending ${changedCount === 1 ? 'change' : 'changes'}` : 'No pending changes'}
-        </p>
-        <Button className="h-9 rounded-full px-5" disabled={changedCount === 0} onClick={onReview}>Review changes</Button>
+      <div className={`sticky bottom-0 -mx-5 mt-4 flex items-center gap-3 bg-gradient-to-t from-background from-70% to-transparent px-5 pt-8 pb-1 sm:-mx-8 sm:px-8 ${changedCount ? 'justify-end' : 'justify-between'}`}>
+        {changedCount === 0 && <p className="text-sm font-medium">No changes to review</p>}
+        <Button className="h-9 rounded-full px-5" disabled={changedCount === 0} onClick={onReview}>
+          {changedCount === 0
+            ? 'Review changes'
+            : `Review ${changedCount} ${changedCount === 1 ? 'change' : 'changes'}`}
+        </Button>
       </div>
     </div>
   )
@@ -382,7 +319,7 @@ function SettingRows({
       >
         <button
           type="button"
-          className="min-w-0 rounded-sm text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="min-w-0 rounded-sm text-left outline-none hover:underline hover:underline-offset-4 focus-visible:ring-3 focus-visible:ring-ring/50"
           aria-label={`Open ${definition.label} details`}
           onClick={() => onInspect(definition.id)}
         >
@@ -470,9 +407,7 @@ function ActivityDetailView({
           : <SettingSwitch label={definition.label} checked={enabled} onChange={(checked) => onChange(definition, checked)} />}
       </div>
       {changed && (
-        <p className="mb-6 text-sm font-medium">
-          Pending change: this setting will turn {enabled ? 'on' : 'off'} after review and approval.
-        </p>
+        <p className="mb-6 text-sm font-medium">Will turn {enabled ? 'on' : 'off'} after apply.</p>
       )}
       <div className="space-y-5">
         <Detail label="Current state" value={inspection.enabled ? 'On' : 'Off'} />
@@ -635,8 +570,7 @@ function ReviewView({
           <p className="text-[1.1rem] font-medium tracking-tight">
             {plan.changes.length} {plan.changes.length === 1 ? 'change' : 'changes'} ready
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">Only the settings listed below will change.</p>
-          <p className="mt-1 text-xs text-muted-foreground">Exact plan · {plan.id}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Plan {plan.id}</p>
         </div>
         <Button variant="ghost" className="h-9 shrink-0 rounded-full px-4" onClick={onEdit}>Edit settings</Button>
       </div>
@@ -670,10 +604,10 @@ function ReviewView({
       )}
 
       <div className="mt-5">
-        <p className="mb-3 text-[13px] font-medium text-muted-foreground">Approval status · tied to {plan.id}</p>
-        <ApprovalStatus preparedByAgent={preparedByAgent} humanReviewed={snapshot.workflow === 'reviewed'} approvalNeeded />
-        <HoldToConfirm
-          confirmed={snapshot.workflow === 'reviewed'}
+        <ApprovalStatus
+          preparedByAgent={preparedByAgent}
+          humanReviewed={snapshot.workflow === 'reviewed'}
+          approvalNeeded
           onConfirm={onReviewed}
           onRevoke={onReviewRevoked}
         />
@@ -693,32 +627,57 @@ function ApprovalStatus({
   preparedByAgent,
   humanReviewed,
   approvalNeeded,
+  onConfirm,
+  onRevoke,
 }: {
   preparedByAgent: boolean
   humanReviewed: boolean
   approvalNeeded: boolean
+  onConfirm?(): void
+  onRevoke?(): void
 }) {
+  const humanDescriptionId = useId()
+  const humanComplete = humanReviewed || !approvalNeeded
+  const humanStatus = humanReviewed ? 'Approved' : approvalNeeded ? 'Waiting for you' : 'Not needed'
+  const humanCopy = humanReviewed
+    ? 'Hold recorded for this plan.'
+    : approvalNeeded
+      ? 'Hold the seal to record review.'
+      : 'Not needed for this plan.'
+
   return (
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-3" aria-label="Approval status">
+    <div className="grid gap-2.5" aria-label="Approval status">
       <Stamp
         title="Agent check"
         complete={preparedByAgent}
         status={preparedByAgent ? 'Change set prepared' : 'Manual change set'}
+        seal={<ApprovalSeal complete={preparedByAgent} />}
       >
         {preparedByAgent
-          ? 'The page tool prepared this exact change set. It is a recorded preparation, not a signature.'
-          : 'This change set was prepared in the page, not by the agent tool.'}
+          ? 'WebMCP prepared this plan. Not a signature.'
+          : 'Prepared in this page, not by the agent.'}
       </Stamp>
       <Stamp
         title="Human check"
-        complete={humanReviewed || !approvalNeeded}
-        status={humanReviewed ? 'Approved' : approvalNeeded ? 'Waiting for you' : 'Not needed'}
+        complete={humanComplete}
+        status={humanStatus}
+        descriptionId={humanDescriptionId}
+        seal={approvalNeeded && onConfirm
+          ? <HoldToConfirm confirmed={humanReviewed} onConfirm={onConfirm} describedBy={humanDescriptionId} />
+          : <ApprovalSeal complete={humanComplete} />}
+        action={humanReviewed && onRevoke
+          ? (
+            <button
+              type="button"
+              className="mt-1.5 text-xs font-medium text-muted-foreground outline-none hover:underline hover:underline-offset-4 focus-visible:ring-3 focus-visible:ring-ring/50"
+              onClick={onRevoke}
+            >
+              Remove confirmation
+            </button>
+          )
+          : null}
       >
-        {humanReviewed
-          ? 'A 1.2 second hold recorded that you reviewed this plan.'
-          : approvalNeeded
-            ? 'Hold for 1.2 seconds to record that you reviewed this plan. Early release does not confirm.'
-            : 'Human approval is not needed for this plan.'}
+        {humanCopy}
       </Stamp>
     </div>
   )
@@ -728,25 +687,29 @@ function Stamp({
   title,
   complete,
   status,
+  seal,
+  descriptionId,
+  action,
   children,
 }: {
   title: string
   complete: boolean
   status: string
+  seal: ReactNode
+  descriptionId?: string
+  action?: ReactNode
   children: string
 }) {
   return (
-    <div className={`grid min-w-0 grid-cols-[auto_1fr] content-start gap-x-3 rounded-sm border p-3 ${complete ? 'border-foreground' : 'border-foreground/20'}`}>
-      <span
-        className={`mt-1 size-2 rounded-full ${complete ? 'bg-foreground' : 'bg-foreground/20'}`}
-        aria-hidden="true"
-      />
+    <div className={`grid min-w-0 grid-cols-[auto_1fr] items-start gap-x-3 rounded-sm border p-3 ${complete ? 'border-foreground' : 'border-foreground/20'}`}>
+      {seal}
       <div className="min-w-0">
         <p className="text-sm font-medium">
           <span>{title}</span><span aria-hidden="true"> · </span>
           <span className={complete ? 'text-foreground' : 'text-muted-foreground'}>{status}</span>
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{children}</p>
+        <p id={descriptionId} className="mt-1 text-xs leading-relaxed text-muted-foreground">{children}</p>
+        {action}
       </div>
     </div>
   )
@@ -783,7 +746,7 @@ function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHo
     return (
       <div className="border-t border-foreground/10 py-8">
         <p className="font-medium">No verified receipt yet</p>
-        <p className="mt-1 text-sm text-muted-foreground">Record a direct choice or apply a human-reviewed plan to create one.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Make a choice or apply a reviewed plan.</p>
       </div>
     )
   }
@@ -794,8 +757,8 @@ function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHo
       <p className="mt-2 text-[1.35rem] font-medium tracking-tight">Privacy settings applied</p>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {reviewedPlan
-          ? `The ${receipt.verification.adapterId} adapter matched the exact plan you reviewed.`
-          : `The ${receipt.verification.adapterId} adapter matched the settings recorded by your direct choice.`}
+          ? 'The host adapter matched the plan you held to confirm.'
+          : 'The host adapter matched your direct choice.'}
       </p>
       <dl className="mt-7 grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-3">
         <ProofStep
@@ -803,7 +766,7 @@ function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHo
           value={reviewedPlan ? 'Human hold recorded' : 'Explicit action recorded'}
         />
         <ProofStep label="Applied revision" value={`${receipt.beforeRevision} → ${receipt.afterRevision}`} />
-        <ProofStep label="Adapter readback" value={`${receipt.verification.adapterId} · matched`} />
+        <ProofStep label="Adapter" value={`${receipt.verification.adapterId} · matched`} />
       </dl>
       <p className="mt-4 text-xs text-muted-foreground">
         Receipt · <span className="break-all">{receipt.id}</span>
@@ -817,12 +780,7 @@ function ReceiptView({ receipt, onHome }: { receipt: PrivacyReceipt | null; onHo
           <ReceiptDetails receipt={receipt} />
         </div>
       </details>
-      <div className="mt-8 border-t border-foreground/10 pt-5 text-sm">
-        <p className="font-medium">What verified means</p>
-        <p className="mt-1 text-muted-foreground">
-          Adapter readback matched {reviewedPlan ? 'the reviewed plan' : 'the recorded direct choice'} within the {receipt.verification.scope === 'local_demo' ? 'local demo' : 'external adapter'} scope. This is not a signature or legal proof.
-        </p>
-      </div>
+      <p className="mt-5 text-sm text-muted-foreground">Not a signature or legal proof.</p>
       <Button className="mt-6 h-9 rounded-full px-5" onClick={onHome}>Return to privacy settings</Button>
     </div>
   )

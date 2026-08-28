@@ -2,6 +2,7 @@ import { useId, useState } from 'react'
 import type { AgentActivity, ControlsAgentActivity } from '@/application'
 import { Button } from '@/components/ui/button'
 import { Check } from 'lucide-react'
+import { AgentMark } from '@/ui/AgentMark'
 
 interface AgentActivityIndicatorProps {
   activity: AgentActivity | ControlsAgentActivity | null
@@ -15,13 +16,17 @@ export function AgentActivityIndicator({ activity, placement = 'sheet' }: AgentA
   if (!activity) return null
 
   const pending = activity.status === 'opened'
+  const onPage = placement === 'page'
   return (
-    <div className={placement === 'page' ? 'relative z-40' : 'absolute right-14 top-3 z-10'}>
+    <div
+      data-agent-indicator=""
+      className={onPage ? 'relative z-40' : 'relative shrink-0'}
+    >
       <Button
         type="button"
         variant="ghost"
-        size="sm"
-        className="relative h-8 rounded-full bg-foreground/5 px-3"
+        size="icon-sm"
+        className="relative rounded-full"
         aria-expanded={open}
         aria-controls={popoverId}
         aria-label={pending ? 'Agent activity, new agent-opened view' : 'Agent activity, interaction recorded'}
@@ -30,11 +35,11 @@ export function AgentActivityIndicator({ activity, placement = 'sheet' }: AgentA
           setOpen((current) => !current)
         }}
       >
-        <span>Agent</span>
+        <AgentMark className="size-4" />
         {pending && (
           <span
             data-testid="agent-activity-dot"
-            className="absolute -right-1 -top-1 size-2.5 rounded-full bg-blue-600 ring-2 ring-background"
+            className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-blue-600 ring-2 ring-background"
             aria-hidden="true"
           />
         )}
@@ -43,7 +48,7 @@ export function AgentActivityIndicator({ activity, placement = 'sheet' }: AgentA
         <div
           id={popoverId}
           role="status"
-          className="absolute right-0 top-11 w-[min(22rem,calc(100vw-2rem))] border border-foreground/10 bg-background p-4 text-foreground"
+          className={`absolute top-10 z-20 w-[min(22rem,calc(100vw-2rem))] border border-foreground/10 bg-background p-4 text-foreground ${onPage ? 'right-0' : 'left-0'}`}
         >
           <div className="flex gap-3">
             {pending

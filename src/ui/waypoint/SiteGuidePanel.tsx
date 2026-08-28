@@ -53,8 +53,6 @@ export function SiteGuidePanel({
 
   return (
     <section className="mx-auto w-full max-w-3xl p-5 sm:px-8 sm:py-7" aria-labelledby="related-privacy-pages-title">
-      <h1 id="related-privacy-pages-title" tabIndex={-1} className="text-[22px] font-medium tracking-tight outline-none">Related privacy pages</h1>
-      <p className="mt-1.5 text-sm text-muted-foreground">Pages declared by Waypoint and available to both people and compatible agents.</p>
       {currentDestination && (
         <p className="mt-3 text-xs font-medium text-muted-foreground">
           Last opened: {currentDestination.label}

@@ -217,8 +217,8 @@ export function TravelProductPage({
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
               {experience.discovery === 'personalised'
-                ? 'Waypoint is using the represented recommendations setting to tailor this list.'
-                : 'Recommendations are off, so everyone sees this same sample selection.'}
+                ? 'Recommendations are on, so this list is tailored.'
+                : 'Recommendations are off, so everyone sees this list.'}
             </p>
           </div>
           <div className="grid gap-x-6 gap-y-12 sm:gap-y-20 md:grid-cols-3">
@@ -278,10 +278,9 @@ function PrivacyEffectSummary({
         </dl>
       </div>
       {status.pendingChanges > 0 && (
-        <div className="mt-5 border-l-2 border-foreground pl-3 text-sm">
-          <p className="font-medium">{status.pendingChanges} {status.pendingChanges === 1 ? 'change' : 'changes'} prepared · Not applied yet</p>
-          <p className="mt-1 text-muted-foreground">The product still reflects the applied values shown above.</p>
-        </div>
+        <p className="mt-4 text-sm font-medium">
+          {status.pendingChanges} {status.pendingChanges === 1 ? 'change' : 'changes'} waiting to apply · product unchanged
+        </p>
       )}
     </section>
   )

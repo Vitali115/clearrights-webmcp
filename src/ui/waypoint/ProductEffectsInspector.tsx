@@ -47,9 +47,9 @@ export function ProductEffectsInspector({
 
         {pendingPlan && (
           <div role="status" className="mt-8 border border-foreground/15 bg-background p-4 text-sm leading-relaxed">
-            <p className="font-medium">Pending draft is not shown in this product preview</p>
+            <p className="font-medium">Waiting changes are not shown here</p>
             <p className="mt-1 text-muted-foreground">
-              {pendingPlan.changeCount} {pendingPlan.changeCount === 1 ? 'change' : 'changes'} in {pendingPlan.id} remain {pendingPlan.status}. The product effects below continue to use revision {appliedRevision} until the exact draft is human-approved and applied.
+              {pendingPlan.changeCount} waiting in {pendingPlan.id}. This table still shows revision {appliedRevision}.
             </p>
           </div>
         )}

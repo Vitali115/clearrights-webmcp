@@ -142,7 +142,8 @@ describe('agent-guided privacy flow', () => {
     expect(screen.getByText('Change set prepared')).toBeVisible()
     expect(screen.getByText('Human check')).toBeVisible()
     expect(screen.getByText('Waiting for you')).toBeVisible()
-    expect(screen.queryByText('Additional agent-ready controls')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Display preferences' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Site guide' })).not.toBeInTheDocument()
 
     const confirmation = screen.getByRole('button', { name: 'Hold to confirm review' })
     fireEvent.pointerDown(confirmation, { button: 0, pointerId: 1 })
