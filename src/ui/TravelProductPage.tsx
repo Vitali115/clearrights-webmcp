@@ -22,7 +22,7 @@ interface TravelProductPageProps {
   privacyEffectStatus: {
     pendingChanges: number
   }
-  showPrivacyEffectSummary: boolean
+  hasRecordedPrivacyState: boolean
   onExplainPrivacy(): void
   onOpenControls(): void
   onExitEffectsPreview(): void
@@ -99,7 +99,7 @@ export function TravelProductPage({
   effectsPreview,
   developerPreview,
   privacyEffectStatus,
-  showPrivacyEffectSummary,
+  hasRecordedPrivacyState,
   onExplainPrivacy,
   onOpenControls,
   onExitEffectsPreview,
@@ -133,11 +133,18 @@ export function TravelProductPage({
         />
       )}
       <header className="border-b border-foreground/8">
-        <div className="flex h-16 items-center justify-between gap-3 px-5 sm:px-8">
+        <div className="grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-5 py-2 sm:px-8">
           <span className="text-base font-medium tracking-tight">Waypoint</span>
+          <div className="flex min-w-0 justify-center">
+            <PrivacyNavbarStatus
+              experience={experience}
+              status={privacyEffectStatus}
+              hasRecordedPrivacyState={hasRecordedPrivacyState}
+              preview={effectsPreview}
+            />
+          </div>
           <nav className="flex shrink-0 items-center gap-1" aria-label="Account navigation">
-            <Button variant="ghost" className="hidden h-9 rounded-full px-3.5 sm:inline-flex">Trips</Button>
-            <Button variant="ghost" className="hidden h-9 rounded-full px-3.5 md:inline-flex" onClick={onExplainPrivacy}>
+            <Button variant="ghost" className="hidden h-9 rounded-full px-3.5 lg:inline-flex" onClick={onExplainPrivacy}>
               How privacy works
             </Button>
             {agentActivityAction}
@@ -165,13 +172,6 @@ export function TravelProductPage({
           <Button type="submit" className="h-9 rounded-full px-5">Search</Button>
         </form>
       </section>
-
-      {!effectsPreview && showPrivacyEffectSummary && (
-        <PrivacyEffectSummary
-          experience={experience}
-          status={privacyEffectStatus}
-        />
-      )}
 
       <section className="px-5 pb-16 sm:px-8 sm:pb-20" aria-labelledby="upcoming-trips">
         <h2 id="upcoming-trips" tabIndex={-1} className="mb-7 text-sm font-medium text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -253,44 +253,55 @@ export function TravelProductPage({
   )
 }
 
-function PrivacyEffectSummary({
+function PrivacyNavbarStatus({
   experience,
   status,
+  hasRecordedPrivacyState,
+  preview,
 }: {
   experience: WaypointExperienceViewModel
   status: TravelProductPageProps['privacyEffectStatus']
+  hasRecordedPrivacyState: boolean
+  preview: boolean
 }) {
-  return (
-    <section
-      data-testid="privacy-effect-summary"
-      className="border-y border-foreground/10 bg-foreground/[0.02] px-5 py-6 sm:px-8"
-      aria-labelledby="waypoint-privacy-effect"
-    >
-      <div className="grid gap-6 lg:grid-cols-[0.8fr_1.4fr] lg:items-center">
-        <div>
-          <p className="text-[13px] font-medium text-muted-foreground">Applied privacy effect</p>
-          <h2 id="waypoint-privacy-effect" className="mt-1 text-xl font-medium tracking-tight">What Waypoint is using now</h2>
-        </div>
-        <dl className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
-          <EffectValue label="Recommendations" value={experience.discovery === 'personalised' ? 'Personalised' : 'Generic'} />
-          <EffectValue label="Nearby guide" value={experience.nearbyGuide === 'visible' ? 'Visible' : 'Hidden'} />
-          <EffectValue label="Partner offer" value={experience.partnerOffer === 'visible' ? 'Visible' : 'Hidden'} />
-        </dl>
-      </div>
-      {status.pendingChanges > 0 && (
-        <p className="mt-4 text-sm font-medium">
-          {status.pendingChanges} {status.pendingChanges === 1 ? 'change' : 'changes'} waiting to apply · product unchanged
-        </p>
-      )}
-    </section>
-  )
-}
+  const optionalEnabled = [
+    experience.discovery === 'personalised',
+    experience.nearbyGuide === 'visible',
+    experience.partnerOffer === 'visible',
+  ].filter(Boolean).length
+  const appliedSummary = optionalEnabled === 0
+    ? 'Essential only'
+    : optionalEnabled === 3
+      ? 'All optional uses on'
+      : `${optionalEnabled} of 3 optional uses on`
+  const pendingLabel = status.pendingChanges === 1 ? '1 change pending' : `${status.pendingChanges} changes pending`
+  const stateDescription = hasRecordedPrivacyState
+    ? `${appliedSummary}.`
+    : 'No privacy choice has been recorded.'
+  const description = status.pendingChanges > 0
+    ? `${stateDescription} ${pendingLabel}; the product is unchanged until apply.`
+    : stateDescription
 
-function EffectValue({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-sm bg-background px-3 py-3">
-      <dt className="truncate text-[11px] font-medium text-muted-foreground">{label}</dt>
-      <dd className="mt-1 truncate text-sm font-medium">{value}</dd>
+    <div
+      role="status"
+      data-testid="privacy-navbar-status"
+      className="hidden min-w-0 items-center justify-center border-x border-foreground/10 px-4 sm:flex"
+      aria-label={description}
+    >
+      <span className="min-w-0 text-center leading-tight">
+        <span className="block text-[9px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+          {preview ? 'Privacy preview' : 'Privacy status'}
+        </span>
+        <span className="mt-1 flex min-w-0 items-center justify-center gap-2 text-xs font-medium">
+          <span className="truncate">{hasRecordedPrivacyState ? appliedSummary : 'Choice required'}</span>
+          {status.pendingChanges > 0 && (
+            <span className="shrink-0 text-amber-700 dark:text-amber-400">
+              {pendingLabel}<span className="hidden xl:inline"> · product unchanged</span>
+            </span>
+          )}
+        </span>
+      </span>
     </div>
   )
 }

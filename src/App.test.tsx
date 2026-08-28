@@ -292,7 +292,7 @@ describe('privacy settings UI', () => {
     const controller = await createController()
     renderApp(controller)
 
-    expect(screen.queryByTestId('privacy-effect-summary')).not.toBeInTheDocument()
+    expect(within(screen.getByTestId('privacy-navbar-status')).getByText('Choice required')).toBeVisible()
     expect(screen.getByText('Popular places, selected without profile data')).toBeVisible()
     expect(screen.queryByText('Around your Lisbon stay')).not.toBeInTheDocument()
     expect(screen.queryByText('A flexible rail pass for your saved city trips')).not.toBeInTheDocument()
@@ -309,9 +309,8 @@ describe('privacy settings UI', () => {
     expect(document.querySelector('[data-clearrights-surface="partner-offer"]')).toBeInTheDocument()
     expect(document.querySelector('img[src="/cards/reykjavik.jpg"]')).toBeInTheDocument()
     expect(document.querySelector('img[src="/cards/rail-pass.jpg"]')).toBeInTheDocument()
-    const appliedEffect = screen.getByTestId('privacy-effect-summary')
-    expect(within(appliedEffect).getByText('Personalised')).toBeVisible()
-    expect(within(appliedEffect).getAllByText('Visible')).toHaveLength(2)
+    const appliedEffect = screen.getByTestId('privacy-navbar-status')
+    expect(within(appliedEffect).getByText('All optional uses on')).toBeVisible()
     expect(within(appliedEffect).queryByText(/revision|receipt|readback/i)).not.toBeInTheDocument()
     expect(controller.getReceipt()).toEqual(expect.objectContaining({
       kind: 'initial_choice',
@@ -338,9 +337,10 @@ describe('privacy settings UI', () => {
     }, 'webmcp_tool')
     renderApp(controller, true)
 
-    const effect = screen.getByTestId('privacy-effect-summary')
-    expect(within(effect).getByText('Generic')).toBeVisible()
-    expect(within(effect).getByText('1 change waiting to apply · product unchanged')).toBeVisible()
+    const effect = screen.getByTestId('privacy-navbar-status')
+    expect(within(effect).getByText('Essential only')).toBeVisible()
+    expect(within(effect).getByText('1 change pending')).toBeVisible()
+    expect(within(effect).getByText('· product unchanged')).toBeVisible()
   })
 
   it('opens and closes the privacy Sheet over the travel product', async () => {
@@ -368,7 +368,7 @@ describe('privacy settings UI', () => {
 
     expect(screen.getByText('Waypoint')).toBeVisible()
     expect(screen.queryByText('Travel demo')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Trips' })).toHaveClass('hidden', 'sm:inline-flex')
+    expect(screen.queryByRole('button', { name: 'Trips' })).not.toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Account navigation' })).toHaveClass('shrink-0')
     expect(screen.getByRole('button', { name: 'Privacy settings' })).toBeVisible()
   })

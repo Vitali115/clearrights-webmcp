@@ -228,7 +228,7 @@ export default function App({
             effectsPreview={route.effects}
             developerPreview={route.effects ? developerPreview : null}
             privacyEffectStatus={privacyEffectStatus}
-            showPrivacyEffectSummary={snapshot.record.notice.status === 'recorded' || Boolean(snapshot.plan) || snapshot.record.receipts.length > 0}
+            hasRecordedPrivacyState={snapshot.record.notice.status === 'recorded' || Boolean(snapshot.plan) || snapshot.record.receipts.length > 0}
             onDeveloperPreviewModeChange={setDeveloperPreviewMode}
             onDeveloperSandboxChange={(setting, enabled) => {
               setDeveloperSandbox((current) => ({ ...current, [setting]: enabled }))
@@ -283,7 +283,7 @@ export default function App({
           effectsPreview={false}
           developerPreview={null}
           privacyEffectStatus={privacyEffectStatus}
-          showPrivacyEffectSummary={snapshot.record.notice.status === 'recorded' || Boolean(snapshot.plan) || snapshot.record.receipts.length > 0}
+          hasRecordedPrivacyState={snapshot.record.notice.status === 'recorded' || Boolean(snapshot.plan) || snapshot.record.receipts.length > 0}
           onDeveloperPreviewModeChange={setDeveloperPreviewMode}
           onDeveloperSandboxChange={(setting, enabled) => {
             setDeveloperSandbox((current) => ({ ...current, [setting]: enabled }))
