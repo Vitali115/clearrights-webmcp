@@ -1,4 +1,4 @@
-# OpenAI WebMCP Challenge submission
+# The WebMCP Challenge submission
 
 ## Submission fields
 
@@ -6,10 +6,10 @@
 - **Tagline:** Privacy changes agents can prepare, people can approve, and hosts can prove.
 - **Live application:** <https://clearrights-webmcp.vercel.app/>
 - **Source code:** <https://github.com/Vitali115/clearrights-webmcp>
-- **Demo video:** `TBD — public YouTube URL under three minutes`
+- **Demo video:** <https://youtu.be/jZI10DsSWyg>
 - **License:** MIT
 
-The live application and public repository were verified on August 27, 2026. Replace the remaining video `TBD` only after opening the public YouTube artifact from a signed-out session.
+The live application and public repository were verified on August 27, 2026. The public YouTube artifact was verified on August 29, 2026. Its current duration is 3:08, so it must be trimmed below three minutes before the final submission.
 
 ## Short description
 
@@ -83,7 +83,7 @@ Manual privacy settings continue to work when WebMCP is unavailable.
 
 ## Video storyboard — target 2:30
 
-| Time | Visual | English narration goal |
+| Time | Visual | Narration goal |
 | --- | --- | --- |
 | 0:00–0:15 | Fragmented privacy choices, then Waypoint | State the problem and one-sentence value proposition. |
 | 0:15–0:45 | Overview and partner-advertising inspection | Show structured state, required settings, consequences, and developer provenance. |
@@ -94,7 +94,7 @@ Manual privacy settings continue to work when WebMCP is unavailable.
 | 2:05–2:20 | Trust trace, GPC, adapter map | Explain real evidence and the production boundary. |
 | 2:20–2:30 | Display preferences and Site Guide | Present them briefly as extensions, not competing products. |
 
-Use English narration, no music, no credentials, no vendor logos, and no claim of certification or legal compliance.
+Use Italian narration with manually reviewed English subtitles, no credentials, no vendor logos, and no claim of certification or legal compliance.
 
 ## Demo limitations
 
@@ -111,7 +111,8 @@ The repository has no production CMP, backend, authentication, geography engine,
 - [ ] Three clean five-case sessions are recorded for every client for which a repeated-run claim will be made.
 - [x] Chrome 152 native WebMCP and ordinary-browser fallback observations are recorded in `EVALS.md`.
 - [ ] The complete ordinary-browser manual review and application path is recorded.
-- [ ] YouTube video is public and under three minutes.
+- [x] YouTube video is public.
+- [ ] Video is trimmed below three minutes; the current public cut is 3:08.
 - [ ] Devpost links, testing instructions, and submission text are final.
 - [ ] Final artifacts are ready by September 2; September 3 is buffer only.
 

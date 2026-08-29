@@ -123,7 +123,7 @@ The same run opened `/#/clearrights` through `navigate_to_site_destination`, obs
 
 ## Public deployment direct-tool run — August 27, 2026
 
-- **Deployment:** `https://webmcp-openai-contest.vercel.app`
+- **Deployment:** `https://clearrights-webmcp.vercel.app`
 - **Client:** Codex In-app Browser, production build flavor; no numeric browser build was exposed
 - **Date and timezone:** August 27, 2026, Europe/Rome
 - **Method:** direct calls to the page-defined WebMCP tool handle; no natural-language prompt-selection claim
@@ -175,7 +175,7 @@ Those gaps remain explicit rather than being converted into a success percentage
 
 This second public run was performed after the privacy-settings hierarchy deploy. It preserves the earlier observations above rather than rewriting them retroactively.
 
-- **Deployment:** `https://webmcp-openai-contest.vercel.app`
+- **Deployment:** `https://clearrights-webmcp.vercel.app`
 - **Client:** Codex In-app Browser; no numeric browser build was exposed
 - **Date and timezone:** August 27, 2026, Europe/Rome
 - **Method:** direct page-defined WebMCP calls plus two deliberate 1.2-second human holds; no natural-language tool-selection claim

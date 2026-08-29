@@ -2,7 +2,7 @@
 
 ClearRights Privacy is a WebMCP reference implementation for agent-prepared, human-approved, host-verified privacy changes.
 
-**[Open the live demo](https://clearrights-webmcp.vercel.app/)** · [Developer integration](https://clearrights-webmcp.vercel.app/#/clearrights) · [Public source](https://github.com/Vitali115/clearrights-webmcp)
+**[Open the live application](https://clearrights-webmcp.vercel.app/)** · [Watch the video](https://youtu.be/jZI10DsSWyg) · [Developer integration](https://clearrights-webmcp.vercel.app/#/clearrights) · [Public source](https://github.com/Vitali115/clearrights-webmcp)
 
 > **A developer declares privacy controls once. An agent can inspect and prepare an exact plan, a person reviews that plan, and the host applies and reads the result back through an explicit adapter.**
 
@@ -145,4 +145,4 @@ The suite covers catalog invariants, deterministic planning, review/revocation, 
 
 ClearRights does not claim legal compliance, identity proof, non-repudiation, accessibility remediation, automatic site understanding, or production infrastructure. Waypoint is a local fictional host. A production adopter remains responsible for accurate catalog content, authentication, authorisation, transactions, recovery, retention, and lawful enforcement.
 
-This project was created during the OpenAI WebMCP Challenge submission period; the current Git history begins on August 27, 2026. Licensed under the [MIT License](LICENSE).
+This project was created during The WebMCP Challenge submission period; the current Git history begins on August 27, 2026. Licensed under the [MIT License](LICENSE).

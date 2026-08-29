@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local submission tooling and media drafts
+.devpost-hackathon-state.json
+devpost-media/

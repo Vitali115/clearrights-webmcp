@@ -3,6 +3,7 @@
 This runbook is the shortest repeatable path through the working Waypoint Travel integration. Privacy is the main story. Display preferences and Site Guide are optional closing examples under **Additional agent-ready controls**.
 
 - **Live demo:** <https://clearrights-webmcp.vercel.app/>
+- **Video:** <https://youtu.be/jZI10DsSWyg>
 - **Public source:** <https://github.com/Vitali115/clearrights-webmcp>
 
 ## Before presenting
