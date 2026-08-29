@@ -26,3 +26,7 @@ dist-ssr
 # Local submission tooling and media drafts
 .devpost-hackathon-state.json
 devpost-media/
+
+# Playwright browser artifacts
+playwright-report/
+test-results/

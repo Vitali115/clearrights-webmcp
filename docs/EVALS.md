@@ -1,6 +1,12 @@
 # ClearRights Privacy evaluation protocol
 
-The evaluation separates deterministic repository tests from probabilistic browser-agent observations. It does not convert a small demo run into an invented success rate.
+The evaluation keeps three evidence layers separate:
+
+1. deterministic Vitest checks;
+2. a reproducible Playwright WebMCP contract harness;
+3. native Chrome and ChatGPT browser-agent observations.
+
+It does not convert a small demo run into an invented success rate, and it does not present the injected Playwright contract as native browser WebMCP support.
 
 ## Machine-readable cases
 
@@ -44,6 +50,29 @@ npm run lint
 npm run build
 ```
 
+## Reproducible Playwright browser contract
+
+Install the Playwright Chromium build once, then run the production-build browser suite:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
+The suite installs a test-only `document.modelContext` before the application bootstrap. ClearRights then registers and executes its real tool definitions through that surface; the harness contains no planner, privacy policy, receipt, or adapter business logic.
+
+The automated scenarios verify:
+
+- the exact 8 → 9 → 8 tool lifecycle;
+- `apply_privacy_plan` absent before the real 1.2-second pointer hold;
+- the reviewed `nextAction` bound to the exact plan ID;
+- no product effect while a plan is pending;
+- adapter readback, verified receipt, and final product effects after apply;
+- review and apply revocation when the approved draft changes;
+- persisted manual choices and complete reset without `document.modelContext`.
+
+Playwright proves that the page contract, UI, storage, and host adapters work together in a real browser DOM. Native tool discovery, browser schema enforcement, and natural-language tool selection remain covered only by the separately recorded Chrome and ChatGPT runs below.
+
 ## Browser-agent protocol
 
 Run all five cases, in order, in three clean sessions for each declared client. Reset demo data before a case whose `initialState` is `clean`; cases 3–5 form one stateful sequence.
@@ -69,7 +98,7 @@ Do not store prompts beyond the published eval cases, chain-of-thought, PII, bro
 | --- | --- | --- |
 | ChatGPT in-app browser | Five prompts × three clean sessions | Three final-build model runs recorded: GPT-5.6 Sol and Terra completed all five cases; GPT-5.6 Luna was blocked before tool discovery by its client/runtime. Results are reported per client, not as an aggregate success rate. |
 | Chrome 149+ with WebMCP enabled | Tool discovery, 8/9 lifecycle, complete privacy path | Passed native manual tool isolation in Chrome 152.0.7977.65 through DevTools Application → WebMCP: four completed calls, zero failures, human hold, dynamic apply, verified receipt, and final return to eight tools. Natural-language agent selection remains untested in Chrome. |
-| Ordinary browser without WebMCP | Complete manual fallback | Chrome 152 displayed the complete manual privacy banner and correctly reported structured agent access as unavailable. The full manual choice/review path remains pending. |
+| Ordinary browser without WebMCP | Complete manual fallback | Passed in the reproducible Playwright production-build run: direct choice, product effects, reload persistence, reset, and restored seed. Chrome 152 separately displayed the correct unavailable-WebMCP state on the public build. |
 
 Any incomplete row remains explicitly **Blocked** or **Pending** until the named client run is performed on the final public build. Passing unit tests or manually invoking a tool is not reported as evidence that a probabilistic agent selected the expected tool.
 
@@ -265,6 +294,7 @@ The receipt view displayed the same receipt ID and verification method. The unde
 
 - Direct WebMCP execution: all five canonical privacy cases passed in this complete run.
 - Dynamic trust boundary: the 8 → 9 → 8 lifecycle and exact tool invocation were observed.
+- Reproducible browser contract: Playwright passed the complete lifecycle, draft revocation, and ordinary-browser fallback against a production build.
 - Natural-language agent selection: final-build GPT-5.6 Sol and Terra completed all five prompts; GPT-5.6 Luna was blocked before structured discovery.
 - Final-build ChatGPT sample: one five-prompt run was recorded for each of Sol, Terra, and Luna, with the Luna limitation preserved rather than converted into an application score.
 - Chrome WebMCP: native registration, manual invocation, dynamic apply, receipt and final catalog were observed; model-driven tool selection remains untested.
@@ -279,6 +309,7 @@ No aggregate success percentage is reported because these are different evaluati
 | Canonical privacy cases, direct tool execution | 5 / 5 | Overview, inspection, staging, premature-apply block and reviewed apply all passed |
 | Chrome native WebMCP calls | 4 / 4 | All calls completed; zero failed, canceled or left in progress |
 | Dynamic trust boundary | 3 / 3 | Eight tools before review, ninth apply tool after the hold, eight tools after apply |
+| Playwright browser contract | 3 / 3 | Full lifecycle, changed-draft revocation, and manual fallback passed against the production build |
 | Receipt and product readback | 3 / 3 | Receipt matched the plan, adapter readback matched revision 3, and visible product effects matched the applied state |
 | Natural-language prompt selection | 2 complete / 1 blocked | Sol and Terra completed all five prompts on the final build; Luna could not list any WebMCP tools in its client/runtime. No aggregate rate is inferred. |
 
@@ -294,7 +325,7 @@ No aggregate success percentage is reported because these are different evaluati
 | Display preferences | **Passed for the recorded path** | Larger text, dark appearance and reduced motion were applied, read back from the DOM adapter, then restored to system values without changing privacy state. |
 | Site Guide | **Passed for the recorded path** | Catalog-driven navigation opened Cancellation policy, focused its heading, preserved the agent indicator and returned correctly with browser Back. |
 | Responsive presentation | **Passed for the recorded smoke path** | The full-viewport mobile privacy sheet was observed without horizontal overflow; the desktop product and review surfaces were also exercised. |
-| Ordinary-browser fallback | **Partially observed** | The manual banner and unavailable-WebMCP messaging worked in Chrome 152. A complete manual review-and-apply recording was not produced. |
+| Ordinary-browser fallback | **Passed in reproducible local browser automation** | Playwright verified direct choice, product effects, reload persistence, reset, and restored seed without `document.modelContext`. The public Chrome observation separately confirmed the unavailable-WebMCP message. |
 | Exhaustive accessibility sweep | **Not scored** | The recorded paths cover focus on Site Guide navigation and reduced-motion application, but not a complete public-build sweep of every keyboard path and forced-colors state. |
 | Repeated probabilistic runs | **Not scored** | One final-build run per named model was recorded. No claim is made for three repetitions per model or for a universal success rate. |
 

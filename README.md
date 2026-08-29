@@ -39,6 +39,15 @@ When review is complete, the overview also exposes a machine-readable `nextActio
 
 The repeatable script is in [`docs/DEMO.md`](docs/DEMO.md). The five-case eval dataset is in [`evals/privacy-prompt-cases.json`](evals/privacy-prompt-cases.json), and the observed direct-tool, native Chrome, and model-driven results are recorded without an invented aggregate rate in [`docs/EVALS.md`](docs/EVALS.md).
 
+For a deterministic browser regression of the same trust boundary, install Playwright's Chromium build once and run:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
+This suite injects a test-only `document.modelContext` before application bootstrap, then executes the actual page-registered tools. It verifies registration, dynamic removal, UI effects, the real 1.2-second hold, adapter readback, and manual fallback. It is a WebMCP contract harness, not a claim that Playwright's headless Chromium is a native WebMCP client.
+
 ## What is real in the demo
 
 The live trust trace is derived from actual state:
@@ -135,6 +144,7 @@ The detailed mapping, including OneTrust and Usercentrics as documentation-only 
 packages/clearrights-sdk/   headless SDK with privacy, accessibility, and site-guide subpaths
 examples/minimal-host/      independent typechecked host integration
 evals/                      machine-readable WebMCP prompt cases
+e2e/                        Playwright WebMCP contract and manual-fallback checks
 docs/DEMO.md                repeatable presentation path
 docs/INTEGRATION.md         host contracts and production adapter boundary
 docs/EVALS.md               deterministic and browser-agent evaluation method
@@ -147,14 +157,16 @@ src/ui/waypoint/            host-owned Waypoint UI
 ## Verify
 
 ```bash
+npm run typecheck
 npm run test:example
 npm run test:webmcp-evals
 npm test
 npm run lint
 npm run build
+npm run test:e2e
 ```
 
-The suite covers catalog invariants, deterministic planning, review/revocation, dynamic tool registration, migrations, receipt retention, enforcement drift, readback mismatch, GPC observation, accessibility rollback/Undo, safe navigation, product effects, and the complete agent-guided privacy flow.
+`npm run verify` combines lint, Vitest, the strict production build, and Playwright. The suite covers catalog invariants, deterministic planning, review/revocation, dynamic tool registration, migrations, receipt retention, enforcement drift, readback mismatch, GPC observation, accessibility rollback/Undo, safe navigation, product effects, and the complete agent-guided privacy flow.
 
 ## Trust boundary
 
