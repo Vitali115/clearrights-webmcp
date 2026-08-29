@@ -79,6 +79,21 @@ The SDK contains no React, DOM, browser storage, WebMCP, Tailwind, Waypoint cont
 
 Eight tools are registered normally. `apply_privacy_plan` becomes the ninth only while an exact non-no-op plan remains human-reviewed.
 
+The host uses WebMCP's native imperative API directly. Tool definitions contain their `name`, `description`, JSON `inputSchema`, annotations, and `execute` handler before registration:
+
+```ts
+const definitions = createToolDefinitions(dependencies)
+const registration = new AbortController()
+
+for (const tool of definitions.common) {
+  await document.modelContext.registerTool(tool, {
+    signal: registration.signal,
+  })
+}
+```
+
+See the complete [tool definitions](src/adapters/webmcp/tool-contracts.ts) and [registration lifecycle](src/adapters/webmcp/webmcp-adapter.ts), including the dynamic registration of `apply_privacy_plan` after human review.
+
 ### ClearRights Privacy
 
 | Tool | Purpose |
